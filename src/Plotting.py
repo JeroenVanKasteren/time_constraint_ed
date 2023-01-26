@@ -97,7 +97,7 @@ def plot_Pi(env, PI_learner, Pi, zero_state, **kwargs):
     ax.set_xticklabels(xticks)
     ax.set_yticklabels(yticks)
     ax.grid(which='minor', color='black', linestyle='-', linewidth=0.25)
-    plt.show()
+    plt.draw()
 
 
 def plot_V(env, PI_learner, V, zero_state, **kwargs):
@@ -148,4 +148,6 @@ def plot_V(env, PI_learner, V, zero_state, **kwargs):
     ax.set_xticks(arange(V_i.shape[1] + 1) - 0.5, minor=True)
     ax.set_yticks(arange(V_i.shape[0] + 1) - 0.5, minor=True)
     ax.grid(which='minor', color='black', linestyle='-', linewidth=0.1)
-    plt.show()
+    plt.draw()
+
+plt.show()

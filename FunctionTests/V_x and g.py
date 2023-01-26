@@ -10,15 +10,14 @@ Moreover, when x=-s then (x+S)*mu=0
 
 import numpy as np
 from numpy import array, arange, maximum, zeros, around, exp
-# from OtherTests.init import Env
-from init import Env
+from OtherTests.init import Env
 from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy.integrate import quad_vec
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
-env = Env(J=1, S=4, mu=array([2]), lmbda=array([3]), t=array([2]),
+env = Env(J=1, S=1, mu=array([2]), lmbda=array([1]), t=array([2]),
           r=array([1]), c=array([1]), P=0,
-          gamma=10, D=8, e=1e-6, trace=False)
+          gamma=10, D=100, e=1e-5, trace=False)
 
 def get_pi_0(env, s, rho):
     """Calculate pi(0)."""
