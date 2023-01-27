@@ -1,11 +1,4 @@
 """
-Take home.
-
-Calculating with and returning arrays works
-Use quad_vec when working with arrays
-
-Integration versus double sum
-Double sum is 30x times faster.
 Colors:
 https://matplotlib.org/stable/gallery/color/named_colors.html
 https://stackoverflow.com/questions/9707676/defining-a-discrete-colormap-for-imshow-in-matplotlib

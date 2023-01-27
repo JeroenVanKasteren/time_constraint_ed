@@ -1,118 +1,86 @@
 """
-Sandbox Value Iteration
-
-# Env initialization
-J = 2
-S = 4
-lambda_ = np.array([1, 1])
-mu = np.array([0.5, 1.5])
-print(sum(lambda_/mu)/S)  # Total system load < 1
-print(lambda_/mu)  # Used to estimate s_star
-
-t = np.array([1/5]*J)
-c = np.array([2, 3, 1])
-
-gamma = 30
-D = 15
-P = 1e2
-e = 1e-5
-
-@author: Jeroen
-
-Policy , Essential to have the numbers in ascending order
-Pi = -5, not evalated
-Pi = -1, Servers full
-Pi = 0, No one waiting
-Pi = i, take queue i into serves, i={1,...,J}
-Pi = J+1, Keep idle
-
-Penalty is an incentive to take people into service, it is not needed when
-there is no decision (servers full)
-
-Colors:
-https://matplotlib.org/stable/gallery/color/named_colors.html
-https://stackoverflow.com/questions/9707676/defining-a-discrete-colormap-for-imshow-in-matplotlib
+Sandbox Policy Iteration
 """
 
-# PATH = (r"D:\Programs\Surfdrive\Surfdrive\VU\Promovendus"
-#         r"\Time constraints in emergency departments\Code")
-PATH = (r"C:\Users\jkn354\surfdrive\VU\Promovendus"
-        r"\Time constraints in emergency departments\Code")
-
-import os
-os.chdir(PATH+"\Other")
-from init import Env
-os.chdir(PATH)
-from Plotting import plot_Pi, plot_V
-
 import numpy as np
-from numpy import array, arange, zeros
 from numba import njit
+from numpy import array, arange, zeros
 
-np.set_printoptions(precision=3, threshold=2000, linewidth=150)  # TODO
+from OtherTests.init import Env
+from src.Plotting import plot_Pi, plot_V
 
-env = Env(J=1, S=1, mu=array([3]), lmbda=array([1]), t=array([5]),
+np.set_printoptions(precision=4, linewidth=150, suppress=True)
+
+env = Env(J=1, S=1, mu=array([2]), lmbda=array([1]), t=array([2]),
           r=array([1]), c=array([1]), P=0,
-          gamma=1, D=30, trace=False, print_modulo=20)
+          gamma=10, D=100, e=1e-5, trace=False)
+# env = Env(J=2, S=2, lmbda=array([0.5,0.5]), mu=array([1,1]), t=array([1.]),
+#           r=array([1,1]), c=array([1,1]), P=0,
+#           gamma=5, D=5, trace=True)
 
 Not_Evaluated = env.NOT_EVALUATED
 Servers_Full = env.SERVERS_FULL
 None_Waiting = env.NONE_WAITING
 Keep_Idle = env.KEEP_IDLE
 
-def initialize_pi(env):
-    "Take the longest waiting queue into service. At tie take the last queue."
-    Pi = Not_Evaluated*np.ones(env.dim, dtype=int)
-    for s in env.S_states:
-        states = [slice(None)]*(env.J*2)
-        states[slice(env.J,env.J*2)] = s
+J = env.J
+S = env.S
+D = env.D
+gamma = env.gamma
+t = env.t
+c = env.c
+r = env.r
+P = env.P
+sizes = env.sizes
+size = env.size
+dim = env.dim
+sizes_i = env.sizes_i
+size_i = env.size_i
+dim_i = env.dim_i
+s_states = env.s_states
+x_states = env.x_states
+P_xy = env.P_xy
 
-        states_0 = states.copy()
-        states_0[slice(0,env.J)] = [0]*env.J
-        Pi[tuple(states_0)] = None_Waiting
-        if np.sum(s) == env.S:
-            Pi[tuple(states)] = Servers_Full
-        else:
-            for i in arange(env.J):
-                states_ = states.copy()
-                for x in arange(1, env.D+1):
-                    states_[i] = x
-                    for j in arange(env.J):
-                        if j != i:
-                            states_[j] = slice(0, x+1)
-                    Pi[tuple(states_)] = i + 1
-    return Pi
 
-Pi = initialize_pi(env)
+def init_W(env, V, W):
+    for i in arange(env.J):
+        states = np.append(i, [slice(None)] * (J * 2))
+        states[1 + i] = slice(D)
+        next_states = [slice(None)] * (J * 2)
+        next_states[i] = slice(1, D + 1)
+        W[tuple(states)] = V[tuple(next_states)]
+        states[1 + i] = D
+        next_states[i] = D
+        W[tuple(states)] = V[tuple(next_states)] - P
+    W[J] = V
+    return W
 
-J=env.J; S=env.S; D=env.D; gamma=env.gamma; t=env.t; c=env.c; r=env.r; P=env.P
-sizes=env.sizes; size=env.size; S_states=env.S_states; x_states=env.x_states
-dim=env.dim; P_xy=env.P_xy
 
 @njit
 def W_f(V, W, Pi):
-    """W."""
-    V = V.reshape(size); W = W.reshape(size); Pi = Pi.reshape(size)
-    for s in S_states:
+    """W given policy."""
+    V = V.reshape(size)
+    W = W.reshape(size_i)
+    Pi = Pi.reshape(size_i)
+    for s in s_states:
         for x in x_states:
-            state = np.sum(x*sizes[0:J] + s*sizes[J:J*2])
-            i = Pi[state]
-            W[state] = V[state]
-            if (np.sum(s) < S) & (x[i-1] > 0):  # serv. idle, any waiting
-                if i == Keep_Idle:
-                    W[state] = W[state] - P if np.any(x == D) else W[state]
-                else:
-                    i = i-1
-                    W[state] = r[i] - c[i] if x[i] > gamma*t[i] else r[i]
-                    for y in arange(x[i] + 1):
-                        next_x = x.copy()
-                        next_x[i] = y
+            for i in arange(J+1):
+                state = np.sum(i * sizes_i[0] + x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
+                if Pi[state] != Keep_Idle:
+                    j = Pi[state] - 1
+                    W[state] = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
+                    next_x = x.copy()
+                    for y in arange(x[j] + 1):
+                        next_x[j] = y
+                        if (i < J) and (i != j):
+                            next_x[i] += 1
                         next_s = s.copy()
-                        next_s[i] += 1
-                        next_state = np.sum(next_x*sizes[0:J] + \
-                                            next_s*sizes[J:J*2])
-                        W[state] += P_xy[i, x[i], y] * V[next_state]
-    return W.reshape(dim)
+                        next_s[j] += 1
+                        next_state = np.sum(
+                            next_x * sizes[0:J] + next_s * sizes[J:J * 2])
+                        W[state] += P_xy[j, x[j], y] * V[next_state]
+    return W.reshape(dim_i)
+
 
 def V_f(env, V, W):
     """V_t."""
@@ -147,6 +115,7 @@ def V_f(env, V, W):
             V_t[tuple(states)] += s_i * env.mu[i] * \
                 (W[tuple(next_states)] - V[tuple(states)])
     return V_t/env.tau
+
 
 @njit
 def policy_improvement(V, Pi):
@@ -183,6 +152,7 @@ def policy_improvement(V, Pi):
                 unstable = True
     return Pi.reshape(dim), unstable
 
+
 def policy_evaluation(env, V, W, Pi, name, count=0):
     """Policy Evaluation."""
     inner_count = 0
@@ -197,10 +167,11 @@ def policy_evaluation(env, V, W, Pi, name, count=0):
         inner_count += 1
     return V, g
 
+
 # Policy Iteration
 name = 'Policy Iteration'
 W = zeros(env.dim)
-Pi = initialize_pi(env)
+Pi = env.init_Pi()
 
 count = 0
 unstable = True

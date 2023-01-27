@@ -41,6 +41,16 @@ Dependent variables
 'sizes' size of every element/submatrix per dimension, float 1D-array
 's_states' all valid combinations of S states, int 2D-array
 'x_states' all combinations of x states, int 2D-array
+
+Policy , Essential to have the numbers in ascending order
+Pi = -3, not evalated
+Pi = -2, Servers full
+Pi = -1, Keep idle
+Pi = 0, No one waiting
+Pi = i, take queue i into serves, i={1,...,J}
+
+Penalty is an incentive to take people into service, it is not needed when
+there is no decision (servers full)
 """
 
 import numpy as np
@@ -152,7 +162,7 @@ class Env():
     def get_pi_0(self, s, rho):
         """Calculate pi(0)."""
         pi_0 = s*exp(s*rho) / (s*rho)**s * \
-            gamma_fun(s)*reg_up_inc_gamma(s,s*rho)
+            gamma_fun(s)*reg_up_inc_gamma(s, s*rho)
         pi_0 += (self.gamma + rho * self.lmbda)/self.gamma * (1 / (1 - rho))
         return 1 / pi_0
 
