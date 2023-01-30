@@ -54,7 +54,7 @@ there is no decision (servers full)
 """
 
 import numpy as np
-from numpy import array, arange, zeros, round, exp, ones, eye, dot, around
+from numpy import array, arange, zeros, round, exp, ones, eye, dot
 from itertools import product
 from sys import exit, getsizeof
 from timeit import default_timer
@@ -65,14 +65,14 @@ from scipy import optimize
 
 class Env():
     S_MIN = 2  # Servers
-    S_MAX = 20
+    S_MAX = 6
     mu_MIN = 0.1  # Service Rate
     mu_MAX = 1
     load_MIN = 0.4  # System load
     load_MAX = 1
     imbalance_MIN = 1  # Imbalance
     imbalance_MAX = 5
-    TARGET = [1/3]  # [1/3] or np.linspace(1/3, 10/3, num=10)  # Target
+    TARGET = [1]  # [1/3] or np.linspace(1/3, 10/3, num=10)  # Target
 
     NONE_WAITING = 0
     KEEP_IDLE = -1
@@ -90,7 +90,7 @@ class Env():
         else:  # Determine arrival rate based on desired load.
             self.Rho = kwargs.get('Rho', np.random.uniform(self.load_MIN, self.load_MAX))
             weight = np.random.uniform(self.imbalance_MIN, self.imbalance_MAX, self.J)
-            self.lmbda = self.mu * (self.S*self.rho*weight/sum(weight))
+            self.lmbda = self.mu * self.S * self.Rho * weight/sum(weight)
         self.t = kwargs.get('t', np.random.choice(self.TARGET, self.J))
         self.gamma = kwargs.get('gamma')
         if any((self.t % (1/self.gamma) != 0) | (self.t < 1/self.gamma)):
@@ -170,7 +170,7 @@ class Env():
         """P(W>t)."""
         tail_prob = pi_0/(1-rho) * \
             (self.lmbda+self.gamma) / (self.gamma + self.lmbda*pi_0) * \
-            (1 - (s*self.mu - self.lmbda) / (s*self.mu + self.gamma) \
+            (1 - (s*self.mu - self.lmbda) / (s*self.mu + self.gamma)
              )**(self.gamma*self.t)
         return tail_prob
 
@@ -178,8 +178,7 @@ class Env():
         """P(W>D)."""
         tail_prob = pi_0/(1-rho) * \
             (self.lmbda+self.gamma) / (self.gamma + self.lmbda*pi_0) * \
-            (1 - (s*self.mu - self.lmbda) / (s*self.mu + self.gamma) \
-             )**(self.gamma*self.D)
+            (1 - (s*self.mu - self.lmbda) / (s*self.mu + self.gamma))**self.D
         return tail_prob
 
     def get_g_app(self, pi_0, tail_prob):
@@ -290,7 +289,7 @@ class Env():
             if time > 60:  # in seconds
                 exit("Looping matrix takes more than 60 seconds.")
 
-    def convergence(self, V_t, V, i, name, j=0):
+    def convergence(self, V_t, V, i, name, j=-1):
         """Convergence check of valid states only."""
         delta_max = V_t[tuple([0]*(self.J*2))] - V[tuple([0]*(self.J*2))]
         delta_min = delta_max.copy()
@@ -305,8 +304,9 @@ class Env():
         converged = delta_max - delta_min < self.e
         max_iter = (i > self.max_iter) | (j > self.max_iter)
         g = (delta_max + delta_min)/2 * self.tau
-        if( (converged & self.trace) |
-           (self.trace & (i % self.print_modulo == 0)) ):
+        if((converged & self.trace) |
+           (self.trace & (i % self.print_modulo == 0 |
+                          j % self.print_modulo == 0))):
             print("iter: ", i,
                   "inner_iter: ", j,
                   ", delta: ", round(delta_max - delta_min, 2),
@@ -314,10 +314,10 @@ class Env():
                   ', D_max', round(delta_max, 2),
                   ", g: ", round(g, 4))
         elif converged:
-            if j==0:
-                print(name,'converged in',i,'iterations. g=', around(g,4))
+            if j == -1:
+                print(name,'converged in',i,'iterations. g=', round(g,4))
             else:
-                print(name,'converged in',j,'iterations. g=', around(g,4))
+                print(name,'converged in',j,'iterations. g=', round(g,4))
         elif max_iter:
-            print(name, 'iter:', i, 'reached max_iter =', max_iter,', g~',around(g,4))
+            print(name, 'iter:', i, 'reached max_iter =', max_iter,', g~',round(g,4))
         return converged | max_iter, g

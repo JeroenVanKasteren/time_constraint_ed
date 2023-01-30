@@ -11,12 +11,14 @@ from src.Plotting import plot_Pi, plot_V
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
-# env = Env(J=1, S=1, mu=array([2]), lmbda=array([1]), t=array([2]),
-#           r=array([1]), c=array([1]), P=0,
-#           gamma=2, D=50, e=1e-5, trace=False)
-env = Env(J=2, S=2, lmbda=array([0.5, 0.5]), mu=array([1, 1]), t=array([1., 1.]),
-          r=array([1, 1]), c=array([1, 1]), P=0,
-          gamma=2, D=6, trace=True)
+np.random.seed(0)
+env = Env(J=2, S=2, Rho=0.5, gamma=10, D=15, P=0, e=1e-4, trace=True,
+          print_modulo=100)
+# env = Env(J=1, S=4, mu=array([1.5]), lmbda=array([4]), t=array([2]), P=0,
+#           gamma=2, D=30, e=1e-5, trace=False)
+# env = Env(J=2, S=2, lmbda=array([0.5, 0.5]), mu=array([1, 1]), t=array([1., 1.]),
+#           r=array([1, 1]), c=array([1, 1]), P=0,
+#           gamma=2, D=6, trace=True)
 
 Not_Evaluated = env.NOT_EVALUATED
 Servers_Full = env.SERVERS_FULL
@@ -160,6 +162,7 @@ def policy_evaluation(env, V, W, Pi, name, count=0):
 
 # Policy Iteration
 name = 'Policy Iteration'
+V = zeros(env.dim)  # V_{t-1}
 W = zeros(env.dim_i)
 Pi = env.init_Pi()
 
@@ -168,7 +171,6 @@ stable = False
 
 env.timer(True, name, env.trace)
 while not stable:
-    V = zeros(env.dim)  # V_{t-1}
     V, g = policy_evaluation(env, V, W, Pi, 'Policy Evaluation of PI', count)
     W = init_W(env, V, W)
     Pi, stable = policy_improvement(V, W, Pi)

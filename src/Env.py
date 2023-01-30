@@ -50,11 +50,14 @@ Created on 19-3-2020.
 """
 
 import numpy as np
-from numpy import array, arange, zeros, round
+from numpy import array, arange, zeros, round, exp, ones, eye, dot, around
 from itertools import product
 from sys import exit, getsizeof
 from timeit import default_timer
 from numba import njit
+
+from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
+from scipy import optimize
 
 
 class TimeConstraintEDs():
@@ -66,7 +69,7 @@ class TimeConstraintEDs():
     load_MAX = 1
     imbalance_MIN = 1  # Imbalance
     imbalance_MAX = 5
-    TARGET = [1]  # [x] or np.linspace(x, 10*x, num=10)  # Target
+    TARGET = [10]  # [x] or np.linspace(x, 10*x, num=10)  # Target
 
     def __init__(self, **kwargs):  # **kwargs: Keyworded arguments
         """Create all variables describing the environment."""
@@ -79,7 +82,7 @@ class TimeConstraintEDs():
         else:  # Determine arrival rate based on desired load.
             self.Rho = kwargs.get('Rho', np.random.uniform(self.load_MIN, self.load_MAX))
             weight = np.random.uniform(self.imbalance_MIN, self.imbalance_MAX, self.J)
-            self.lmbda = self.mu * (self.S*self.rho*weight/sum(weight))
+            self.lmbda = self.mu * self.S * self.Rho * weight/sum(weight)
         self.t = kwargs.get('t', np.random.choice(self.TARGET, self.J))
         self.gamma = kwargs.get('gamma')
         if any((self.t % (1/self.gamma) != 0) | (self.t < 1/self.gamma)):
@@ -90,14 +93,21 @@ class TimeConstraintEDs():
         self.P = kwargs.get('P', max(self.c + self.r)*10)
         self.D = kwargs.get('D')
         self.e = kwargs.get('e', 1e-5)
-        
+
         self.a = self.lmbda/self.mu
+        self.s_star = self.server_allocation()
+        self.rho = self.a/self.s_star
+        self.pi_0 = self.get_pi_0(self.s_star, self.rho)
+        self.tail_prob = self.get_tail_prob(self.s_star, self.rho, self.pi_0)
+        self.cap_prob = self.get_time_cap_prob(self.s_star, self.rho, self.pi_0)
+        self.g = self.get_g_app(self.pi_0, self.tail_prob)
+
         self.P_xy = self.trans_prob()
-        self.tau = self.S * max(self.mu) + sum(np.maximum(self.lmbda, self.gamma))
-        self.dim = tuple(np.repeat([self.D + 1, self.S + 1], self.J))
+        self.tau = self.S*max(self.mu) + sum(np.maximum(self.lmbda, self.gamma))
+        self.dim = tuple(np.repeat([self.D+1, self.S+1], self.J))
         self.sizes = self.def_sizes(self.dim)
         self.size = np.prod(self.dim)
-        self.dim_i = tuple(np.append(self.J + 1, np.repeat([self.D + 1, self.S + 1], self.J)))
+        self.dim_i = tuple(np.append(self.J+1, np.repeat([self.D+1, self.S+1], self.J)))
         self.sizes_i = self.def_sizes(self.dim_i)
         self.size_i = np.prod(self.dim_i)
 
@@ -105,10 +115,10 @@ class TimeConstraintEDs():
         self.trace = kwargs.get('trace', False)
         self.print_modulo = kwargs.get('print_modulo', 1)
 
-        self.s_states = array(list(product(arange(self.S + 1), repeat=self.J)))
+        self.s_states = array(list(product(arange(self.S+1), repeat=self.J)))
         self.s_states_v = self.s_states[np.sum(self.s_states, axis=1) <= self.S]  # Valid states
-        self.s_states = self.s_states_[np.sum(self.s_states_, axis=1) < self.S]  # Action states
-        self.x_states = array(list(product(arange(self.D + 1), repeat=self.J)))
+        self.s_states = self.s_states_v[np.sum(self.s_states_v, axis=1) < self.S]  # Action states
+        self.x_states = array(list(product(arange(self.D+1), repeat=self.J)))
 
         self.feasibility(kwargs.get('time_check', True))
         # if self.trace:
@@ -122,7 +132,8 @@ class TimeConstraintEDs():
               "r:", round(self.r, 4), '\n',
               "c:", round(self.c, 4), '\n',
               "s_star:", round(self.s_star, 4), '\n',
-              "rho:", round(self.rho, 4))
+              "rho:", round(self.rho, 4), '\n',
+              "P(W>D):", self.cap_prob)
         assert self.Rho < 1, "rho < 1 does not hold"
 
     def trans_prob(self):
@@ -130,23 +141,107 @@ class TimeConstraintEDs():
         P_xy = np.zeros((self.J, self.D+1, self.D+1))
         gamma = self.gamma
         A = np.indices((self.D+1, self.D+1))  # x=A[0], y=A[1]
-        mask_tril = A[0, 1:, 1:] >= A[1, 1:, 1:]    
-        for i in range(self.J):  # For every class
+        mask_tril = A[0, 1:, 1:] >= A[1, 1:, 1:]
+        for i in range(self.J):
             lmbda = self.lmbda[i]
             P_xy[i, 1:, 1:][mask_tril] = (gamma / (lmbda + gamma)) ** \
-                (A[0, 1:, 1:][mask_tril] - A[1, 1:, 1:][mask_tril]) * \
-                lmbda / (lmbda + gamma)
+                                         (A[0, 1:, 1:][mask_tril] - A[1, 1:, 1:][mask_tril]) * \
+                                         lmbda / (lmbda + gamma)
             P_xy[i, 1:, 0] = (gamma / (lmbda + gamma)) ** A[0, 1:, 0]
         P_xy[:, 0, 0] = 1
         return P_xy
 
-    def def_sizes(self):
+    def get_pi_0(self, s, rho):
+        """Calculate pi(0)."""
+        pi_0 = s*exp(s*rho) / (s*rho)**s * \
+            gamma_fun(s)*reg_up_inc_gamma(s, s*rho)
+        pi_0 += (self.gamma + rho * self.lmbda)/self.gamma * (1 / (1 - rho))
+        return 1 / pi_0
+
+    def get_tail_prob(self, s, rho, pi_0):
+        """P(W>t)."""
+        tail_prob = pi_0/(1-rho) * \
+            (self.lmbda+self.gamma) / (self.gamma + self.lmbda*pi_0) * \
+            (1 - (s*self.mu - self.lmbda) / (s*self.mu + self.gamma)
+             )**(self.gamma*self.t)
+        return tail_prob
+
+    def get_time_cap_prob(self, s, rho, pi_0):
+        """P(W>D)."""
+        tail_prob = pi_0/(1-rho) * \
+            (self.lmbda+self.gamma) / (self.gamma + self.lmbda*pi_0) * \
+            (1 - (s*self.mu - self.lmbda) / (s*self.mu + self.gamma))**self.D
+        return tail_prob
+
+    def get_g_app(self, pi_0, tail_prob):
+        return (self.r - self.c * tail_prob) * \
+            (self.lmbda + pi_0*self.lmbda**2/self.gamma)
+
+    def server_allocation_cost(self, s):
+        """Sums of g per queue, note that -reward is returned."""
+        with np.errstate(divide='ignore', invalid='ignore'):
+            rho = self.a / s
+            pi_0 = self.get_pi_0(s, rho)
+            tail_prob = self.get_tail_prob(s, rho, pi_0)
+        tail_prob[~np.isfinite(tail_prob)] = 1  # Correct dividing by 0
+        res = self.get_g_app(pi_0, tail_prob)
+        return -np.sum(res, axis=len(np.shape(s))-1)
+
+    def server_allocation(self):
         """Docstring."""
-        sizes = np.zeros(len(self.dim), dtype=np.int64)
+        weighted_load = self.a/sum(self.a)
+        if np.all(self.t > 0):
+            weighted_load *= (1/self.t)/sum((1/self.t))
+        if sum(self.c + self.r) > 0:
+            weighted_load *= (self.c + self.r)/sum(self.c + self.r)
+
+        x0 = self.a + weighted_load/sum(weighted_load) * (self.S-sum(self.a))
+        lb_bound = self.a  # lb <= A.dot(x) <= ub
+        ub_bound = self.S-dot((ones((self.J, self.J))-eye(self.J)), self.a)
+        bounds = optimize.Bounds(lb_bound, ub_bound)
+
+        A_cons = array([1]*self.J)
+        lb_cons = self.S  # Equal bounds represent equality constraint
+        ub_cons = self.S
+        lin_cons = optimize.LinearConstraint(A_cons, lb_cons, ub_cons)
+
+        s_star = optimize.minimize(self.server_allocation_cost, x0, bounds=bounds, constraints=lin_cons).x
+        return s_star
+
+    def def_sizes(self, dim):
+        """Docstring."""
+        sizes = np.zeros(len(dim), dtype=np.int64)
         sizes[-1] = 1
-        for i in range(len(self.dim) - 2, -1, -1):
-            sizes[i] = sizes[i + 1] * self.dim[i + 1]
+        for i in range(len(dim) - 2, -1, -1):
+            sizes[i] = sizes[i + 1] * dim[i + 1]
         return sizes
+
+    def init_Pi(self):
+        """
+        Take the longest waiting queue into service (or last queue if tied).
+        Take arrivals directly into service.
+        """
+        Pi = self.NOT_EVALUATED*np.ones(self.dim_i, dtype=int)
+        for s in self.s_states_v:
+            states = np.append([slice(None)]*(1+self.J), s)
+            if np.sum(s) == self.S:
+                Pi[tuple(states)] = self.SERVERS_FULL
+                continue
+            for i in arange(self.J):
+                states_ = states.copy()
+                for x in arange(1, self.D+1):
+                    states_[1+i] = x  # x_i = x
+                    for j in arange(self.J):
+                        if j != i:
+                            states_[1+j] = slice(0, x+1)  # 0 <= x_j <= x_i
+                    Pi[tuple(states_)] = i + 1
+                states_ = states.copy()
+                states_[0] = i
+                states_[1+i] = 0
+                Pi[tuple(states)] = i + 1  # Admit arrival (of i)
+            states = np.concatenate(([self.J], [0]*self.J, s), axis=0)  # x_i = 0 All i
+            Pi[tuple(states)] = self.NONE_WAITING
+        return Pi
 
     def timer(self, start_boolean, name, trace):
         """Only if trace=TRUE, start timer if start=true, else print time."""
@@ -163,25 +258,25 @@ class TimeConstraintEDs():
 
     @staticmethod
     @njit
-    def test_loop(memory, size, sizes, S_states, x_states, J):
+    def test_loop(memory, size_i, sizes_i, s_states, x_states, J):
         """Docstring."""
-        memory = memory.reshape(size)
-        for s in S_states:
+        memory = memory.reshape(size_i)
+        for s in s_states:
             for x in x_states:
-                state = np.sum(x*sizes[0:J] + s*sizes[J:J*2])
-                memory[state] = np.random.rand()
+                for i in arange(J + 1):
+                    state = i * sizes_i[0] + np.sum(x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
+                    memory[state] = np.random.rand()
 
     def feasibility(self, time_check):
         """Feasability Check matrix size."""
-        memory = zeros(self.dim)
+        memory = zeros(self.dim_i)
         name = 'Running time feasibility'
         if self.trace:
-            print("Size of V: ", round(getsizeof(memory)/10**9, 4), "GB.")
+            print("Size of W: ", round(getsizeof(memory)/10**9, 4), "GB.")
+            print("Size of V: ", round(getsizeof(zeros(self.dim))/10**9, 4), "GB.")
         if time_check:
             self.timer(True, name, True)
-            time = self.test_loop(memory, self.size, self.sizes,
-                                  self.S_states, self.x_states, self.J)  # Numba
+            self.test_loop(memory, self.size_i, self.sizes_i, self.s_states, self.x_states, self.J)
             time = self.timer(False, name, True)
-            if(time > 60):  # in seconds
+            if time > 60:  # in seconds
                 exit("Looping matrix takes more than 60 seconds.")
-

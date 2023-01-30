@@ -11,18 +11,11 @@ Created on 19-3-2020.
 import numpy as np
 from numpy import arange, around, array
 import matplotlib.pyplot as plt
-import os
-
-PATH = (r"D:\Programs\Surfdrive\Surfdrive\VU\Promovendus"
-        r"\Time constraints in emergency departments\Code")
-# PATH = (r"C:\Users\jkn354\surfdrive\VU\Promovendus"
-#         r"\Time constraints in emergency departments\Code")
-os.chdir(PATH)
 
 from Env import TimeConstraintEDs as Env
 from Learner import PolicyIteration, ValueIteration, OneStepPolicyImprovement
 
-np.set_printoptions(precision=4)
+np.set_printoptions(precision=4, linewidth=150, suppress=True)
 np.random.seed(42)
 EXPERIMENTS = 10
 

@@ -11,12 +11,13 @@ from src.Plotting import plot_Pi, plot_V
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
-# env = Env(J=1, S=1, mu=array([2]), lmbda=array([1]), t=array([2]),
-#           r=array([1]), c=array([1]), P=0,
-#           gamma=2, D=50, e=1e-5, trace=False)
-env = Env(J=2, S=2, lmbda=array([0.5, 0.5]), mu=array([1, 1]), t=array([1., 1.]),
-          r=array([1, 1]), c=array([1, 1]), P=0,
-          gamma=2, D=6, trace=True)
+np.random.seed(42)
+env = Env(J=2, S=4, Rho=0.5, gamma=6, D=50, P=0, e=1e-4, trace=True)
+# env = Env(J=1, S=4, mu=array([1.5]), lmbda=array([4]), t=array([2]), P=0,
+#           gamma=2, D=30, e=1e-5, trace=False)
+# env = Env(J=2, S=2, lmbda=array([0.5, 0.5]), mu=array([1, 1]), t=array([1., 1.]),
+#           r=array([1, 1]), c=array([1, 1]), P=0,
+#           gamma=2, D=6, trace=True)
 
 Not_Evaluated = env.NOT_EVALUATED
 Servers_Full = env.SERVERS_FULL
