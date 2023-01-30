@@ -1,33 +1,5 @@
 """
 Sandbox Value Iteration
-
-# Env initialization
-J = 2
-S = 4
-lambda_ = np.array([1, 1])
-mu = np.array([0.5, 1.5])
-print(sum(lambda_/mu)/S)  # Total system load < 1
-print(lambda_/mu)  # Used to estimate s_star
-
-t = np.array([1/5]*J)
-c = np.array([2, 3, 1])
-
-gamma = 30
-D = 15
-P = 1e2
-e = 1e-5
-
-@author: Jeroen
-
-Policy , Essential to have the numbers in ascending order
-Pi = -5, not evalated
-Pi = -1, Servers full
-Pi = 0, No one waiting
-Pi = i, take queue i into serves, i={1,...,J}
-Pi = J+1, Keep idle
-
-Penalty is an incentive to take people into service, it is not needed when
-there is no decision (servers full)
 """
 
 import numpy as np
@@ -39,12 +11,12 @@ from src.Plotting import plot_Pi, plot_V
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
-env = Env(J=1, S=1, mu=array([2]), lmbda=array([1]), t=array([2]),
-          r=array([1]), c=array([1]), P=0,
-          gamma=10, D=100, e=1e-5, trace=False)
-# env = Env(J=2, S=2, lmbda=array([0.5,0.5]), mu=array([1,1]), t=array([1.]),
-#           r=array([1,1]), c=array([1,1]), P=0,
-#           gamma=5, D=5, trace=True)
+# env = Env(J=1, S=1, mu=array([2]), lmbda=array([1]), t=array([2]),
+#           r=array([1]), c=array([1]), P=0,
+#           gamma=2, D=50, e=1e-5, trace=False)
+env = Env(J=2, S=2, lmbda=array([0.5, 0.5]), mu=array([1, 1]), t=array([1., 1.]),
+          r=array([1, 1]), c=array([1, 1]), P=0,
+          gamma=2, D=6, trace=True)
 
 Not_Evaluated = env.NOT_EVALUATED
 Servers_Full = env.SERVERS_FULL
@@ -92,7 +64,7 @@ def W_f(V, W):
     for s in s_states:
         for x in x_states:
             for i in arange(J+1):
-                state = np.sum(i * sizes_i[0] + x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
+                state = i * sizes_i[0] + np.sum(x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
                 for j in arange(J):
                     if (x[j] > 0) or (j == i):  # Class i waiting, arrival, or time passing
                         w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
@@ -100,7 +72,7 @@ def W_f(V, W):
                         for y in arange(x[j] + 1):
                             next_x[j] = y
                             if (i < J) and (i != j):
-                                next_x[i] += 1
+                                next_x[i] = min(next_x[i] + 1, D)
                             next_s = s.copy()
                             next_s[j] += 1
                             next_state = np.sum(next_x * sizes[0:J] + next_s * sizes[J:J * 2])
@@ -141,14 +113,14 @@ def V_f(env, V, W):
 @njit
 def policy_improvement(V, W, Pi):
     """Determine best action/policy per state by one-step lookahead."""
-    V = V.reshape(size);
-    W = W.reshape(size_i);
+    V = V.reshape(size)
+    W = W.reshape(size_i)
     Pi = Pi.reshape(size_i)
     stable = True
     for s in s_states:
         for x in x_states:
             for i in arange(J+1):
-                state = np.sum(i * sizes_i[0] + x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
+                state = i * sizes_i[0] + np.sum(x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
                 pi = Pi[state]
                 Pi[state] = Keep_Idle if ((np.sum(x) > 0) or (i < J)) else Pi[state]
                 w = W[state]
@@ -160,7 +132,7 @@ def policy_improvement(V, W, Pi):
                         for y in arange(x[j] + 1):
                             next_x[j] = y
                             if (i < J) and (i != j):
-                                next_x[i] += 1
+                                next_x[i] = min(next_x[i] + 1, D)
                             next_s = s.copy()
                             next_s[j] += 1
                             next_state = np.sum(next_x * sizes[0:J] + next_s * sizes[J:J * 2])
@@ -199,10 +171,10 @@ print("V", V)
 print("Pi", Pi)
 print("g", g)
 
-if env.J > 1:
-    plot_Pi(env, env, Pi, zero_state=True)
-    plot_Pi(env, env, Pi, zero_state=False)
-for i in arange(env.J):
-    plot_Pi(env, env, Pi, zero_state=True, i=i)
-    plot_Pi(env, env, Pi, zero_state=True, i=i, smu=True)
-    plot_V(env, env, V, zero_state=True, i=i)
+# if env.J > 1:
+#     plot_Pi(env, env, Pi, zero_state=True)
+#     plot_Pi(env, env, Pi, zero_state=False)
+# for i in arange(env.J):
+#     plot_Pi(env, env, Pi, zero_state=True, i=i)
+#     plot_Pi(env, env, Pi, zero_state=True, i=i, smu=True)
+#     plot_V(env, env, V, zero_state=True, i=i)

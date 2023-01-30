@@ -273,7 +273,7 @@ class Env():
         for s in s_states:
             for x in x_states:
                 for i in arange(J + 1):
-                    state = np.sum(i * sizes_i[0] + x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
+                    state = i * sizes_i[0] + np.sum(x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
                     memory[state] = np.random.rand()
 
     def feasibility(self, time_check):

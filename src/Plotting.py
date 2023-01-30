@@ -21,7 +21,7 @@ def plot_Pi(env, PI_learner, Pi, zero_state, **kwargs):
         state = kwargs.get('state')
     else:  # Select a random valid states
         state = np.concatenate((env.x_states[np.random.randint(len(env.x_states))],
-                                env.S_states[np.random.randint(len(env.S_states))])).astype(object)
+                                env.s_states[np.random.randint(len(env.s_states))])).astype(object)
         state[0] = 1 if 'smu' in kwargs else 0
 
     states = state.copy()

@@ -11,12 +11,12 @@ from src.Plotting import plot_Pi, plot_V
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
-env = Env(J=1, S=1, mu=array([2]), lmbda=array([1]), t=array([2]),
-          r=array([1]), c=array([1]), P=0,
-          gamma=10, D=100, e=1e-5, trace=False)
-# env = Env(J=2, S=2, lmbda=array([0.5,0.5]), mu=array([1,1]), t=array([1.]),
-#           r=array([1,1]), c=array([1,1]), P=0,
-#           gamma=5, D=5, trace=True)
+# env = Env(J=1, S=1, mu=array([2]), lmbda=array([1]), t=array([2]),
+#           r=array([1]), c=array([1]), P=0,
+#           gamma=2, D=50, e=1e-5, trace=False)
+env = Env(J=2, S=2, lmbda=array([0.5, 0.5]), mu=array([1, 1]), t=array([1., 1.]),
+          r=array([1, 1]), c=array([1, 1]), P=0,
+          gamma=2, D=6, trace=True)
 
 Not_Evaluated = env.NOT_EVALUATED
 Servers_Full = env.SERVERS_FULL
@@ -65,137 +65,127 @@ def W_f(V, W, Pi):
     for s in s_states:
         for x in x_states:
             for i in arange(J+1):
-                state = np.sum(i * sizes_i[0] + x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
-                if Pi[state] != Keep_Idle:
+                state = i * sizes_i[0] + np.sum(x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
+                if Pi[state] > 0:
                     j = Pi[state] - 1
                     W[state] = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
                     next_x = x.copy()
                     for y in arange(x[j] + 1):
                         next_x[j] = y
                         if (i < J) and (i != j):
-                            next_x[i] += 1
+                            next_x[i] = min(next_x[i] + 1, D)
                         next_s = s.copy()
                         next_s[j] += 1
-                        next_state = np.sum(
-                            next_x * sizes[0:J] + next_s * sizes[J:J * 2])
+                        next_state = np.sum(next_x * sizes[0:J] + next_s * sizes[J:J * 2])
                         W[state] += P_xy[j, x[j], y] * V[next_state]
     return W.reshape(dim_i)
 
 
 def V_f(env, V, W):
     """V_t."""
-    all_states = [slice(None)]*(env.J*2)
+    states_c = [slice(None)] * (env.J * 2)
     V_t = env.tau * V
     for i in arange(env.J):
-        # x_i = 0
-        states = all_states.copy()
-        next_states = all_states.copy()
-        states[i] = 0  # x_i (=0)
-        next_states[i] = 1  # x_i + 1
-        V_t[tuple(states)] += env.lmbda[i] * (W[tuple(next_states)] -
-                                              V[tuple(states)])
-        # 0 < x_i < D
-        states = all_states.copy()
-        next_states = all_states.copy()
-        states[i] = slice(1, env.D)  # x_i
-        next_states[i] = slice(2, env.D+1)  # x_i + 1
-        V_t[tuple(states)] += env.gamma * (W[tuple(next_states)] -
-                                           V[tuple(states)])
-        # x_i = D
-        states = all_states.copy()
-        states[i] = env.D  # x_i = D
-        V_t[tuple(states)] += env.gamma * (W[tuple(states)] -
-                                           V[tuple(states)])
-        # s_i
-        for s_i in arange(1, env.S+1):
-            states = all_states.copy()
-            next_states = all_states.copy()
-            states[env.J+i] = s_i
-            next_states[env.J+i] = s_i - 1
-            V_t[tuple(states)] += s_i * env.mu[i] * \
-                (W[tuple(next_states)] - V[tuple(states)])
-    return V_t/env.tau
+        states_i = np.append(i, [slice(None)] * (env.J * 2))
+
+        states = states_c.copy()
+        next_states = states_i.copy()
+        states[i] = 0  # x_i = 0
+        next_states[1 + i] = 0
+        V_t[tuple(states)] += env.lmbda[i] * (W[tuple(next_states)] - V[tuple(states)])
+
+        states = states_c.copy()
+        next_states = states_i.copy()
+        states[i] = slice(1, env.D + 1)  # 0 < x_i <= D
+        next_states[1 + i] = slice(1, env.D + 1)  # 0 < x_i <= D
+        V_t[tuple(states)] += env.gamma * (W[tuple(next_states)] - V[tuple(states)])
+
+        for s_i in arange(1, env.S + 1):  # s_i
+            states = states_c.copy()
+            next_states = states_i.copy()
+            states[env.J + i] = s_i
+            next_states[0] = env.J
+            next_states[1 + env.J + i] = s_i - 1
+            V_t[tuple(states)] += s_i * env.mu[i] * (W[tuple(next_states)] - V[tuple(states)])
+    return V_t / env.tau
 
 
 @njit
-def policy_improvement(V, Pi):
+def policy_improvement(V, W, Pi):
     """Determine best action/policy per state by one-step lookahead."""
     V = V.reshape(size)
-    Pi = Pi.reshape(size)
-    unstable = False
-    for s in S_states:
+    W = W.reshape(size_i)
+    Pi = Pi.reshape(size_i)
+    stable = True
+    for s in s_states:
         for x in x_states:
-            state = np.sum(x*sizes[0:J] + s*sizes[J:J*2])
-            if np.sum(x) == 0:
-                Pi[state] = None_Waiting
-                continue
-            if np.sum(s) == S:
-                Pi[state] = Servers_Full
-                continue
-            pi = Pi[state]
-            w = V[state] - P if np.any(x == D) else V[state]
-            Pi[state] = Keep_Idle
-            for i in arange(J):
-                if(x[i] > 0):  # FIL class i waiting
-                    value = r[i] - c[i] if x[i] > gamma*t[i] else r[i]
-                    for y in arange(x[i] + 1):
+            for i in arange(J+1):
+                state = i * sizes_i[0] + np.sum(x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
+                pi = Pi[state]
+                Pi[state] = Keep_Idle if ((np.sum(x) > 0) or (i < J)) else Pi[state]
+                w = W[state]
+                for j in arange(J):
+                    if (x[j] > 0) or (j == i):  # Class i waiting, arrival, or time passing
+                        value = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
+                        w -= P if x[j] == D else 0
                         next_x = x.copy()
-                        next_x[i] = y
-                        next_s = s.copy()
-                        next_s[i] += 1
-                        next_state = np.sum(next_x*sizes[0:J] + \
-                                            next_s*sizes[J:J*2])
-                        value += P_xy[i, x[i], y] * V[next_state]
-                    Pi[state] = i + 1 if round(value,10) > round(w,10) else Pi[state]
-                    w = array([value, w]).max()
-            if pi != Pi[state]:
-                unstable = True
-    return Pi.reshape(dim), unstable
+                        for y in arange(x[j] + 1):
+                            next_x[j] = y
+                            if (i < J) and (i != j):
+                                next_x[i] = min(next_x[i] + 1, D)
+                            next_s = s.copy()
+                            next_s[j] += 1
+                            next_state = np.sum(next_x * sizes[0:J] + next_s * sizes[J:J * 2])
+                            value += P_xy[j, x[j], y] * V[next_state]
+                        Pi[state] = j + 1 if value >= w else Pi[state]
+                        w = array([value, w]).max()
+                if pi != Pi[state]:
+                    stable = False
+    return Pi.reshape(dim_i), stable
 
 
 def policy_evaluation(env, V, W, Pi, name, count=0):
     """Policy Evaluation."""
     inner_count = 0
-    while True:
+    converged = False
+    while not converged:
+        W = init_W(env, V, W)
         W = W_f(V, W, Pi)
         V_t = V_f(env, V, W)
         converged, g = env.convergence(V_t, V, count, name, j=inner_count)
-        if(converged):
-            break  # Stopping condition
-        # Rescale and Save V_t
-        V = V_t - V_t[tuple([0]*(J*2))]
+        V = V_t - V_t[tuple([0] * (env.J * 2))]  # Rescale and Save V_t
         inner_count += 1
     return V, g
 
 
 # Policy Iteration
 name = 'Policy Iteration'
-W = zeros(env.dim)
+W = zeros(env.dim_i)
 Pi = env.init_Pi()
 
 count = 0
-unstable = True
+stable = False
 
 env.timer(True, name, env.trace)
-while unstable:
+while not stable:
     V = zeros(env.dim)  # V_{t-1}
     V, g = policy_evaluation(env, V, W, Pi, 'Policy Evaluation of PI', count)
-    # TODO switch unstable to stable!
-    Pi, unstable = policy_improvement(V, Pi)
+    W = init_W(env, V, W)
+    Pi, stable = policy_improvement(V, W, Pi)
     if count > env.max_iter:
         break
     count += 1
 env.timer(False, name, env.trace)
 
-# print("V", V)
-# print("Pi", Pi)
+print("V", V)
+print("Pi", Pi)
 print("g", g)
 
-if env.J > 1:
-    plot_Pi(env, env, Pi, zero_state=True)
-    plot_Pi(env, env, Pi, zero_state=False)
-for i in arange(env.J):
-    plot_Pi(env, env, Pi, zero_state=True, i=i)
-    plot_Pi(env, env, Pi, zero_state=True, i=i, smu=True)
-    plot_V(env, env, V, zero_state=True, i=i)
+# if env.J > 1:
+#     plot_Pi(env, env, Pi, zero_state=True)
+#     plot_Pi(env, env, Pi, zero_state=False)
+# for i in arange(env.J):
+#     plot_Pi(env, env, Pi, zero_state=True, i=i)
+#     plot_Pi(env, env, Pi, zero_state=True, i=i, smu=True)
+#     plot_V(env, env, V, zero_state=True, i=i)
 

@@ -10,14 +10,15 @@ Moreover, when x=-s then (x+S)*mu=0
 
 import numpy as np
 from numpy import array, arange, maximum, zeros, around, exp
-from OtherTests.init import Env
 from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy.integrate import quad_vec
+
+from OtherTests.init import Env
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 env = Env(J=1, S=1, mu=array([2]), lmbda=array([1]), t=array([2]),
           r=array([1]), c=array([1]), P=0,
-          gamma=10, D=100, e=1e-5, trace=False)
+          gamma=2, D=6, e=1e-5, trace=False)
 
 def get_pi_0(env, s, rho):
     """Calculate pi(0)."""
@@ -32,39 +33,40 @@ def get_tail_prob(env, s, rho, pi_0):
         (1-(s*env.mu-env.lmbda) / (s*env.mu+env.gamma))**(env.gamma*env.t)
     return tail_prob
 
-def V_f(env, pi_0, tail_prob, g):
+def V_f(env, g):
     """Calculate V for a single queue."""
-    S=env.S; lmbda=env.lmbda; mu=env.mu; gamma=env.gamma; rho=env.rho
+    S=env.S; lmbda=env.lmbda; mu=env.mu; gamma=env.gamma; rho=env.rho; r=env.r; a=env.a
     V = zeros(S + env.D + 1)
 
-    x = arange(-S+1,0+1)  # V(x) for x<=0, with V(-s)=0
-    V_x_le_0 = lambda y: (1-(y/env.a)**(x+S))/(1-y/env.a)*exp(env.a-y)
-    V[x+S] = (g-lmbda*env.r)/lmbda * quad_vec(V_x_le_0, env.a, np.inf)[0]
+    x = arange(-S+1, +1)  # V(x) for x<=0, with V(-s)=0
+    V_x_le_0 = lambda y: (1-(y/a)**(x+S))/(1-y/a)*exp(a-y)
+    V[x+S] = (g-lmbda*r)/lmbda * quad_vec(V_x_le_0, a, np.inf)[0]
 
     frac = (S * mu + gamma) / (lmbda + gamma)
-    trm = exp(env.a) / env.a ** (S - 1) * gamma_fun(S) * reg_up_inc_gamma(S, env.a)
+    trm = exp(a) / a ** (S - 1) * gamma_fun(S) * reg_up_inc_gamma(S, a)
     x = arange(1, env.D + 1)  # V(x) for x>0
     # x = arange(0, env.D + 1)  # V(x) for x>=0
-    V[x+S] = V[S] + (S*mu*env.r - g) / (gamma*S*mu*(1 - rho)**2) * \
+    V[x+S] = V[S] + (S*mu*r - g) / (gamma*S*mu*(1 - rho)**2) * \
         (lmbda + gamma - lmbda*x*(rho-1) - (lmbda+gamma)*frac**x) + \
-            1/(gamma*(rho-1)) * (g - S*mu*env.r - gamma/lmbda *
-                                 (g + (g-lmbda*env.r)/rho * trm)) * (-rho + frac**(x-1))
+            1/(gamma*(rho-1)) * (g - S*mu*r - gamma/lmbda *
+                                 (g + (g-lmbda*r)/rho * trm)) * (-rho + frac**(x-1))
     # 1 if x=0
     # V[S] += 1 / (gamma * (rho - 1)) * (g - S * mu * env.r - gamma / lmbda *
-    #                                    (g + (g - lmbda * env.r) / rho * trm)) * (gamma * (rho - 1) / (S * mu + gamma))
+    #                                    (g + (g - lmbda * r) / rho * trm)) * (gamma * (rho - 1) / (S * mu + gamma))
 
     # -1_{x > gamma*t}[...]
     x = arange(gamma*env.t+1, env.D+1).astype(int)
     V[x+S] -= env.c / (gamma * (1 - rho)**2) * \
-        (lmbda + gamma - lmbda*(x - gamma*env.t - 1) * \
-         (rho - 1) - (lmbda + gamma) * frac**(x-gamma*env.t-1))
+        (lmbda + gamma - lmbda*(x - gamma*env.t - 1) * (rho - 1) -
+         (lmbda + gamma) * frac**(x-gamma*env.t-1))
     return V
+
 
 pi_0 = get_pi_0(env, env.s_star, env.rho)
 tail_prob = get_tail_prob(env, env.S, env.rho, pi_0)
 g = (env.r - env.c*tail_prob) * (env.lmbda + pi_0*env.lmbda**2/env.gamma)
 P_xy = env.P_xy[0]
-V = V_f(env, pi_0, tail_prob, g)
+V = V_f(env, g)
 
 S=env.S; D=env.D; lmbda=env.lmbda; mu=env.mu; gamma=env.gamma; rho=env.rho
 
