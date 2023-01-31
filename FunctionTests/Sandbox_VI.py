@@ -12,9 +12,9 @@ from src.Plotting import plot_Pi, plot_V
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 np.random.seed(42)
-env = Env(J=2, S=4, Rho=0.5, gamma=6, D=50, P=0, e=1e-4, trace=True)
-# env = Env(J=1, S=4, mu=array([1.5]), lmbda=array([4]), t=array([2]), P=0,
-#           gamma=2, D=30, e=1e-5, trace=False)
+# env = Env(J=2, S=4, Rho=0.5, gamma=6, D=50, P=0, e=1e-4, trace=True)
+env = Env(J=1, S=4, mu=array([1.5]), lmbda=array([4]), t=array([2]), P=0,
+          gamma=2, D=30, e=1e-5, trace=False)
 # env = Env(J=2, S=2, lmbda=array([0.5, 0.5]), mu=array([1, 1]), t=array([1., 1.]),
 #           r=array([1, 1]), c=array([1, 1]), P=0,
 #           gamma=2, D=6, trace=True)
@@ -65,9 +65,11 @@ def W_f(V, W):
     for s in s_states:
         for x in x_states:
             for i in arange(J+1):
-                state = i * sizes_i[0] + np.sum(x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
+                state = i * sizes_i[0] + np.sum(
+                    x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
+                W[state] -= P if np.all(x > )
                 for j in arange(J):
-                    if (x[j] > 0) or (j == i):  # Class i waiting, arrival, or time passing
+                    if (x[j] > 0) or (j == i):
                         w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
                         next_x = x.copy()
                         for y in arange(x[j] + 1):
@@ -76,7 +78,8 @@ def W_f(V, W):
                                 next_x[i] = min(next_x[i] + 1, D)
                             next_s = s.copy()
                             next_s[j] += 1
-                            next_state = np.sum(next_x * sizes[0:J] + next_s * sizes[J:J * 2])
+                            next_state = np.sum(next_x * sizes[0:J] +
+                                                next_s * sizes[J:J * 2])
                             w += P_xy[j, x[j], y] * V[next_state]
                         W[state] = array([w, W[state]]).max()
     return W.reshape(dim_i)
@@ -121,14 +124,16 @@ def policy_improvement(V, W, Pi):
     for s in s_states:
         for x in x_states:
             for i in arange(J+1):
-                state = i * sizes_i[0] + np.sum(x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
+                state = i * sizes_i[0] + np.sum(
+                    x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
                 pi = Pi[state]
-                Pi[state] = Keep_Idle if ((np.sum(x) > 0) or (i < J)) else Pi[state]
+                Pi[state] = Keep_Idle if ((np.sum(x) > 0) or (i < J)) else \
+                    Pi[state]
                 w = W[state]
                 for j in arange(J):
-                    if (x[j] > 0) or (j == i):  # Class i waiting, arrival, or time passing
+                    if (x[j] > 0) or (j == i):
                         value = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
-                        w -= P if x[j] == D else 0
+                        w -= P if np.all(x > gamma * t) else 0
                         next_x = x.copy()
                         for y in arange(x[j] + 1):
                             next_x[j] = y

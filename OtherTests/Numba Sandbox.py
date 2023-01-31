@@ -87,6 +87,16 @@ f4(D, s, J)  # Error (would work in python)
 f5(D, s, J)  # Error (would work in python)
 
 # -----------------------------------------------------------------------
+# ---------------------------- ELEMENTWISE --------------------------
+
+@njit
+def f5a(x, gamma, t):
+    """Array creation and bitwise comparing."""
+    return x > gamma*t
+
+f5a(x=[10, 5, 4, 8], gamma=1, t=[2, 2, 2, 2])  # Error (would work in python)
+
+# -----------------------------------------------------------------------
 # ---------------------------- MANIPULATION -----------------------------
 
 @njit

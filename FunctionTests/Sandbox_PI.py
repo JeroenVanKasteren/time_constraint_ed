@@ -12,7 +12,7 @@ from src.Plotting import plot_Pi, plot_V
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 np.random.seed(0)
-env = Env(J=2, S=2, Rho=0.5, gamma=10, D=15, P=0, e=1e-4, trace=True,
+env = Env(J=1, S=2, Rho=0.5, gamma=2, D=5, P=1000, e=1e-4, trace=True,
           print_modulo=100)
 # env = Env(J=1, S=4, mu=array([1.5]), lmbda=array([4]), t=array([2]), P=0,
 #           gamma=2, D=30, e=1e-5, trace=False)
@@ -55,6 +55,13 @@ def init_W(env, V, W):
         next_states[i] = D
         W[tuple(states)] = V[tuple(next_states)] - P
     W[J] = V
+    if P > 0:
+        states = [[slice(None)]*(1+J*2)]
+        for i in arange(J):
+            states[i] = slice(int(gamma*t[i]), D+1)
+        for s in s_states:
+            states[1+J:] = s
+            W[tuple(states)] -= P
     return W
 
 
@@ -122,12 +129,14 @@ def policy_improvement(V, W, Pi):
     for s in s_states:
         for x in x_states:
             for i in arange(J+1):
-                state = i * sizes_i[0] + np.sum(x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
+                state = i * sizes_i[0] + np.sum(
+                    x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
                 pi = Pi[state]
-                Pi[state] = Keep_Idle if ((np.sum(x) > 0) or (i < J)) else Pi[state]
+                Pi[state] = Keep_Idle if ((np.sum(x) > 0) or (i < J)) else \
+                    Pi[state]
                 w = W[state]
-                for j in arange(J):
-                    if (x[j] > 0) or (j == i):  # Class i waiting, arrival, or time passing
+                for j in arange(J):  # j waiting, arrival, or time passing
+                    if (x[j] > 0) or (j == i):
                         value = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
                         w -= P if x[j] == D else 0
                         next_x = x.copy()

@@ -118,10 +118,9 @@ class PolicyIteration:
                     Pi[state] = KEEP_IDLE if ((np.sum(x) > 0) or (i < J)) else \
                         Pi[state]
                     w = W[state]
-                    for j in arange(J):
-                        if (x[j] > 0) or (j == i):  # Class i waiting, arrival, or time passing
+                    for j in arange(J):  # j waiting, arrival, or time passing
+                        if (x[j] > 0) or (j == i):
                             value = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
-                            w -= P if x[j] == D else 0
                             next_x = x.copy()
                             for y in arange(x[j] + 1):
                                 next_x[j] = y
@@ -129,9 +128,8 @@ class PolicyIteration:
                                     next_x[i] = min(next_x[i] + 1, D)
                                 next_s = s.copy()
                                 next_s[j] += 1
-                                next_state = np.sum(
-                                    next_x * sizes[0:J] + next_s * sizes[
-                                                                   J:J * 2])
+                                next_state = np.sum(next_x * sizes[0:J] +
+                                                    next_s * sizes[J:J * 2])
                                 value += P_xy[j, x[j], y] * V[next_state]
                             Pi[state] = j + 1 if value >= w else Pi[state]
                             w = array([value, w]).max()
