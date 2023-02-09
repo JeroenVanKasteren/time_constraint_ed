@@ -537,7 +537,60 @@ print(if_any3(x))  # This works
 # -----------------------------------------------------------------------
 # ----------------------------- Dictionairy -----------------------------
 
+import numpy as np
+import numba as nb
+from numba.typed import Dict
+
+
 c = 2
 vector_f = np.array([1.1, 1.2], np.float32)
 vector_i = np.array([1, 1], int)
 
+d = {'c': c, 'vector_f': vector_f, 'vector_i':vector_i}
+d_ints = {'1':  1, '2': 2}
+d_i = Dict.empty(key_type=nb.types.unicode_type, value_type=nb.types.f4)
+d_f = Dict.empty(key_type=nb.types.unicode_type, value_type=nb.types.f4)
+
+@nb.njit
+def dict_python(d):
+    return d['vector_f']
+
+print(dict_python(d))  # works in python mode, not in no-python mode
+
+@nb.njit
+def dict_int(d):
+    return d['1']
+
+@nb.njit
+def dict_int2(d):
+    return d['1']
+
+print(dict_int(d_ints))  # works in python mode, not in no-python mode
+
+# -----------------------------------------------------------------------
+# ----------------------------- Importance of signitures ----------------
+
+import timeit
+import numba as nb
+import numpy as np
+
+@nb.njit  # (nb.int64(nb.int64))
+def cube_formula(x):
+    return x**3 + 3*x**2 + 3
+
+@nb.njit # (nb.int64[:](nb.int64[:]))
+def perform_operation_jitted(x):
+    out = np.empty_like(x)
+    for i, elem in enumerate(x):
+        res = cube_formula(elem)
+        out[i] = res
+    return out
+
+print(np.mean(timeit.repeat("perform_operation_jitted(np.arange(1e6, dtype=np.int64))",
+                    "from __main__ import perform_operation_jitted," 
+                    "cube_formula; import numpy as np",
+                    repeat=10, number=1)))
+
+# without numba: 1.76
+# with numba: 0.027
+# with numba & handles: 0.0092
