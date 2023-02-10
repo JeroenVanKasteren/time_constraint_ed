@@ -540,7 +540,7 @@ print(if_any3(x))  # This works
 import numpy as np
 import numba as nb
 from numba.typed import Dict
-
+from numba import types as tp
 
 c = 2
 vector_f = np.array([1.1, 1.2], np.float32)
@@ -548,24 +548,34 @@ vector_i = np.array([1, 1], int)
 
 d = {'c': c, 'vector_f': vector_f, 'vector_i':vector_i}
 d_ints = {'1':  1, '2': 2}
-d_i = Dict.empty(key_type=nb.types.unicode_type, value_type=nb.types.f4)
-d_f = Dict.empty(key_type=nb.types.unicode_type, value_type=nb.types.f4)
+d_i = Dict.empty(key_type=tp.unicode_type, value_type=tp.i8)
+d_f = Dict.empty(key_type=tp.unicode_type, value_type=tp.f8)
+d_i['1'] = 1
+d_i['2'] = 2
+d_f['a'] = 1.1
+d_f['b'] = 2.2
 
 @nb.njit
 def dict_python(d):
     return d['vector_f']
 
-print(dict_python(d))  # works in python mode, not in no-python mode
-
 @nb.njit
 def dict_int(d):
     return d['1']
 
-@nb.njit
-def dict_int2(d):
-    return d['1']
-
+print(dict_python(d))  # works in python mode, not in no-python mode
 print(dict_int(d_ints))  # works in python mode, not in no-python mode
+
+dict_ty = tp.DictType(tp.unicode_type, tp.i8)
+
+@nb.njit (tp.f8[:](tp.f8[:], dict_ty))
+def dict_numba(x, d):
+    x[3] = d['1']
+    x[4] = d['2']
+    return x
+
+x = np.arange(5, dtype=float)
+print(dict_numba(x, d_i))
 
 # -----------------------------------------------------------------------
 # ----------------------------- Importance of signitures ----------------

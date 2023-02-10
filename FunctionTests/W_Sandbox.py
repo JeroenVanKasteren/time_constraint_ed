@@ -1,6 +1,7 @@
 
 import numpy as np
 import numba as nb
+from numba import types as tp
 from numpy import array, arange, zeros
 from OtherTests.init import Env
 
@@ -68,6 +69,8 @@ def get_W(V, W, Pi,
                         W[state] += P_xy[j, x[j], y] * V[next_state]
     return W.reshape(dim_i)
 
+d_i = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i8)
+d_f = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.f8)
 
 name = "Test W"
 env.timer(True, name, env.trace)
