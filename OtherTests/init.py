@@ -90,9 +90,9 @@ class Env:
         mu = kwargs.get('mu', uniform(s.mu_MIN, s.mu_MAX, s.J))
         if 'lab' in kwargs:
             lab = kwargs.get('lab')
-            load: float = sum(lam / mu) / s.S
+            s.load: float = sum(lam / mu) / s.S
         else:  # Determine arrival rate based on desired load.
-            load = kwargs.get('load', uniform(s.load_MIN, s.load_MAX))
+            s.load = kwargs.get('load', uniform(s.load_MIN, s.load_MAX))
             weight = uniform(s.imbalance_MIN, s.imbalance_MAX, s.J)
             lab = mu * s.S * s.load * weight / sum(weight)
         t = array(kwargs.get('t', np.random.choice(s.TARGET, s.J)), float)
@@ -214,7 +214,7 @@ class Env:
         return s_star
 
     @staticmethod
-    def def_sizes(dim):
+    def def_sizes(dim) -> int[:]:
         """Docstring."""
         sizes = np.zeros(len(dim), int)
         sizes[-1] = 1

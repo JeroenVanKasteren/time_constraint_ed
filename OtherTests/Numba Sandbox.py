@@ -604,3 +604,58 @@ print(np.mean(timeit.repeat("perform_operation_jitted(np.arange(1e6, dtype=np.in
 # without numba: 1.76
 # with numba: 0.027
 # with numba & handles: 0.0092
+
+# -----------------------------------------------------------------------
+# ------------------------------- Array creation ------------------------
+
+import timeit
+import numpy as np
+import numba as nb
+from numba import types as tp
+
+DICT_TYPE_F = tp.DictType(tp.unicode_type, tp.f8[:])  # float vector
+
+@nb.njit((DICT_TYPE_F, tp.i8))
+def copy_numba(d_f, J):
+    # x = np.empty(J, nb.f8)
+    for _ in range(1e5):
+        x = d_f['x'].copy()  # Without copy does not copy
+        # x[0] = 2
+        # print(x, d_f)
+
+@nb.njit((DICT_TYPE_F, tp.i8))
+def copy_numba(d_f, J):
+    x = np.empty(J, nb.f8)
+    for _ in range(1e5):
+        for i in range(J):
+            x[i] = d_f['x'][i]  # Copies
+            # x[0] = 2
+            # print(x, d_f)
+
+# Subsetting test
+@nb.njit((DICT_TYPE_F, tp.i8), parallel=True, error_model='numpy')
+def copy_numba(d_f, J):
+    y = d_f['x'][1:2]
+    for _ in nb.prange(1e5):
+        x = y.copy()  # Copies
+# Subsetting test
+@nb.njit((DICT_TYPE_F, tp.i8), parallel=True, error_model='numpy')
+def copy_numba(d_f, J):
+    for _ in nb.prange(1e5):
+        x = d_f['x'][1:2].copy()
+
+# Fastest!
+@nb.njit((DICT_TYPE_F, tp.i8), parallel=True, error_model='numpy')
+def copy_numba(d_f, J):
+    for _ in nb.prange(1e5):
+        x = d_f['x'].copy()  # Copies
+
+d_f = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.f8[:])
+d_f['x'] = np.array([2.4, 2.5, 2.6])
+
+copy_numba(d_f, len(d_f['x']))
+
+print(np.mean(timeit.repeat("copy_numba(d_f, len(d_f['x']))",
+                    "from __main__ import copy_numba," 
+                    "DICT_TYPE_F, d_f; import numpy as np; import numba as nb",
+                    repeat=200, number=1)))
