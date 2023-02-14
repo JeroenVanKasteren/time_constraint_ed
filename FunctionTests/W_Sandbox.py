@@ -49,10 +49,10 @@ def get_W(V, W, Pi, J, D, gamma,
     r = d_f['r']
     c = d_f['c']
     t = d_f['t']
-    for s_i in nb.prange(J):
-        for x_i in nb.prange(J):
-            for i in nb.prange(J):
-                x = d_i['x'][i].copy()
+    for s_i in nb.prange(len(d_i['s'])):
+        for x_i in nb.prange(len(d_i['x'])):
+            for i in np.arange(J):
+                x = d_i['x'][x_i].copy()
                 s = d_i['s'][i].copy()
                 state = i * d_i['sizes_i'][0] + np.sum(x*sizes_x + s*sizes_s)
                 if Pi[state] > 0:

@@ -632,23 +632,35 @@ def copy_numba(d_f, J):
             # x[0] = 2
             # print(x, d_f)
 
-# Subsetting test
+# 0.02624, however, also parallelizing the inner loop makes it slower (0.0312)
+@nb.njit((DICT_TYPE_F, tp.i8), parallel=True, error_model='numpy')
+def copy_numba(d_f, J):
+    x = np.empty(J, nb.f8)
+    for _ in nb.prange(1e5):
+        # for i in np.arange(J):
+        for i in nb.prange(J):
+            x[i] = d_f['x'][i]  # Copies
+
+# Approx as fast (without parallel 0.02915, with parallel 0.02614)
+# error model numpy has only a marginal effect of 1% faster
+@nb.njit((DICT_TYPE_F, tp.i8), parallel=True, error_model='numpy')
+def copy_numba(d_f, J):
+    for _ in np.arange(1e5):
+    # for _ in nb.prange(1e5):
+        x = d_f['x'].copy()  # Copies
+
+# Subsetting test, same time
 @nb.njit((DICT_TYPE_F, tp.i8), parallel=True, error_model='numpy')
 def copy_numba(d_f, J):
     y = d_f['x'][1:2]
     for _ in nb.prange(1e5):
         x = y.copy()  # Copies
-# Subsetting test
+
+# Subsetting test, same time
 @nb.njit((DICT_TYPE_F, tp.i8), parallel=True, error_model='numpy')
 def copy_numba(d_f, J):
     for _ in nb.prange(1e5):
         x = d_f['x'][1:2].copy()
-
-# Fastest!
-@nb.njit((DICT_TYPE_F, tp.i8), parallel=True, error_model='numpy')
-def copy_numba(d_f, J):
-    for _ in nb.prange(1e5):
-        x = d_f['x'].copy()  # Copies
 
 d_f = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.f8[:])
 d_f['x'] = np.array([2.4, 2.5, 2.6])
@@ -658,4 +670,52 @@ copy_numba(d_f, len(d_f['x']))
 print(np.mean(timeit.repeat("copy_numba(d_f, len(d_f['x']))",
                     "from __main__ import copy_numba," 
                     "DICT_TYPE_F, d_f; import numpy as np; import numba as nb",
-                    repeat=200, number=1)))
+                    repeat=20, number=5))/5)
+
+# -----------------------------------------------------------------------
+# ------------------------------- sum sizes ------------------------
+
+import timeit
+import numpy as np
+import numba as nb
+from numba import types as tp
+from itertools import product
+
+D = 100
+J = 3
+S = 20
+dim = tuple(np.repeat([D + 1, S + 1], J))
+x_states = np.array(list(product(np.arange(D + 1), repeat=J)))
+sizes = np.zeros(len(dim), int)
+sizes[-1] = 1
+for i in range(len(dim) - 2, -1, -1):
+    sizes[i] = sizes[i + 1] * dim[i + 1]
+
+@nb.njit((tp.i8[:], tp.i8), parallel=True)
+def w_numba(sizes, J):
+    sizes_x = sizes[1:J + 1]
+    sizes_s = sizes[J + 1:J * 2 + 1]
+    for s_i in nb.prange(len(d_i['s'])):
+        for x_i in nb.prange(len(d_i['x'])):
+            for i in np.arange(J):
+                x = d_i['x'][i].copy()
+                s = d_i['s'][i].copy()
+                state = i * d_i['sizes_i'][0] + np.sum(x*sizes_x + s*sizes_s)
+
+@nb.njit((tp.i8[:], tp.i8), parallel=True)
+def w_numba(sizes, J):
+    sizes_x = sizes[1:J + 1]
+    sizes_s = sizes[J + 1:J * 2 + 1]
+    for s_i in nb.prange(len(d_i['s'])):
+        for x_i in nb.prange(len(d_i['x'])):
+            for i in np.arange(J):
+                x = d_i['x'][i].copy()
+                s = d_i['s'][i].copy()
+                state = i * d_i['sizes_i'][0] + np.sum(x*sizes_x + s*sizes_s)
+
+w_numba(sizes, J)
+
+print(np.mean(timeit.repeat("copy_numba(d_f, len(d_f['x']))",
+                    "from __main__ import copy_numba," 
+                    "DICT_TYPE_F, d_f; import numpy as np; import numba as nb",
+                    repeat=20, number=5))/5)
