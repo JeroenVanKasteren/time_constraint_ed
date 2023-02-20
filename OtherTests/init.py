@@ -309,8 +309,8 @@ class Env:
         max_iter = (i > self.max_iter) | (j > self.max_iter)
         g = (delta_max + delta_min) / 2 * self.tau
         if ((converged & self.trace) |
-                (self.trace & (i % self.print_modulo == 0 |
-                               j % self.print_modulo == 0))):
+                (self.trace & ((i % self.print_modulo == 0) |
+                                (j % self.print_modulo == 0)))):
             print("iter: ", i,
                   "inner_iter: ", j,
                   ", delta: ", round(delta_max - delta_min, 2),

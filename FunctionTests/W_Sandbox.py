@@ -52,8 +52,8 @@ def get_W(V, W, Pi, J, D, gamma,
     for s_i in nb.prange(len(d_i['s'])):
         for x_i in nb.prange(len(d_i['x'])):
             for i in np.arange(J):
-                x = d_i['x'][x_i].copy()
-                s = d_i['s'][i].copy()
+                x = d_i['x'][x_i]
+                s = d_i['s'][s_i]
                 state = i * d_i['sizes_i'][0] + np.sum(x*sizes_x + s*sizes_s)
                 if Pi[state] > 0:
                     j = Pi[state] - 1
@@ -69,11 +69,12 @@ def get_W(V, W, Pi, J, D, gamma,
                         W[state] += P_xy[j, x[j], y] * V[next_state]
     return W
 
-d_i = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i8[:])
-d_i['sizes'] = env.sizes
-d_i['sizes_i'] = env.sizes_i
-d_i['s'] = env.s_states
-d_i['x'] = env.x_states
+d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i8[:])
+d_i1['sizes'] = env.sizes
+d_i1['sizes_i'] = env.sizes_i
+d_i2 = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i4[:, :])
+d_i2['s'] = env.s_states
+d_i2['x'] = env.x_states
 d_f = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.f8[:])
 d_f['t'] = env.t
 d_f['c'] = env.c

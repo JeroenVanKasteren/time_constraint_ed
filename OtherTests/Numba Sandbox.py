@@ -681,41 +681,56 @@ import numba as nb
 from numba import types as tp
 from itertools import product
 
+DICT_TYPE_I = tp.DictType(tp.unicode_type, tp.i4[:])  # int vector
+DICT_TYPE_I2 = tp.DictType(tp.unicode_type, tp.i4[:, :])  # int vector
+
 D = 100
-J = 3
-S = 20
-dim = tuple(np.repeat([D + 1, S + 1], J))
-x_states = np.array(list(product(np.arange(D + 1), repeat=J)))
-sizes = np.zeros(len(dim), int)
-sizes[-1] = 1
-for i in range(len(dim) - 2, -1, -1):
-    sizes[i] = sizes[i + 1] * dim[i + 1]
+J = 2
+S = 10
+dim_i = tuple(np.append(J + 1, np.repeat([D + 1, S + 1], J)))
+d_i = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i4[:])
+d_i2 = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i4[:, :])
+s_states = np.array(list(product(np.arange(S + 1), repeat=J)))
+d_i2['s'] = s_states[np.sum(s_states, axis=1) < S]
+d_i2['x'] = np.array(list(product(np.arange(D + 1), repeat=J)))
+sizes_i = np.zeros(len(dim_i), int)
+sizes_i[-1] = 1
+for i in range(len(dim_i) - 2, -1, -1):
+    sizes_i[i] = sizes_i[i + 1] * dim_i[i + 1]
+d_i['sizes_i'] = sizes_i
 
-@nb.njit((tp.i8[:], tp.i8), parallel=True)
-def w_numba(sizes, J):
-    sizes_x = sizes[1:J + 1]
-    sizes_s = sizes[J + 1:J * 2 + 1]
-    for s_i in nb.prange(len(d_i['s'])):
-        for x_i in nb.prange(len(d_i['x'])):
-            for i in np.arange(J):
-                x = d_i['x'][i].copy()
-                s = d_i['s'][i].copy()
+
+@nb.njit((tp.i8, DICT_TYPE_I, DICT_TYPE_I2)) #, parallel=True)
+def w_numba(J, d_i, d_i2):
+    sizes_x = d_i['sizes_i'][1:J + 1]
+    sizes_s = d_i['sizes_i'][J + 1:J * 2 + 1]
+    for s_i in nb.prange(len(d_i2['s'])):
+        for x_i in nb.prange(len(d_i2['x'])):
+            for i in nb.prange(J):
+                x = d_i2['x'][x_i].copy()
+                s = d_i2['s'][s_i].copy()
                 state = i * d_i['sizes_i'][0] + np.sum(x*sizes_x + s*sizes_s)
+# 0.974s without parallel, 0.7648s with parallel, without numba 57.5s
+# not copying: 0.592s
 
-@nb.njit((tp.i8[:], tp.i8), parallel=True)
-def w_numba(sizes, J):
-    sizes_x = sizes[1:J + 1]
-    sizes_s = sizes[J + 1:J * 2 + 1]
-    for s_i in nb.prange(len(d_i['s'])):
-        for x_i in nb.prange(len(d_i['x'])):
-            for i in np.arange(J):
-                x = d_i['x'][i].copy()
-                s = d_i['s'][i].copy()
-                state = i * d_i['sizes_i'][0] + np.sum(x*sizes_x + s*sizes_s)
+@nb.njit((tp.i8, DICT_TYPE_I, DICT_TYPE_I2), parallel=True)
+def w_numba(J, d_i, d_i2):
+    sizes_x = d_i['sizes_i'][1:J + 1]
+    sizes_s = d_i['sizes_i'][J + 1:J * 2 + 1]
+    for s_i in nb.prange(len(d_i2['s'])):
+        for x_i in nb.prange(len(d_i2['x'])):
+            for i in nb.prange(J):
+                x = d_i2['x'][x_i].copy()
+                s = d_i2['s'][s_i].copy()
+                state = i * d_i['sizes_i'][0]
+                for j in np.arange(J):
+                     state += x[j] * sizes_x[j] + s[j] * sizes_s[j]
+# 0.809 with parallel, not faster
 
-w_numba(sizes, J)
+w_numba(J, d_i, d_i2)
 
-print(np.mean(timeit.repeat("copy_numba(d_f, len(d_f['x']))",
-                    "from __main__ import copy_numba," 
-                    "DICT_TYPE_F, d_f; import numpy as np; import numba as nb",
-                    repeat=20, number=5))/5)
+print(np.mean(timeit.repeat("w_numba(J, d_i, d_i2)",
+                    "from __main__ import w_numba," 
+                    "DICT_TYPE_I, DICT_TYPE_I2, J, d_i, d_i2;"
+                    "import numpy as np; import numba as nb",
+                    repeat=5, number=2))/2)
