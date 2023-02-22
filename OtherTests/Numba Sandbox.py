@@ -682,7 +682,7 @@ from numba import types as tp
 from itertools import product
 
 DICT_TYPE_I = tp.DictType(tp.unicode_type, tp.i4[:])  # int vector
-DICT_TYPE_I2 = tp.DictType(tp.unicode_type, tp.i4[:, :])  # int vector
+DICT_TYPE_I2 = tp.DictType(tp.unicode_type, tp.i4[:, :])  # float vector
 
 D = 100
 J = 2
@@ -712,6 +712,7 @@ def w_numba(J, d_i, d_i2):
                 state = i * d_i['sizes_i'][0] + np.sum(x*sizes_x + s*sizes_s)
 # 0.974s without parallel, 0.7648s with parallel, without numba 57.5s
 # not copying: 0.592s
+# no function handles 1.129
 
 @nb.njit((tp.i8, DICT_TYPE_I, DICT_TYPE_I2), parallel=True)
 def w_numba(J, d_i, d_i2):
@@ -733,4 +734,4 @@ print(np.mean(timeit.repeat("w_numba(J, d_i, d_i2)",
                     "from __main__ import w_numba," 
                     "DICT_TYPE_I, DICT_TYPE_I2, J, d_i, d_i2;"
                     "import numpy as np; import numba as nb",
-                    repeat=5, number=2))/2)
+                    repeat=5, number=3))/3)
