@@ -90,7 +90,7 @@ class Env:
         mu = kwargs.get('mu', uniform(s.mu_MIN, s.mu_MAX, s.J))
         if 'lab' in kwargs:
             lab = kwargs.get('lab')
-            s.load: float = sum(lam / mu) / s.S
+            s.load: float = sum(lab / mu) / s.S
         else:  # Determine arrival rate based on desired load.
             s.load = kwargs.get('load', uniform(s.load_MIN, s.load_MAX))
             weight = uniform(s.imbalance_MIN, s.imbalance_MAX, s.J)
@@ -102,6 +102,7 @@ class Env:
             print("Rounded t down to nearest multiple of 1/gamma.")
         s.lab = array(lab, float)
         s.mu = array(mu, float)
+        s.t = array(t, float)
         s.c = array(kwargs.get('c', array([1] * s.J)), float)
         s.r = array(kwargs.get('r', array([1] * s.J)), float)
         s.P: int = kwargs.get('P', max(s.c + s.r) * 10)
@@ -113,9 +114,9 @@ class Env:
         s.rho = array(s.a / s.s_star, float)
         s.pi_0 = s.get_pi_0(s.s_star, s.rho)
         s.tail_prob = s.get_tail_prob(s.s_star, s.rho, s.pi_0, s.gamma*s.t)
-        s.cap_prob = s.get_time_cap_prob(s.s_star, s.rho, s.pi_0, s.D)
+        s.cap_prob = s.get_tail_prob(s.s_star, s.rho, s.pi_0, s.D)
         s.g = s.get_g_app(s.pi_0, s.tail_prob)
-        s.p_xy = s.trans_prob()
+        s.P_xy = s.trans_prob()
         s.tau = array(s.S * max(s.mu) + sum(np.maximum(s.lab, s.gamma)), float)
 
         s.dim = tuple(np.repeat([s.D + 1, s.S + 1], s.J))
@@ -154,7 +155,7 @@ class Env:
 
     def trans_prob(s) -> array:
         """P_xy(i, x, y) transition prob. for class i to jump from x to y."""
-        P_xy = np.zeros((s.J, s.D + 1, s.D + 1), float)
+        P_xy = np.zeros((s.J, s.D + 1, s.D + 1), dtype=float)
         A = np.indices((s.D + 1, s.D + 1))  # x=A[0], y=A[1]
         mask_tril = A[0, 1:, 1:] >= A[1, 1:, 1:]
         for i in range(s.J):
@@ -189,7 +190,7 @@ class Env:
         with np.errstate(divide='ignore', invalid='ignore'):
             rho = env.a / s
             pi_0 = env.get_pi_0(s, rho)
-            tail_prob = env.get_tail_prob(s, rho, pi_0)
+            tail_prob = env.get_tail_prob(s, rho, pi_0, env.gamma*env.t)
         tail_prob[~np.isfinite(tail_prob)] = 1  # Correct dividing by 0
         res = env.get_g_app(pi_0, tail_prob)
         return -np.sum(res, axis=len(np.shape(s)) - 1)
@@ -214,7 +215,7 @@ class Env:
         return s_star
 
     @staticmethod
-    def def_sizes(dim) -> int[:]:
+    def def_sizes(dim):
         """Docstring."""
         sizes = np.zeros(len(dim), int)
         sizes[-1] = 1
@@ -222,22 +223,22 @@ class Env:
             sizes[i] = sizes[i + 1] * dim[i + 1]
         return sizes
 
-    def init_Pi(s):
+    def init_pi(self):
         """
         Take the longest waiting queue into service (or last queue if tied).
         Take arrivals directly into service.
         """
-        Pi = s.NOT_EVALUATED * np.ones(s.dim_i, dtype=int)
-        for s in s.s_states_v:
-            states = np.append([slice(None)] * (1 + s.J), s)
-            if np.sum(s) == s.S:
-                Pi[tuple(states)] = s.SERVERS_FULL
+        Pi = self.NOT_EVALUATED * np.ones(self.dim_i, dtype=int)
+        for s in self.s_states_v:
+            states = np.append([slice(None)] * (1 + self.J), s)
+            if np.sum(s) == self.S:
+                Pi[tuple(states)] = self.SERVERS_FULL
                 continue
-            for i in arange(s.J):
+            for i in arange(self.J):
                 states_ = states.copy()
-                for x in arange(1, s.D + 1):
+                for x in arange(1, self.D + 1):
                     states_[1 + i] = x  # x_i = x
-                    for j in arange(s.J):
+                    for j in arange(self.J):
                         if j != i:
                             states_[1 + j] = slice(0, x + 1)  # 0 <= x_j <= x_i
                     Pi[tuple(states_)] = i + 1
@@ -245,9 +246,9 @@ class Env:
                 states_[0] = i
                 states_[1 + i] = 0
                 Pi[tuple(states)] = i + 1  # Admit arrival (of i)
-            states = np.concatenate(([s.J], [0] * s.J, s),
+            states = np.concatenate(([self.J], [0] * self.J, s),
                                     axis=0)  # x_i = 0 All i
-            Pi[tuple(states)] = s.NONE_WAITING
+            Pi[tuple(states)] = self.NONE_WAITING
         return Pi
 
     def timer(self, start: bool, name: str, trace: bool):
@@ -286,7 +287,7 @@ class Env:
                   "GB.")
         if time_check:
             self.timer(True, name, True)
-            s.test_loop(memory, self.size_i, self.sizes_i, self.s_states,
+            self.test_loop(memory, self.size_i, self.sizes_i, self.s_states,
                            self.x_states, self.J)
             time = self.timer(False, name, True)
             if time > 60:  # in seconds

@@ -8,17 +8,17 @@ import timeit
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 np.random.seed(0)
-env = Env(J=1, S=2, load=0.5, gamma=2., D=5, P=1000, e=1e-4, trace=True,
+env = Env(J=2, S=4, load=0.5, gamma=2., D=100, P=1000, e=1e-4, trace=True,
           print_modulo=100)
 # env = Env(J=1, S=4, mu=array([1.5]), lmbda=array([4]), t=array([2]), P=0,
 #           gamma=2, D=30, e=1e-5, trace=False)
 
-DICT_TYPE_I = tp.DictType(tp.unicode_type, tp.i4[:])  # int 1D vector
+DICT_TYPE_I1 = tp.DictType(tp.unicode_type, tp.i4[:])  # int 1D vector
 DICT_TYPE_I2 = tp.DictType(tp.unicode_type, tp.i4[:, :])  # int 2D vector
-DICT_TYPE_F = tp.DictType(tp.unicode_type, tp.f4[:])  # float 1D vector
+DICT_TYPE_F = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
 
 
-def init_W(env, V, W):
+def init_w(env, V, W):
     for i in arange(env.J):
         states = np.append(i, [slice(None)] * (env.J * 2))
         states[1 + i] = slice(env.D)
@@ -30,7 +30,7 @@ def init_W(env, V, W):
         W[tuple(states)] = V[tuple(next_states)]
     W[env.J] = V
     if env.P > 0:
-        states = [[slice(None)]*(1 + env.J*2)]
+        states = [slice(None)]*(1 + env.J*2)
         for i in arange(env.J):
             states[1 + i] = slice(int(env.gamma * env.t[i]) + 1, env.D+1)
         for s in env.s_states:
@@ -39,9 +39,9 @@ def init_W(env, V, W):
     return W
 
 
-@nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.f4[:], tp.i8, tp.i8, tp.f8,
-                  DICT_TYPE_I, DICT_TYPE_I2, DICT_TYPE_F, tp.f4[:, :, :]),
-         parallel=True, error_model='numpy')
+# @nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i4[:], tp.i8, tp.i8, tp.f8,
+#                   DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F, tp.f8[:, :, :]),
+#          parallel=True, error_model='numpy')
 def get_w(V, W, Pi, J, D, gamma,
           d_i, d_i2, d_f, P_xy):
     """W given policy."""
@@ -52,11 +52,11 @@ def get_w(V, W, Pi, J, D, gamma,
     r = d_f['r']
     c = d_f['c']
     t = d_f['t']
-    for s_i in nb.prange(len(d_i['s'])):
-        for x_i in nb.prange(len(d_i['x'])):
-            for i in nb.prange(J):
-                x = d_i['x'][x_i]
-                s = d_i['s'][s_i]
+    for s_i in nb.prange(len(d_i2['s'])):
+        for x_i in nb.prange(len(d_i2['x'])):
+            for i in nb.prange(J + 1):
+                x = d_i2['x'][x_i]
+                s = d_i2['s'][s_i]
                 state = i * d_i['sizes_i'][0] + np.sum(x*sizes_x + s*sizes_s)
                 if Pi[state] > 0:
                     j = Pi[state] - 1
@@ -65,22 +65,22 @@ def get_w(V, W, Pi, J, D, gamma,
                     for y in arange(x[j] + 1):
                         # Old code
                         next_x[j] = y
-                        if (i < J) and (i != j):
-                            next_x[i] = np.min(next_x[i] + 1, D)
+                        if (i < J) and (i != j) and (x[j] < D):
+                            next_x[i] = next_x[i] + 1
                         next_s = s.copy()
                         next_s[j] += 1
                         next_state = np.sum(next_x*sizes_x_n + next_s*sizes_s_n)
-
                         # new code
-                        next_state = np.sum(next_x*sizes_x_n + next_s*sizes_s_n)
-                        next_state -= (x[j] - y) * sizes_x_n[j]
-                        if (j != i) and (x[i] < D):
-                            next_state += sizes_x_n[i]
-                        next_state += sizes_s_n[j]
+                        # next_state = np.sum(x*sizes_x_n + s*sizes_s_n)
+                        # next_state -= (x[j] - y) * sizes_x_n[j]
+                        # if (j != i) and (x[i] < D):
+                        #     next_state += sizes_x_n[i]
+                        # next_state += sizes_s_n[j]
                         W[state] += P_xy[j, x[j], y] * V[next_state]
     return W
 
-d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i8[:])
+
+d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i4[:])
 d_i1['sizes'] = env.sizes
 d_i1['sizes_i'] = env.sizes_i
 d_i2 = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i4[:, :])
@@ -92,30 +92,34 @@ d_f['c'] = env.c
 d_f['r'] = env.r
 
 name = "Test W"
-env.timer(True, name, env.trace)
-V = zeros(env.dim)  # V_{t-1}
-W = zeros(env.dim_i)
-Pi = env.init_Pi()
+V = zeros(env.dim, dtype=np.float32)  # V_{t-1}
+W = zeros(env.dim_i, dtype=np.float32)
+Pi = env.init_pi()
+Pi = Pi.reshape(env.size_i)
 
 count = 0
+n = 10
 env.timer(True, name, env.trace)
-for test_range in range(10):  # Update each state.
-    W = init_W(env, V, W)
+for test_range in range(n):  # Update each state.
+    W = init_w(env, V, W)
     V = V.reshape(env.size)
     W = W.reshape(env.size_i)
-    Pi = Pi.reshape(env.size_i)
-    W = get_W(V, W, Pi)
+    W = get_w(V, W, Pi, env.J, env.D, env.gamma, d_i1, d_i2, d_f, env.P_xy)
+    V = V.reshape(env.dim)
     W = W.reshape(env.dim_i)
-env.timer(False, name, env.trace)
+print(env.timer(False, name, env.trace)/n)
 
-V = zeros(env.dim)  # V_{t-1}
-W = init_W(env, V, W)
-Pi = env.init_Pi()
-print(np.mean(timeit.repeat("get_w(V, W, Pi, J, D, gamma, d_i, d_i2, d_f,"
-                            "P_xy):",
+V = zeros(env.dim, dtype=np.float32)  # V_{t-1}
+W = zeros(env.dim_i, dtype=np.float32)
+W = init_w(env, V, W)
+Pi = env.init_pi()
+V = V.reshape(env.size)
+W = W.reshape(env.size_i)
+Pi = Pi.reshape(env.size_i)
+print(np.mean(timeit.repeat("get_w(V, W, Pi, env.J, env.D, env.gamma, d_i1, "
+                            "d_i2, d_f, env.P_xy)",
                             "from __main__ import get_w,"
-                            "DICT_TYPE_I, DICT_TYPE_I2, DICT_TYPE_F,"
-                            "V, W, Pi, J, D, gamma, d_i, d_i2, d_f, P_xy;"
+                            "DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F,"
+                            "V, W, Pi, env, d_i1, d_i2, d_f;"
                             "import numpy as np; import numba as nb",
                             repeat=5, number=3))/3)
-
