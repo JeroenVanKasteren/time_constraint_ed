@@ -8,7 +8,7 @@ import timeit
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 np.random.seed(0)
-env = Env(J=2, S=4, load=0.5, gamma=2., D=100, P=1000, e=1e-4, trace=True,
+env = Env(J=2, S=4, load=0.5, gamma=10., D=25, P=1000, e=1e-4, trace=True,
           print_modulo=100)
 # env = Env(J=1, S=4, mu=array([1.5]), lmbda=array([4]), t=array([2]), P=0,
 #           gamma=2, D=30, e=1e-5, trace=False)
@@ -61,23 +61,55 @@ def get_w(V, W, Pi, J, D, gamma,
                 if Pi[state] > 0:
                     j = Pi[state] - 1
                     W[state] = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
-                    next_x = x.copy()  # copy part of old code
                     for y in arange(x[j] + 1):
-                        # Old code
-                        next_x[j] = y
-                        if (i < J) and (i != j) and (x[j] < D):
-                            next_x[i] = next_x[i] + 1
-                        next_s = s.copy()
-                        next_s[j] += 1
-                        next_state = np.sum(next_x*sizes_x_n + next_s*sizes_s_n)
-                        # new code
-                        # next_state = np.sum(x*sizes_x_n + s*sizes_s_n)
-                        # next_state -= (x[j] - y) * sizes_x_n[j]
-                        # if (j != i) and (x[i] < D):
-                        #     next_state += sizes_x_n[i]
-                        # next_state += sizes_s_n[j]
+                        next_state = np.sum(x*sizes_x_n + s*sizes_s_n)
+                        next_state -= (x[j] - y) * sizes_x_n[j]
+                        if (i < J) and (j != i) and (x[i] < D):
+                            next_state += sizes_x_n[i]
+                        next_state += sizes_s_n[j]
                         W[state] += P_xy[j, x[j], y] * V[next_state]
     return W
+
+
+# @nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i4[:], tp.i8, tp.i8, tp.f8,
+#                   DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F, tp.f8[:, :, :]),
+#          parallel=True, error_model='numpy')
+# def get_w(V, W, Pi, J, D, gamma,
+#           d_i, d_i2, d_f, P_xy):
+#     """W given policy."""
+#     sizes_x = d_i['sizes_i'][1:J + 1]
+#     sizes_s = d_i['sizes_i'][J + 1:J * 2 + 1]
+#     sizes_x_n = d_i['sizes'][0:J]  # sizes Next state
+#     sizes_s_n = d_i['sizes'][J:J * 2]
+#     r = d_f['r']
+#     c = d_f['c']
+#     t = d_f['t']
+#     for s_i in nb.prange(len(d_i2['s'])):
+#         for x_i in nb.prange(len(d_i2['x'])):
+#             for i in nb.prange(J + 1):
+#                 x = d_i2['x'][x_i]
+#                 s = d_i2['s'][s_i]
+#                 state = i * d_i['sizes_i'][0] + np.sum(x*sizes_x + s*sizes_s)
+#                 if Pi[state] > 0:
+#                     j = Pi[state] - 1
+#                     W[state] = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
+#                     next_x = x.copy()  # copy part of old code
+#                     if (i < J) and (i != j) and (x[i] < D):
+#                         next_x[i] = next_x[i] + 1
+#                     for y in arange(x[j] + 1):
+#                         # Old code
+#                         next_x[j] = y
+#                         next_s = s.copy()
+#                         next_s[j] += 1
+#                         next_state = np.sum(next_x*sizes_x_n + next_s*sizes_s_n)
+#                         # new code
+#                         # next_state = np.sum(x*sizes_x_n + s*sizes_s_n)
+#                         # next_state -= (x[j] - y) * sizes_x_n[j]
+#                         # if (j != i) and (x[i] < D):
+#                         #     next_state += sizes_x_n[i]
+#                         # next_state += sizes_s_n[j]
+#                         W[state] += P_xy[j, x[j], y] * V[next_state]
+#     return W
 
 
 d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i4[:])
@@ -123,3 +155,11 @@ print(np.mean(timeit.repeat("get_w(V, W, Pi, env.J, env.D, env.gamma, d_i1, "
                             "V, W, Pi, env, d_i1, d_i2, d_f;"
                             "import numpy as np; import numba as nb",
                             repeat=5, number=3))/3)
+
+
+# J=2, S=4, load=0.5, gamma=10., D=25, P=1000
+# Timing get_w(...), which is almost all time per iteration
+# Old code (copying next state)
+# Python: 7.84, Numba: 0.13
+# Without copying
+# Python: 7.8, Numba: 0.072
