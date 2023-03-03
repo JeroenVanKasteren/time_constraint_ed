@@ -18,7 +18,7 @@ from OtherTests.init import Env
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 np.random.seed(42)
-env = Env(J=2, S=4, load=0.5, gamma=10., D=25, P=1000, e=1e-4, trace=True,
+env = Env(J=1, S=4, load=0.75, gamma=10., D=100, P=1000, e=1e-4, trace=True,
           print_modulo=100)
 # env = Env(J=1, S=1, mu=array([3]), lab=array([1]), t=array([1]), P=1e3,
 #           gamma=1, D=5, e=1e-4, trace=True, print_modulo=100)
