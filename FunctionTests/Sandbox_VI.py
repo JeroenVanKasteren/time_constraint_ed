@@ -1,8 +1,5 @@
 """
 Sandbox Value Iteration
-
-# P=0, g 5.3286
-# P=1e3, g 5.1097
 """
 
 import numpy as np
@@ -15,19 +12,20 @@ from src.Plotting import plot_pi, plot_v
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 np.random.seed(42)
-# env = Env(J=2, S=4, load=0.5, gamma=10., D=25, P=1000, e=1e-4, trace=True,
-#           print_modulo=100)
-env = Env(J=1, S=4, mu=array([1.5]), lab=array([4]), t=array([2]), P=1e3,
-          gamma=2, D=30, e=1e-4, trace=True, print_modulo=100)
+env = Env(J=2, S=4, load=0.5, gamma=10., D=25, P=1000, e=1e-4, trace=True,
+          print_modulo=100)
+# env = Env(J=1, S=1, mu=array([3]), lab=array([1]), t=array([1]), P=1e3,
+#           gamma=1, D=5, e=1e-4, trace=True, print_modulo=100,
+#           max_iter=5)
 
 DICT_TYPE_I1 = tp.DictType(tp.unicode_type, tp.i4[:])  # int 1D vector
 DICT_TYPE_I2 = tp.DictType(tp.unicode_type, tp.i4[:, :])  # int 2D vector
 DICT_TYPE_F = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
 
 
-@nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i8, tp.i8, tp.f8,
-                  DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F, tp.f8[:, :, :]),
-         parallel=True, error_model='numpy')
+# @nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i8, tp.i8, tp.f8,
+#                   DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F, tp.f8[:, :, :]),
+#          parallel=True, error_model='numpy')
 def get_w(V, W, J, D, gamma, d_i, d_i2, d_f, P_xy):
     """W given policy."""
     sizes_x = d_i['sizes_i'][1:J + 1]
@@ -55,8 +53,8 @@ def get_w(V, W, J, D, gamma, d_i, d_i2, d_f, P_xy):
                                           + i_not_admitted
                                           + sizes_s_n[j])
                             w += P_xy[j, x[j], y] * V[next_state]
-                    if w > W[state]:
-                        W[state] = w
+                        if w > W[state]:
+                            W[state] = w
     return W
 
 
@@ -159,11 +157,13 @@ env.timer(True, name, env.trace)
 converged = False
 while not converged:  # Update each state.
     W = env.init_w(V, W)
+    print(W)
     V = V.reshape(env.size)
     W = W.reshape(env.size_i)
     W = get_w(V, W, env.J, env.D, env.gamma, d_i1, d_i2, d_f, env.P_xy)
     V = V.reshape(env.dim)
     W = W.reshape(env.dim_i)
+    print(W)
     V_t = get_v(env, V, W)
     converged, g = env.convergence(V_t, V, count, name)
     V = V_t - V_t[tuple([0] * (env.J * 2))]  # Rescale and Save V_t

@@ -18,8 +18,10 @@ from OtherTests.init import Env
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 np.random.seed(42)
-env = Env(J=1, S=4, mu=array([1.5]), lmbda=array([4]), t=array([2]), P=0,
-          gamma=2, D=30, e=1e-5, trace=False)
+env = Env(J=2, S=4, load=0.5, gamma=10., D=25, P=1000, e=1e-4, trace=True,
+          print_modulo=100)
+# env = Env(J=1, S=1, mu=array([3]), lab=array([1]), t=array([1]), P=1e3,
+#           gamma=1, D=5, e=1e-4, trace=True, print_modulo=100)
 
 S = env.S
 D = env.D
@@ -76,9 +78,9 @@ x = 0  # x = 0
 RHS[x+S] = (lab*V[x+S+1] + (x + S)*mu*V[np.maximum(x+S-1, 0)]
             + (env.tau - lab - (x + S) * mu) * V[x+S])
 x = np.arange(1, D)  # x>=1
-RHS[x+S] = gamma*V[x+S+1] + \
-    S*mu*(env.r + np.sum(P_xy[1:D, :D]*V[S:D+S], 1)) + \
-        (env.tau - gamma - S*mu)*V[x+S]
+RHS[x+S] = (gamma*V[x+S+1]
+            + S*mu*(env.r + np.sum(P_xy[1:D, :D]*V[S:D+S], 1))
+            + (env.tau - gamma - S*mu)*V[x+S])
 x = np.arange(env.t*gamma+1, D).astype(int)  # x>t*gamma
 RHS[x+S] -= S*mu * env.c
 

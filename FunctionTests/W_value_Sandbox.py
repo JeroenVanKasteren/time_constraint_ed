@@ -47,8 +47,8 @@ def get_w(V, W, J, D, gamma, d_i, d_i2, d_f, P_xy):
                                           + i_not_admitted
                                           + sizes_s_n[j])
                             w += P_xy[j, x[j], y] * V[next_state]
-                    if w > W[state]:
-                        W[state] = w
+                        if w > W[state]:
+                            W[state] = w
     return W
 
 
