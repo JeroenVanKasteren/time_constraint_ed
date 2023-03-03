@@ -1,7 +1,6 @@
 import numpy as np
 import numba as nb
 from numba import types as tp
-from numpy import array, arange, zeros
 from OtherTests.init import Env
 import timeit
 
@@ -16,27 +15,6 @@ env = Env(J=2, S=4, load=0.5, gamma=10., D=25, P=1000, e=1e-4, trace=True,
 DICT_TYPE_I1 = tp.DictType(tp.unicode_type, tp.i4[:])  # int 1D vector
 DICT_TYPE_I2 = tp.DictType(tp.unicode_type, tp.i4[:, :])  # int 2D vector
 DICT_TYPE_F = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
-
-
-def init_w(env, V, W):
-    for i in arange(env.J):
-        states = np.append(i, [slice(None)] * (env.J * 2))
-        states[1 + i] = slice(env.D)
-        next_states = [slice(None)] * (env.J * 2)
-        next_states[i] = slice(1, env.D + 1)
-        W[tuple(states)] = V[tuple(next_states)]
-        states[1 + i] = env.D
-        next_states[i] = env.D
-        W[tuple(states)] = V[tuple(next_states)]
-    W[env.J] = V
-    if env.P > 0:
-        states = [slice(None)]*(1 + env.J*2)
-        for i in arange(env.J):
-            states[1 + i] = slice(int(env.gamma * env.t[i]) + 1, env.D+1)
-        for s in env.s_states:
-            states[1 + env.J:] = s
-            W[tuple(states)] -= env.P
-    return W
 
 
 @nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i4[:], tp.i8, tp.i8, tp.f8,
@@ -64,7 +42,7 @@ def get_w(V, W, Pi, J, D, gamma,
                     i_not_admitted = 0
                     if (i < J) and (i != j) and (x[i] < D):
                         i_not_admitted = sizes_x_n[i]
-                    for y in arange(x[j] + 1):
+                    for y in range(x[j] + 1):
                         next_state = (np.sum(x*sizes_x_n + s*sizes_s_n)
                                       - (x[j] - y) * sizes_x_n[j]
                                       + i_not_admitted
@@ -98,7 +76,7 @@ def get_w_old(V, W, Pi, J, D, gamma,
                     next_x = x.copy()  # copy part of old code
                     if (i < J) and (i != j) and (x[i] < D):
                         next_x[i] = next_x[i] + 1
-                    for y in arange(x[j] + 1):
+                    for y in range(x[j] + 1):
                         next_x[j] = y
                         next_s = s.copy()
                         next_s[j] += 1
@@ -119,8 +97,8 @@ d_f['c'] = env.c
 d_f['r'] = env.r
 
 # Same output?
-W_rand = array(np.random.rand(env.size_i), dtype=np.float32)
-V = array(np.random.rand(env.size), dtype=np.float32)
+W_rand = np.array(np.random.rand(env.size_i), dtype=np.float32)
+V = np.array(np.random.rand(env.size), dtype=np.float32)
 Pi = env.init_pi()
 Pi = Pi.reshape(env.size_i)
 W = W_rand.copy()
@@ -130,16 +108,15 @@ W_old = get_w_old(V, W, Pi, env.J, env.D, env.gamma, d_i1, d_i2, d_f, env.P_xy)
 print(np.allclose(W_new, W_old))  # True
 
 name = "Test W"
-V = zeros(env.dim, dtype=np.float32)  # V_{t-1}
-W = zeros(env.dim_i, dtype=np.float32)
+V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
+W = np.zeros(env.dim_i, dtype=np.float32)
 Pi = env.init_pi()
 Pi = Pi.reshape(env.size_i)
 
-count = 0
 n = 10
 env.timer(True, name, env.trace)
 for test_range in range(n):  # Update each state.
-    W = init_w(env, V, W)
+    W = env.init_w(V, W)
     V = V.reshape(env.size)
     W = W.reshape(env.size_i)
     W = get_w(V, W, Pi, env.J, env.D, env.gamma, d_i1, d_i2, d_f, env.P_xy)
@@ -147,8 +124,8 @@ for test_range in range(n):  # Update each state.
     W = W.reshape(env.dim_i)
 print(env.timer(False, name, env.trace)/n)
 
-V = zeros(env.dim, dtype=np.float32)  # V_{t-1}
-W = zeros(env.dim_i, dtype=np.float32)
+V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
+W = np.zeros(env.dim_i, dtype=np.float32)
 W = init_w(env, V, W)
 Pi = env.init_pi()
 V = V.reshape(env.size)
@@ -161,7 +138,6 @@ print(np.mean(timeit.repeat("get_w(V, W, Pi, env.J, env.D, env.gamma, d_i1, "
                             "V, W, Pi, env, d_i1, d_i2, d_f;"
                             "import numpy as np; import numba as nb",
                             repeat=5, number=3))/3)
-
 
 # J=2, S=4, load=0.5, gamma=10., D=25, P=1000
 # Timing get_w(...), which is almost all time per iteration

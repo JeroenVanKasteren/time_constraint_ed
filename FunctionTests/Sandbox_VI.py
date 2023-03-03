@@ -1,186 +1,193 @@
 """
 Sandbox Value Iteration
+
+# P=0, g 5.3286
+# P=1e3, g 5.1097
 """
 
 import numpy as np
-from numba import njit
-from numpy import array, arange, zeros
-
+from numpy import array
+import numba as nb
+from numba import types as tp
 from OtherTests.init import Env
-from src.Plotting import plot_Pi, plot_V
+from src.Plotting import plot_pi, plot_v
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 np.random.seed(42)
-# env = Env(J=2, S=4, Rho=0.5, gamma=6, D=50, P=0, e=1e-4, trace=True)
-env = Env(J=1, S=4, mu=array([1.5]), lmbda=array([4]), t=array([2]), P=0,
-          gamma=2, D=30, e=1e-5, trace=False)
-# env = Env(J=2, S=2, lmbda=array([0.5, 0.5]), mu=array([1, 1]), t=array([1., 1.]),
-#           r=array([1, 1]), c=array([1, 1]), P=0,
-#           gamma=2, D=6, trace=True)
+# env = Env(J=2, S=4, load=0.5, gamma=10., D=25, P=1000, e=1e-4, trace=True,
+#           print_modulo=100)
+env = Env(J=1, S=4, mu=array([1.5]), lab=array([4]), t=array([2]), P=1e3,
+          gamma=2, D=30, e=1e-4, trace=True, print_modulo=100)
 
-Not_Evaluated = env.NOT_EVALUATED
-Servers_Full = env.SERVERS_FULL
-None_Waiting = env.NONE_WAITING
-Keep_Idle = env.KEEP_IDLE
-
-J = env.J
-S = env.S
-D = env.D
-gamma = env.gamma
-t = env.t
-c = env.c
-r = env.r
-P = env.P
-sizes = env.sizes
-size = env.size
-dim = env.dim
-sizes_i = env.sizes_i
-size_i = env.size_i
-dim_i = env.dim_i
-s_states = env.s_states
-x_states = env.x_states
-P_xy = env.P_xy
+DICT_TYPE_I1 = tp.DictType(tp.unicode_type, tp.i4[:])  # int 1D vector
+DICT_TYPE_I2 = tp.DictType(tp.unicode_type, tp.i4[:, :])  # int 2D vector
+DICT_TYPE_F = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
 
 
-def init_W(env, V, W):
-    for i in arange(env.J):
-        states = np.append(i, [slice(None)] * (J * 2))
-        states[1 + i] = slice(D)
-        next_states = [slice(None)] * (J * 2)
-        next_states[i] = slice(1, D + 1)
-        W[tuple(states)] = V[tuple(next_states)]
-        states[1 + i] = D
-        next_states[i] = D
-        W[tuple(states)] = V[tuple(next_states)] - P
-    W[J] = V
+@nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i8, tp.i8, tp.f8,
+                  DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F, tp.f8[:, :, :]),
+         parallel=True, error_model='numpy')
+def get_w(V, W, J, D, gamma, d_i, d_i2, d_f, P_xy):
+    """W given policy."""
+    sizes_x = d_i['sizes_i'][1:J + 1]
+    sizes_s = d_i['sizes_i'][J + 1:J * 2 + 1]
+    sizes_x_n = d_i['sizes'][0:J]  # sizes Next state
+    sizes_s_n = d_i['sizes'][J:J * 2]
+    r = d_f['r']
+    c = d_f['c']
+    t = d_f['t']
+    for s_i in nb.prange(len(d_i2['s'])):
+        for x_i in nb.prange(len(d_i2['x'])):
+            for i in nb.prange(J + 1):
+                x = d_i2['x'][x_i]
+                s = d_i2['s'][s_i]
+                state = i * d_i['sizes_i'][0] + np.sum(x*sizes_x + s*sizes_s)
+                for j in range(J):
+                    if (x[j] > 0) or (j == i):
+                        w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
+                        i_not_admitted = 0
+                        if (i < J) and (i != j) and (x[i] < D):
+                            i_not_admitted = sizes_x_n[i]
+                        for y in range(x[j] + 1):
+                            next_state = (np.sum(x*sizes_x_n + s*sizes_s_n)
+                                          - (x[j] - y) * sizes_x_n[j]
+                                          + i_not_admitted
+                                          + sizes_s_n[j])
+                            w += P_xy[j, x[j], y] * V[next_state]
+                    if w > W[state]:
+                        W[state] = w
     return W
 
 
-@njit
-def W_f(V, W):
-    """W."""
-    V = V.reshape(size)
-    W = W.reshape(size_i)
-    for s in s_states:
-        for x in x_states:
-            for i in arange(J+1):
-                state = i * sizes_i[0] + np.sum(
-                    x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
-                W[state] -= P if np.all(x > )
-                for j in arange(J):
-                    if (x[j] > 0) or (j == i):
-                        w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
-                        next_x = x.copy()
-                        for y in arange(x[j] + 1):
-                            next_x[j] = y
-                            if (i < J) and (i != j):
-                                next_x[i] = min(next_x[i] + 1, D)
-                            next_s = s.copy()
-                            next_s[j] += 1
-                            next_state = np.sum(next_x * sizes[0:J] +
-                                                next_s * sizes[J:J * 2])
-                            w += P_xy[j, x[j], y] * V[next_state]
-                        W[state] = array([w, W[state]]).max()
-    return W.reshape(dim_i)
-
-
-def V_f(env, V, W):
+def get_v(env, V, W):
     """V_t."""
     states_c = [slice(None)] * (env.J * 2)
     V_t = env.tau * V
-    for i in arange(env.J):
+    for i in range(env.J):
         states_i = np.append(i, [slice(None)] * (env.J * 2))
 
         states = states_c.copy()
         next_states = states_i.copy()
         states[i] = 0  # x_i = 0
         next_states[1 + i] = 0
-        V_t[tuple(states)] += env.lmbda[i] * (W[tuple(next_states)] - V[tuple(states)])
+        V_t[tuple(states)] += env.lab[i] * (W[tuple(next_states)]
+                                            - V[tuple(states)])
 
         states = states_c.copy()
         next_states = states_i.copy()
         states[i] = slice(1, env.D + 1)  # 0 < x_i <= D
         next_states[1 + i] = slice(1, env.D + 1)  # 0 < x_i <= D
-        V_t[tuple(states)] += env.gamma * (W[tuple(next_states)] - V[tuple(states)])
+        V_t[tuple(states)] += env.gamma * (W[tuple(next_states)]
+                                           - V[tuple(states)])
 
-        for s_i in arange(1, env.S + 1):  # s_i
+        for s_i in range(1, env.S + 1):  # s_i
             states = states_c.copy()
             next_states = states_i.copy()
             states[env.J + i] = s_i
             next_states[0] = env.J
             next_states[1 + env.J + i] = s_i - 1
-            V_t[tuple(states)] += s_i * env.mu[i] * (W[tuple(next_states)] - V[tuple(states)])
+            V_t[tuple(states)] += s_i * env.mu[i] * (W[tuple(next_states)]
+                                                     - V[tuple(states)])
     return V_t / env.tau
 
 
-@njit
-def policy_improvement(V, W, Pi):
-    """Determine best action/policy per state by one-step lookahead."""
-    V = V.reshape(size)
-    W = W.reshape(size_i)
-    Pi = Pi.reshape(size_i)
+@nb.njit(nb.types.Tuple((nb.i4[:], nb.b1))(
+    tp.f4[:], tp.f4[:], tp.i4[:], tp.i8, tp.i8, tp.f8, tp.i8,
+    DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F, tp.f8[:, :, :]),
+    parallel=True, error_model='numpy')
+def policy_improvement(V, W, Pi, J, D, gamma, keep_idle,
+                       d_i, d_i2, d_f, P_xy):
+    """W given policy."""
+    sizes_x = d_i['sizes_i'][1:J + 1]
+    sizes_s = d_i['sizes_i'][J + 1:J * 2 + 1]
+    sizes_x_n = d_i['sizes'][0:J]  # sizes Next state
+    sizes_s_n = d_i['sizes'][J:J * 2]
+    r = d_f['r']
+    c = d_f['c']
+    t = d_f['t']
     stable = True
-    for s in s_states:
-        for x in x_states:
-            for i in arange(J+1):
-                state = i * sizes_i[0] + np.sum(
-                    x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
+    for s_i in nb.prange(len(d_i2['s'])):
+        for x_i in nb.prange(len(d_i2['x'])):
+            for i in nb.prange(J + 1):
+                x = d_i2['x'][x_i]
+                s = d_i2['s'][s_i]
+                state = i * d_i['sizes_i'][0] + np.sum(x*sizes_x + s*sizes_s)
                 pi = Pi[state]
-                Pi[state] = Keep_Idle if ((np.sum(x) > 0) or (i < J)) else \
-                    Pi[state]
+                if (np.sum(x) > 0) or (i < J):
+                    Pi[state] = keep_idle
                 w = W[state]
-                for j in arange(J):
+                for j in range(J):  # j waiting, arrival, or time passing
                     if (x[j] > 0) or (j == i):
                         value = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
-                        w -= P if np.all(x > gamma * t) else 0
-                        next_x = x.copy()
-                        for y in arange(x[j] + 1):
-                            next_x[j] = y
-                            if (i < J) and (i != j):
-                                next_x[i] = min(next_x[i] + 1, D)
-                            next_s = s.copy()
-                            next_s[j] += 1
-                            next_state = np.sum(next_x * sizes[0:J] + next_s * sizes[J:J * 2])
+                        i_not_admitted = 0
+                        if (i < J) and (i != j) and (x[i] < D):
+                            i_not_admitted = sizes_x_n[i]
+                        for y in range(x[j] + 1):
+                            next_state = (np.sum(x * sizes_x_n + s * sizes_s_n)
+                                          - (x[j] - y) * sizes_x_n[j]
+                                          + i_not_admitted
+                                          + sizes_s_n[j])
                             value += P_xy[j, x[j], y] * V[next_state]
-                        Pi[state] = j + 1 if value >= w else Pi[state]
-                        w = array([value, w]).max()
+                    if value > w:
+                        Pi[state] = j + 1
+                        w = value
                 if pi != Pi[state]:
                     stable = False
-    return Pi.reshape(dim_i), stable
+    return Pi, stable
 
+d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i4[:])
+d_i1['sizes'] = env.sizes
+d_i1['sizes_i'] = env.sizes_i
+d_i2 = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i4[:, :])
+d_i2['s'] = env.s_states
+d_i2['x'] = env.x_states
+d_f = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.f8[:])
+d_f['t'] = env.t
+d_f['c'] = env.c
+d_f['r'] = env.r
 
 # Value Iteration
 name = 'Value Iteration'
-V = zeros(env.dim)  # V_{t-1}
-W = zeros(env.dim_i)
-Pi = env.init_Pi()
+V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
+W = np.zeros(env.dim_i, dtype=np.float32)
+Pi = env.init_pi()
+Pi = Pi.reshape(env.size_i)
 
 count = 0
 env.timer(True, name, env.trace)
 converged = False
 while not converged:  # Update each state.
-    W = init_W(env, V, W)
-    W = W_f(V, W)
-    V_t = V_f(env, V, W)
+    W = env.init_w(V, W)
+    V = V.reshape(env.size)
+    W = W.reshape(env.size_i)
+    W = get_w(V, W, env.J, env.D, env.gamma, d_i1, d_i2, d_f, env.P_xy)
+    V = V.reshape(env.dim)
+    W = W.reshape(env.dim_i)
+    V_t = get_v(env, V, W)
     converged, g = env.convergence(V_t, V, count, name)
     V = V_t - V_t[tuple([0] * (env.J * 2))]  # Rescale and Save V_t
     count += 1
-
 env.timer(False, name, env.trace)
 
 # Determine policy via Policy Improvement.
-W = init_W(env, V, W)
-Pi, _ = policy_improvement(V, W, Pi)
+W = env.init_w(V, W)
+Pi = Pi.reshape(env.size_i)
+V = V.reshape(env.size)
+W = W.reshape(env.size_i)
+Pi, stable = policy_improvement(V, W, Pi, env.J, env.D, env.gamma,
+                                env.KEEP_IDLE, d_i1, d_i2, d_f, env.P_xy)
+V = V.reshape(env.dim)
+Pi = Pi.reshape(env.dim_i)
 
 print("V", V)
 print("Pi", Pi)
 print("g", g)
 
-# if env.J > 1:
-#     plot_Pi(env, env, Pi, zero_state=True)
-#     plot_Pi(env, env, Pi, zero_state=False)
-# for i in arange(env.J):
-#     plot_Pi(env, env, Pi, zero_state=True, i=i)
-#     plot_Pi(env, env, Pi, zero_state=True, i=i, smu=True)
-#     plot_V(env, env, V, zero_state=True, i=i)
+if env.J > 1:
+    plot_pi(env, env, Pi, zero_state=True)
+    plot_pi(env, env, Pi, zero_state=False)
+for i in range(env.J):
+    plot_pi(env, env, Pi, zero_state=True, i=i)
+    plot_pi(env, env, Pi, zero_state=True, i=i, smu=True)
+    plot_v(env, V, zero_state=True, i=i)

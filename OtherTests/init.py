@@ -54,12 +54,13 @@ there is no decision (servers full)
 """
 
 import numpy as np
-from numpy import array, arange, zeros, round, exp, ones, eye, dot
+from numpy import array, round
 from numpy.random import randint, uniform
+import numba as nb
 from itertools import product
 from sys import exit, getsizeof
 from timeit import default_timer
-from numba import njit
+
 
 from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy import optimize
@@ -130,12 +131,12 @@ class Env:
         s.trace = kwargs.get('trace', False)
         s.print_modulo = kwargs.get('print_modulo', 1)
 
-        s_states = array(list(product(arange(s.S + 1), repeat=s.J)))
+        s_states = array(list(product(np.arange(s.S + 1), repeat=s.J)))
         # Valid states
         s.s_states_v = s_states[np.sum(s_states, axis=1) <= s.S]
         # Action states
         s.s_states = s.s_states_v[np.sum(s.s_states_v, axis=1) < s.S]
-        s.x_states = array(list(product(arange(s.D + 1), repeat=s.J)))
+        s.x_states = array(list(product(np.arange(s.D + 1), repeat=s.J)))
 
         s.feasibility(kwargs.get('time_check', True))
         # if self.trace:
@@ -170,7 +171,7 @@ class Env:
 
     def get_pi_0(env, s, rho):
         """Calculate pi(0)."""
-        return (1 / (s * exp(s * rho) / (s * rho) ** s
+        return (1 / (s * np.exp(s * rho) / (s * rho) ** s
                      * gamma_fun(s) * reg_up_inc_gamma(s, s * rho)
                      + (env.gamma + rho * env.lab) / env.gamma
                      * (1 / (1 - rho))))
@@ -204,7 +205,7 @@ class Env:
             weighted_load *= (s.c + s.r) / sum(s.c + s.r)
         x0 = s.a + weighted_load / sum(weighted_load) * (s.S - sum(s.a))
         lb_bound = s.a  # lb <= A.dot(x) <= ub
-        ub_bound = s.S - dot((ones((s.J, s.J)) - eye(s.J)), s.a)
+        ub_bound = s.S - np.dot((np.ones((s.J, s.J)) - np.eye(s.J)), s.a)
         bounds = optimize.Bounds(lb_bound, ub_bound)
         cons = array([1] * s.J)
         lb_cons = s.S  # Equal bounds represent equality constraint
@@ -234,11 +235,11 @@ class Env:
             if np.sum(s) == self.S:
                 Pi[tuple(states)] = self.SERVERS_FULL
                 continue
-            for i in arange(self.J):
+            for i in range(self.J):
                 states_ = states.copy()
-                for x in arange(1, self.D + 1):
+                for x in range(1, self.D + 1):
                     states_[1 + i] = x  # x_i = x
-                    for j in arange(self.J):
+                    for j in range(self.J):
                         if j != i:
                             states_[1 + j] = slice(0, x + 1)  # 0 <= x_j <= x_i
                     Pi[tuple(states_)] = i + 1
@@ -250,6 +251,26 @@ class Env:
                                     axis=0)  # x_i = 0 All i
             Pi[tuple(states)] = self.NONE_WAITING
         return Pi
+
+    def init_w(env, V, W):
+        for i in range(env.J):
+            states = np.append(i, [slice(None)] * (env.J * 2))
+            states[1 + i] = slice(env.D)
+            next_states = [slice(None)] * (env.J * 2)
+            next_states[i] = slice(1, env.D + 1)
+            W[tuple(states)] = V[tuple(next_states)]
+            states[1 + i] = env.D
+            next_states[i] = env.D
+            W[tuple(states)] = V[tuple(next_states)]
+        W[env.J] = V
+        if env.P > 0:
+            states = [slice(None)] * (1 + env.J * 2)
+            for i in range(env.J):
+                states[1 + i] = slice(int(env.gamma * env.t[i]) + 1, env.D + 1)
+            for s in env.s_states:
+                states[1 + env.J:] = s
+                W[tuple(states)] -= env.P
+        return W
 
     def timer(self, start: bool, name: str, trace: bool):
         """Only if trace=TRUE, start timer if start=true, else print time."""
@@ -266,25 +287,25 @@ class Env:
             return time
 
     @staticmethod
-    @njit
+    @nb.njit
     def test_loop(memory, size_i, sizes_i, s_states, x_states, J):
         """Docstring."""
         memory = memory.reshape(size_i)
         for s in s_states:
             for x in x_states:
-                for i in arange(J + 1):
+                for i in range(J + 1):
                     state = i * sizes_i[0] + np.sum(
                         x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
                     memory[state] = np.random.rand()
 
     def feasibility(self, time_check):
         """Check matrix size and looping time."""
-        memory = zeros(self.dim_i)
+        memory = np.zeros(self.dim_i)
         name = 'Running time feasibility'
         if self.trace:
-            print("Size of W: ", round(getsizeof(memory) / 10 ** 9, 4), "GB.")
-            print("Size of V: ", round(getsizeof(zeros(self.dim)) / 10 ** 9, 4),
-                  "GB.")
+            print("Size of W: ", round(getsizeof(memory) / 10**9, 4), "GB.")
+            print("Size of V: ", round(getsizeof(np.zeros(self.dim)) / 10**9,
+                                       4), "GB.")
         if time_check:
             self.timer(True, name, True)
             self.test_loop(memory, self.size_i, self.sizes_i, self.s_states,
@@ -295,8 +316,7 @@ class Env:
 
     def convergence(self, V_t, V, i, name, j=-1):
         """Convergence check of valid states only."""
-        delta_max = V_t[tuple([0] * (self.J * 2))] - V[
-            tuple([0] * (self.J * 2))]
+        delta_max = V_t[tuple([0] * (self.J * 2))] - V[tuple([0] * (self.J*2))]
         delta_min = delta_max.copy()
         for s in self.s_states_v:
             states = [slice(None)] * (self.J * 2)
