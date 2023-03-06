@@ -14,7 +14,7 @@ np.set_printoptions(precision=4, linewidth=150, suppress=True)
 np.random.seed(42)
 # env = Env(J=2, S=4, load=0.5, gamma=10., D=25, P=1000, e=1e-4, trace=True,
 #           print_modulo=100)
-env = Env(J=1, S=4, load=0.75, gamma=10., D=100, P=1000, e=1e-4, trace=True,
+env = Env(J=1, S=4, load=0.75, gamma=20., D=1000, P=1000, e=1e-4, trace=True,
           print_modulo=100)
 # env = Env(J=1, S=1, mu=array([3]), lab=array([1]), t=array([1]), P=1e3,
 #           gamma=1, D=5, e=1e-4, trace=True, print_modulo=100,
@@ -55,8 +55,8 @@ def get_w(V, W, J, D, gamma, d_i, d_i2, d_f, P_xy):
                                           + i_not_admitted
                                           + sizes_s_n[j])
                             w += P_xy[j, x[j], y] * V[next_state]
-                        if w > W[state]:
-                            W[state] = w
+                        #if w > W[state]:  # TODO, always admit
+                        W[state] = w
     return W
 
 
@@ -191,3 +191,4 @@ for i in range(env.J):
     plot_pi(env, env, Pi, zero_state=True, i=i)
     plot_pi(env, env, Pi, zero_state=True, i=i, smu=True)
     plot_v(env, V, zero_state=True, i=i)
+
