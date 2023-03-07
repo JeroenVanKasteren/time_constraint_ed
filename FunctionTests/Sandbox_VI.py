@@ -129,9 +129,9 @@ def policy_improvement(V, W, Pi, J, D, gamma, keep_idle,
                                           + i_not_admitted
                                           + sizes_s_n[j])
                             value += P_xy[j, x[j], y] * V[next_state]
-                    if value > w:
-                        Pi[state] = j + 1
-                        w = value
+                        if value > w:  # TODO, always admit
+                            Pi[state] = j + 1
+                            w = value
                 if pi != Pi[state]:
                     stable = False
     return Pi, stable
