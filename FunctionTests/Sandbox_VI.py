@@ -12,10 +12,10 @@ from src.Plotting import plot_pi, plot_v
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 np.random.seed(42)
-# env = Env(J=2, S=4, load=0.5, gamma=10., D=25, P=1000, e=1e-4, trace=True,
+# env = Env(J=2, S=4, load=0.5, gamma=10., D=25, P=1e3, e=1e-4, trace=True,
 #           print_modulo=100)
-env = Env(J=1, S=4, load=0.75, gamma=20., D=1000, P=1000, e=1e-4, trace=True,
-          print_modulo=100)
+env = Env(J=2, S=4, load=0.75, gamma=20., D=40, P=1e3, e=1e-4, trace=True,
+          convergence_check=10, print_modulo=10)
 # env = Env(J=1, S=1, mu=array([3]), lab=array([1]), t=array([1]), P=1e3,
 #           gamma=1, D=5, e=1e-4, trace=True, print_modulo=100,
 #           max_iter=5)
@@ -23,6 +23,17 @@ env = Env(J=1, S=4, load=0.75, gamma=20., D=1000, P=1000, e=1e-4, trace=True,
 DICT_TYPE_I1 = tp.DictType(tp.unicode_type, tp.i4[:])  # int 1D vector
 DICT_TYPE_I2 = tp.DictType(tp.unicode_type, tp.i4[:, :])  # int 2D vector
 DICT_TYPE_F = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
+
+d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i4[:])
+d_i1['sizes'] = env.sizes
+d_i1['sizes_i'] = env.sizes_i
+d_i2 = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i4[:, :])
+d_i2['s'] = env.s_states
+d_i2['x'] = env.x_states
+d_f = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.f8[:])
+d_f['t'] = env.t
+d_f['c'] = env.c
+d_f['r'] = env.r
 
 
 @nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i8, tp.i8, tp.f8,
@@ -55,8 +66,8 @@ def get_w(V, W, J, D, gamma, d_i, d_i2, d_f, P_xy):
                                           + i_not_admitted
                                           + sizes_s_n[j])
                             w += P_xy[j, x[j], y] * V[next_state]
-                        #if w > W[state]:  # TODO, always admit
-                        W[state] = w
+                        if w > W[state]:
+                            W[state] = w
     return W
 
 
@@ -129,23 +140,13 @@ def policy_improvement(V, W, Pi, J, D, gamma, keep_idle,
                                           + i_not_admitted
                                           + sizes_s_n[j])
                             value += P_xy[j, x[j], y] * V[next_state]
-                        if value > w:  # TODO, always admit
+                        if value > w:
                             Pi[state] = j + 1
                             w = value
                 if pi != Pi[state]:
                     stable = False
     return Pi, stable
 
-d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i4[:])
-d_i1['sizes'] = env.sizes
-d_i1['sizes_i'] = env.sizes_i
-d_i2 = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i4[:, :])
-d_i2['s'] = env.s_states
-d_i2['x'] = env.x_states
-d_f = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.f8[:])
-d_f['t'] = env.t
-d_f['c'] = env.c
-d_f['r'] = env.r
 
 # Value Iteration
 name = 'Value Iteration'
@@ -155,8 +156,9 @@ Pi = env.init_pi()
 Pi = Pi.reshape(env.size_i)
 
 count = 0
-env.timer(True, name, env.trace)
 converged = False
+
+env.timer(True, name, env.trace)
 while not converged:  # Update each state.
     W = env.init_w(V, W)
     V = V.reshape(env.size)
@@ -165,8 +167,11 @@ while not converged:  # Update each state.
     V = V.reshape(env.dim)
     W = W.reshape(env.dim_i)
     V_t = get_v(env, V, W)
-    converged, g = env.convergence(V_t, V, count, name)
+    if count % env.convergence_check == 0:
+        converged, g = env.convergence(V_t, V, count, name)
     V = V_t - V_t[tuple([0] * (env.J * 2))]  # Rescale and Save V_t
+    if count > env.max_iter:
+        break
     count += 1
 env.timer(False, name, env.trace)
 
@@ -191,4 +196,3 @@ for i in range(env.J):
     plot_pi(env, env, Pi, zero_state=True, i=i)
     plot_pi(env, env, Pi, zero_state=True, i=i, smu=True)
     plot_v(env, V, zero_state=True, i=i)
-

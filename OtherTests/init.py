@@ -130,6 +130,7 @@ class Env:
         s.max_iter = kwargs.get('max_iter', np.Inf)
         s.trace = kwargs.get('trace', False)
         s.print_modulo = kwargs.get('print_modulo', 1)
+        s.convergence_check = kwargs.get('convergence_check', 1)
 
         s_states = array(list(product(np.arange(s.S + 1), repeat=s.J)))
         # Valid states
@@ -329,9 +330,9 @@ class Env:
         converged = delta_max - delta_min < self.e
         max_iter = (i > self.max_iter) | (j > self.max_iter)
         g = (delta_max + delta_min) / 2 * self.tau
-        if ((converged & self.trace) |
-                (self.trace & ((i % self.print_modulo == 0) |
-                                (j % self.print_modulo == 0)))):
+        if ((converged & self.trace)
+                | (self.trace & (((i % self.print_modulo == 0) & (j == -1))
+                                 | (j % self.print_modulo == 0)))):
             print("iter: ", i,
                   "inner_iter: ", j,
                   ", delta: ", round(delta_max - delta_min, 2),
