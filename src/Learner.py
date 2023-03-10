@@ -10,9 +10,11 @@ The implemented learners are:
 @author: Jeroen van Kasteren (jeroen.van.kasteren@vu.nl)
 """
 
-
 import numpy as np
-from numpy import array, arange, zeros, exp, round
+from numpy import array
+import numba as nb
+from numba import types as tp
+import Env
 from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy.integrate import quad_vec
 from numba import njit

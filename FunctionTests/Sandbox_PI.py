@@ -14,7 +14,7 @@ np.set_printoptions(precision=4, linewidth=150, suppress=True)
 np.random.seed(42)
 # env = Env(J=2, S=4, load=0.5, gamma=10., D=25, P=1e3, e=1e-4, trace=True,
 #           print_modulo=100)
-env = Env(J=2, S=4, load=0.75, gamma=20., D=40, P=1e3, e=1e-4, trace=True,
+env = Env(J=2, S=3, load=0.75, gamma=5., D=10, P=1e3, e=1e-5, trace=True,
           convergence_check=10, print_modulo=10)
 # env = Env(J=1, S=1, mu=array([3]), lab=array([1]), t=array([1]), P=1e3,
 #           gamma=1, D=5, e=1e-4, trace=True, print_modulo=100,
@@ -116,7 +116,7 @@ def policy_improvement(V, W, Pi, J, D, gamma, keep_idle,
     r = d_f['r']
     c = d_f['c']
     t = d_f['t']
-    stable = True
+    stable = 0
     for s_i in nb.prange(len(d_i2['s'])):
         for x_i in nb.prange(len(d_i2['x'])):
             for i in nb.prange(J + 1):
@@ -143,8 +143,8 @@ def policy_improvement(V, W, Pi, J, D, gamma, keep_idle,
                             Pi[state] = j + 1
                             w = value
                 if pi != Pi[state]:
-                    stable = False
-    return Pi, stable
+                    stable = stable + 1  # binary operation allows reduction
+    return Pi, stable == 0
 
 
 def policy_evaluation(env, V, W, Pi, name, count=0):
@@ -182,18 +182,18 @@ env.timer(True, name, env.trace)
 while not stable:
     V, g = policy_evaluation(env, V, W, Pi, 'Policy Evaluation of PI', count)
     W = env.init_w(V, W)
-    Pi = Pi.reshape(env.size_i)
     V = V.reshape(env.size)
     W = W.reshape(env.size_i)
     Pi, stable = policy_improvement(V, W, Pi, env.J, env.D, env.gamma,
                                     env.KEEP_IDLE, d_i1, d_i2, d_f, env.P_xy)
     V = V.reshape(env.dim)
     W = W.reshape(env.dim_i)
-    Pi = Pi.reshape(env.dim_i)
     if count > env.max_iter:
         break
     count += 1
 env.timer(False, name, env.trace)
+
+Pi = Pi.reshape(env.dim_i)
 
 print("V", V)
 print("Pi", Pi)

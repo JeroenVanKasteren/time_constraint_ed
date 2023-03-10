@@ -20,7 +20,7 @@ from src.Plotting import plot_pi, plot_v
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 np.random.seed(42)
-env = Env(J=2, S=3, load=0.75, gamma=20., D=100, P=1e3, e=1e-4, trace=True,
+env = Env(J=1, S=3, load=0.75, gamma=20., D=100, P=1e3, e=1e-4, trace=True,
           convergence_check=10, print_modulo=10)
 
 # -------------------- Without x<0 -------------------------
@@ -67,24 +67,24 @@ for i in range(env.J):
         V_app[tuple(states)] += V[i, x]
 
 for i in range(env.J):
+    s = env.s_star[i]
     x = range(env.D + 1)
     LHS = env.g[i] + env.tau*V[i, x]
     RHS = np.zeros(env.D + 1)
     x = np.arange(1, env.D)  # x>=1
     RHS[x] = (env.gamma*V[i, x+1]
-              + env.s[i] * env.mu[i] * (env.r[i]
-                                        + np.sum(env.P_xy[i, 1:env.D, :env.D]
-                                                 * V[i, 0:env.D], 1))
-              + (env.tau - env.gamma - env.s[i] * env.mu[i]) * V[i, x])
+              + s * env.mu[i] * (env.r[i] + np.sum(env.P_xy[i, 1:env.D, :env.D]
+                                                   * V[i, 0:env.D], 1))
+              + (env.tau - env.gamma - s * env.mu[i]) * V[i, x])
     x = np.arange(env.t[i] * env.gamma+1, env.D).astype(int)  # x>t*gamma
-    RHS[x] -= env.s[i] * env.mu[i] * env.c[i]
+    RHS[x] -= s * env.mu[i] * env.c[i]
     print("V", V[i, :])
     dec = 5
     x = np.arange(1, env.D)
-    print("gamma*t: ", env.gamma* env.t[i])
+    print("gamma*t: ", env.gamma * env.t[i])
     print("LHS==RHS? ", (np.around(LHS[x], dec) ==
                          np.around(RHS[x], dec)).all())
-    print("x, LHS, RHS, V: \n", np.c_[np.arange(env.D+1), LHS, RHS, V[i,:]])
+    print("x, LHS, RHS, V: \n", np.c_[np.arange(env.D+1), LHS, RHS, V[i, :]])
 
 # Policy improvement to get policy
 # Evaluate policy to get g (and V)

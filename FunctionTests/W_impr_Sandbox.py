@@ -7,7 +7,7 @@ import timeit
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 np.random.seed(0)
-env = Env(J=2, S=4, load=0.5, gamma=10., D=25, P=1000, e=1e-4, trace=True,
+env = Env(J=2, S=4, load=0.5, gamma=10., D=25, P=1000, e=1e-5, trace=True,
           print_modulo=100)
 # env = Env(J=1, S=4, mu=array([1.5]), lmbda=array([4]), t=array([2]), P=0,
 #           gamma=2, D=30, e=1e-5, trace=False)
@@ -31,7 +31,7 @@ def get_w(V, W, Pi, J, D, gamma, keep_idle,
     r = d_f['r']
     c = d_f['c']
     t = d_f['t']
-    stable = True
+    stable = 0
     for s_i in nb.prange(len(d_i2['s'])):
         for x_i in nb.prange(len(d_i2['x'])):
             for i in nb.prange(J + 1):
@@ -58,8 +58,8 @@ def get_w(V, W, Pi, J, D, gamma, keep_idle,
                         Pi[state] = j + 1
                         w = value
                 if pi != Pi[state]:
-                    stable = False
-    return Pi, stable
+                    stable = stable + 1  # binary operation allows reduction
+    return Pi, stable == 0
 
 
 d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i4[:])
@@ -105,6 +105,8 @@ print(np.mean(timeit.repeat("get_w(V, W, Pi, env.J, env.D, env.gamma, "
                             "V, W, Pi, env, d_i1, d_i2, d_f;"
                             "import numpy as np; import numba as nb",
                             repeat=5, number=3))/3)
+
+get_w.parallel_diagnostics(level=4)
 
 # J=2, S=4, load=0.5, gamma=10., D=25, P=1000
 # Timing get_w(...), which is almost all time per iteration
