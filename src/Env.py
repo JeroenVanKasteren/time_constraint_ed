@@ -61,6 +61,11 @@ from scipy import optimize
 
 
 class TimeConstraintEDs():
+    NONE_WAITING: int = 0
+    KEEP_IDLE: int = -1
+    SERVERS_FULL: int = -2
+    NOT_EVALUATED: int = -3
+
     S_MIN = 2  # Servers
     S_MAX = 6
     mu_MIN = 0.1  # Service Rate
