@@ -221,33 +221,6 @@ class TimeConstraintEDs():
             sizes[i] = sizes[i + 1] * dim[i + 1]
         return sizes
 
-    def init_Pi(self):
-        """
-        Take the longest waiting queue into service (or last queue if tied).
-        Take arrivals directly into service.
-        """
-        Pi = self.NOT_EVALUATED*np.ones(self.dim_i, dtype=int)
-        for s in self.s_states_v:
-            states = np.append([slice(None)]*(1+self.J), s)
-            if np.sum(s) == self.S:
-                Pi[tuple(states)] = self.SERVERS_FULL
-                continue
-            for i in arange(self.J):
-                states_ = states.copy()
-                for x in arange(1, self.D+1):
-                    states_[1+i] = x  # x_i = x
-                    for j in arange(self.J):
-                        if j != i:
-                            states_[1+j] = slice(0, x+1)  # 0 <= x_j <= x_i
-                    Pi[tuple(states_)] = i + 1
-                states_ = states.copy()
-                states_[0] = i
-                states_[1+i] = 0
-                Pi[tuple(states)] = i + 1  # Admit arrival (of i)
-            states = np.concatenate(([self.J], [0]*self.J, s), axis=0)  # x_i = 0 All i
-            Pi[tuple(states)] = self.NONE_WAITING
-        return Pi
-
     def timer(self, start_boolean, name, trace):
         """Only if trace=TRUE, start timer if start=true, else print time."""
         if not trace:

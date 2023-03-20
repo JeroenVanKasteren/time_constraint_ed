@@ -117,7 +117,7 @@ def policy_improvement(V, W, Pi, J, D, gamma, keep_idle,
     r = d_f['r']
     c = d_f['c']
     t = d_f['t']
-    stable = True
+    stable = 0
     for s_i in nb.prange(len(d_i2['s'])):
         for x_i in nb.prange(len(d_i2['x'])):
             for i in nb.prange(J + 1):
@@ -144,9 +144,8 @@ def policy_improvement(V, W, Pi, J, D, gamma, keep_idle,
                             Pi[state] = j + 1
                             w = value
                 if pi != Pi[state]:
-                    stable = False
-    return Pi, stable
-
+                    stable = stable + 1  # binary operation allows reduction
+    return Pi, stable == 0
 
 # Value Iteration
 name = 'Value Iteration'

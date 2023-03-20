@@ -225,32 +225,32 @@ class Env:
             sizes[i] = sizes[i + 1] * dim[i + 1]
         return sizes
 
-    def init_pi(self):
+    def init_pi(env):
         """
         Take the longest waiting queue into service (or last queue if tied).
         Take arrivals directly into service.
         """
-        Pi = self.NOT_EVALUATED * np.ones(self.dim_i, dtype=int)
-        for s in self.s_states_v:
-            states = np.append([slice(None)] * (1 + self.J), s)
-            if np.sum(s) == self.S:
-                Pi[tuple(states)] = self.SERVERS_FULL
+        Pi = env.NOT_EVALUATED * np.ones(env.dim_i, dtype=int)
+        for s in env.s_states_v:
+            states = np.append([slice(None)] * (1 + env.J), s)
+            if np.sum(s) == env.S:
+                Pi[tuple(states)] = env.SERVERS_FULL
                 continue
-            for i in range(self.J):
+            for i in range(env.J):
                 states_ = states.copy()
-                for x in range(1, self.D + 1):
+                for x in range(1, env.D + 1):
                     states_[1 + i] = x  # x_i = x
-                    for j in range(self.J):
+                    for j in range(env.J):
                         if j != i:
                             states_[1 + j] = slice(0, x + 1)  # 0 <= x_j <= x_i
                     Pi[tuple(states_)] = i + 1
                 states_ = states.copy()
                 states_[0] = i
                 states_[1 + i] = 0
-                Pi[tuple(states)] = i + 1  # Admit arrival (of i)
-            states = np.concatenate(([self.J], [0] * self.J, s),
+                Pi[tuple(states_)] = i + 1  # Admit arrival (of i)
+            states = np.concatenate(([env.J], [0] * env.J, s),
                                     axis=0)  # x_i = 0 All i
-            Pi[tuple(states)] = self.NONE_WAITING
+            Pi[tuple(states)] = env.NONE_WAITING
         return Pi
 
     def init_w(env, V, W):
@@ -315,24 +315,24 @@ class Env:
             if time > 60:  # in seconds
                 exit("Looping matrix takes more than 60 seconds.")
 
-    def convergence(self, V_t, V, i, name, j=-1):
+    def convergence(env, V_t, V, i, name, j=-1):
         """Convergence check of valid states only."""
-        delta_max = V_t[tuple([0] * (self.J * 2))] - V[tuple([0] * (self.J*2))]
+        delta_max = V_t[tuple([0] * (env.J * 2))] - V[tuple([0] * (env.J*2))]
         delta_min = delta_max.copy()
-        for s in self.s_states_v:
-            states = [slice(None)] * (self.J * 2)
-            states[slice(self.J, self.J * 2)] = s
+        for s in env.s_states_v:
+            states = [slice(None)] * (env.J * 2)
+            states[slice(env.J, env.J * 2)] = s
             diff = V_t[tuple(states)] - V[tuple(states)]
             delta_max = np.max([np.max(diff), delta_max])
             delta_min = np.min([np.min(diff), delta_min])
-            if abs(delta_max - delta_min) > self.e:
+            if abs(delta_max - delta_min) > env.e:
                 break
-        converged = delta_max - delta_min < self.e
-        max_iter = (i > self.max_iter) | (j > self.max_iter)
-        g = (delta_max + delta_min) / 2 * self.tau
-        if ((converged & self.trace)
-                | (self.trace & (((i % self.print_modulo == 0) & (j == -1))
-                                 | (j % self.print_modulo == 0)))):
+        converged = delta_max - delta_min < env.e
+        max_iter = (i > env.max_iter) | (j > env.max_iter)
+        g = (delta_max + delta_min) / 2 * env.tau
+        if ((converged & env.trace)
+                | (env.trace & (((i % env.print_modulo == 0) & (j == -1))
+                                 | (j % env.print_modulo == 0)))):
             print("iter: ", i,
                   "inner_iter: ", j,
                   ", delta: ", round(delta_max - delta_min, 2),
