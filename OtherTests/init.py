@@ -177,6 +177,12 @@ class Env:
                      + (env.gamma + rho * env.lab) / env.gamma
                      * (1 / (1 - rho))))
 
+    def get_delay_prob(env, s, rho):
+        """Calculate pi(0)."""
+        return (1 / (s * np.exp(s * rho) / (s * rho) ** s
+                     * gamma_fun(s) * reg_up_inc_gamma(s, s * rho)
+                     + (1 / (1 - rho))))
+
     def get_tail_prob(env, s, rho, pi_0, n):
         """P(W>t)."""
         return (pi_0 / (1 - rho) * (env.lab + env.gamma)
