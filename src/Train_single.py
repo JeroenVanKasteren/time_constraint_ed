@@ -27,12 +27,12 @@ pi_learner.policy_iteration(env)
 
 # ------ Value Iteration ------ #
 vi_learner = ValueIteration(env, pi_learner)
-vi_learner.value_iteration(env, pi_learner)
+vi_learner.value_iteration(env)
+vi_learner.get_policy(env)
 
 # ------ One Step Policy Improvement ------ #
 ospi_learner = OneStepPolicyImprovement(env, pi_learner)
-ospi_learner.one_step_policy_improvement(env, pi_learner)
-ospi_learner.calculate_g(env, pi_learner)
+ospi_learner.get_g(env)
 
 
 def summarize_policy(env, learner, pi_learner):
@@ -53,8 +53,8 @@ def summarize_policy(env, learner, pi_learner):
                          'Invalid_State'])
     counts = pd.DataFrame(0, index=np.arange(env.D), columns=feature_list)
     for x in range(env.D):
-        states = [slice(None)]*(env.J*2)
-        states[0] = x
+        states = [slice(None)] * (1 + env.J*2)
+        states[1] = x
         counts.loc[x, 'None_Waiting'] = np.sum(learner.Pi[tuple(states)]
                                                == pi_learner.NONE_WAITING)
         counts.loc[x, 'Servers_Full'] = np.sum(learner.Pi[tuple(states)]
@@ -67,7 +67,7 @@ def summarize_policy(env, learner, pi_learner):
         total_valid = 1 if total_valid == 0 else total_valid
         for i in range(env.J):
             states = [slice(None)]*(env.J*2)
-            states[i] = x
+            states[1+i] = x
             counts.loc[x, 'Class_'+str(i+1)] = np.sum(learner.Pi[tuple(states)]
                                                       == i+1) / total_valid
         counts.loc[x, 'Keep_Idle'] = (np.sum(learner.Pi[tuple(states)]

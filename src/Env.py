@@ -56,6 +56,7 @@ from itertools import product
 from sys import exit, getsizeof
 from timeit import default_timer
 import numba as nb
+from numba import types as tp
 from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy import optimize
 
@@ -131,6 +132,20 @@ class TimeConstraintEDs:
         # Action states
         s.s_states = s.s_states_v[np.sum(s.s_states_v, axis=1) < s.S]
         s.x_states = array(list(product(np.arange(s.D + 1), repeat=s.J)))
+
+        s.d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type,
+                                        value_type=tp.i4[:])
+        s.d_i1['sizes'] = s.sizes
+        s.d_i1['sizes_i'] = s.sizes_i
+        s.d_i2 = nb.typed.Dict.empty(key_type=tp.unicode_type,
+                                     value_type=tp.i4[:, :])
+        s.d_i2['s'] = s.s_states
+        s.d_i2['x'] = s.x_states
+        s.d_f = nb.typed.Dict.empty(key_type=tp.unicode_type,
+                                    value_type=tp.f8[:])
+        s.d_f['t'] = s.t
+        s.d_f['c'] = s.c
+        s.d_f['r'] = s.r
 
         s.feasibility(kwargs.get('time_check', True))
         # if self.trace:

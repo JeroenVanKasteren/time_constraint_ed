@@ -30,20 +30,6 @@ class PolicyIteration:
         self.count = 0
         self.stable = False
 
-        self.d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type,
-                                        value_type=tp.i4[:])
-        self.d_i1['sizes'] = env.sizes
-        self.d_i1['sizes_i'] = env.sizes_i
-        self.d_i2 = nb.typed.Dict.empty(key_type=tp.unicode_type,
-                                        value_type=tp.i4[:, :])
-        self.d_i2['s'] = env.s_states
-        self.d_i2['x'] = env.x_states
-        self.d_f = nb.typed.Dict.empty(key_type=tp.unicode_type,
-                                       value_type=tp.f8[:])
-        self.d_f['t'] = env.t
-        self.d_f['c'] = env.c
-        self.d_f['r'] = env.r
-
     @staticmethod
     def init_pi(env):
         """
@@ -196,10 +182,10 @@ class PolicyIteration:
         return V_t / env.tau
 
     @staticmethod
-    @nb.njit(nb.types.Tuple((nb.i4[:], nb.b1))(
-        tp.f4[:], tp.f4[:], tp.i4[:], tp.i8, tp.i8, tp.f8, tp.i8,
-        DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F, tp.f8[:, :, :]),
-        parallel=True, error_model='numpy')
+    # @nb.njit(nb.types.Tuple((nb.i4[:], nb.b1))(
+    #     tp.f4[:], tp.f4[:], tp.i4[:], tp.i8, tp.i8, tp.f8, tp.i8,
+    #     DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F, tp.f8[:, :, :]),
+    #     parallel=True, error_model='numpy')
     def policy_improvement(V, W, Pi, J, D, gamma, keep_idle,
                            d_i, d_i2, d_f, P_xy):
         """W given policy."""
@@ -211,9 +197,12 @@ class PolicyIteration:
         c = d_f['c']
         t = d_f['t']
         stable = 0
-        for s_i in nb.prange(len(d_i2['s'])):
-            for x_i in nb.prange(len(d_i2['x'])):
-                for i in nb.prange(J + 1):
+        #for s_i in nb.prange(len(d_i2['s'])):
+        #    for x_i in nb.prange(len(d_i2['x'])):
+        #        for i in nb.prange(J + 1):
+        for s_i in range(len(d_i2['s'])):
+            for x_i in range(len(d_i2['x'])):
+                for i in range(J + 1):
                     x = d_i2['x'][x_i]
                     s = d_i2['s'][s_i]
                     state = i * d_i['sizes_i'][0] + np.sum(
@@ -247,17 +236,17 @@ class PolicyIteration:
         inner_count = 0
         converged = False
         while not converged:
-            W = env.init_w(V, W)
+            W = self.init_w(env, V, W)
             V = V.reshape(env.size)
             W = W.reshape(env.size_i)
             W = self.get_w(V, W, Pi, env.J, env.D, env.gamma,
-                           self.d_i1, self.d_i2, self.d_f, env.P_xy)
+                           env.d_i1, env.d_i2, env.d_f, env.P_xy)
             V = V.reshape(env.dim)
             W = W.reshape(env.dim_i)
             V_t = self.get_v(env, V, W)
             if inner_count % env.convergence_check == 0:
-                converged, g = env.convergence(V_t, V, count, name,
-                                                    j=inner_count)
+                converged, g = self.convergence(env, V_t, V, count, name,
+                                                j=inner_count)
             V = V_t - V_t[tuple([0] * (env.J * 2))]  # Rescale and Save V_t
             if count > env.max_iter:
                 return V, g
@@ -268,17 +257,17 @@ class PolicyIteration:
         """Docstring."""
         s.V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
         s.W = np.zeros(env.dim_i, dtype=np.float32)
-        s.Pi = env.init_pi()
+        s.Pi = s.init_pi(env)
         s.Pi = s.Pi.reshape(env.size_i)
         while not s.stable:
             s.V, s.g = s.policy_evaluation(env, s.V, s.W, s.Pi, s.g,
                                            'Policy Evaluation of PI', s.count)
-            W = env.init_w(V, W)
+            s.W = s.init_w(env, s.V, s.W)
             s.V = s.V.reshape(env.size)
             s.W = s.W.reshape(env.size_i)
             s.Pi, s.stable = s.policy_improvement(s.V, s.W, s.Pi, env.J, env.D,
                                                   env.gamma, env.KEEP_IDLE,
-                                                  s.d_i1, s.d_i2, s.d_f,
+                                                  env.d_i1, env.d_i2, env.d_f,
                                                   env.P_xy)
             s.V = s.V.reshape(env.dim)
             s.W = s.W.reshape(env.dim_i)
@@ -296,26 +285,13 @@ class ValueIteration:
 
     def __init__(self, env, pi_learner):
         self.name = 'Value Iteration'
+        self.pi_learner = pi_learner
         self.V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
         self.V_t = np.zeros(env.dim, dtype=np.float32)  # V_{t}
         self.W = np.zeros(env.dim_i, dtype=np.float32)
-        self.Pi = pi_learner.init_pi()
+        self.Pi = pi_learner.init_pi(env)
         self.g = 0
         self.count = 0
-
-        self.d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type,
-                                        value_type=tp.i4[:])
-        self.d_i1['sizes'] = env.sizes
-        self.d_i1['sizes_i'] = env.sizes_i
-        self.d_i2 = nb.typed.Dict.empty(key_type=tp.unicode_type,
-                                        value_type=tp.i4[:, :])
-        self.d_i2['s'] = env.s_states
-        self.d_i2['x'] = env.x_states
-        self.d_f = nb.typed.Dict.empty(key_type=tp.unicode_type,
-                                       value_type=tp.f8[:])
-        self.d_f['t'] = env.t
-        self.d_f['c'] = env.c
-        self.d_f['r'] = env.r
 
     @staticmethod
     @nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i8, tp.i8, tp.f8,
@@ -386,29 +362,31 @@ class ValueIteration:
                                                - V[tuple(states)]))
         return self.V_t / env.tau
 
-    def policy(s, env, pi_learner):
-        """Determine policy via Policy Improvement."""
-        s.Pi, _ = pi_learner.policy_improvement(s.V, s.W, s.Pi, env.J, env.D,
-                                                env.gamma, env.KEEP_IDLE,
-                                                s.d_i1, s.d_i2, s.d_f, env.P_xy)
-
     def value_iteration(s, env):
         converged = False
         while not converged:  # Update each state.
-            s.W = env.init_w(s.V, s.W)
+            s.W = s.pi_learner.init_w(env, s.V, s.W)
             s.V = s.V.reshape(env.size)
             s.W = s.W.reshape(env.size_i)
             s.W = s.get_w(s.V, s.W, env.J, env.D, env.gamma,
-                          s.d_i1, s.d_i2, s.d_f, env.P_xy)
+                          env.d_i1, env.d_i2, env.d_f, env.P_xy)
             s.V = s.V.reshape(env.dim)
             s.W = s.W.reshape(env.dim_i)
             s.V_t = s.get_v(env, s.V, s.W)
             if s.count % env.convergence_check == 0:
-                converged, g = env.convergence(s.V_t, s.V, s.count, s.name)
+                converged, g = s.pi_learner.convergence(env, s.V_t, s.V,
+                                                        s.count, s.name)
             s.V = s.V_t - s.V_t[tuple([0] * (env.J * 2))]  # Rescale V_t
             if s.count > env.max_iter:
                 break
             s.count += 1
+
+    def get_policy(s, env):
+        """Determine policy via Policy Improvement."""
+        s.Pi, _ = s.pi_learner.policy_improvement(s.V, s.W, s.Pi, env.J, env.D,
+                                                  env.gamma, env.KEEP_IDLE,
+                                                  env.d_i1, env.d_i2, env.d_f,
+                                                  env.P_xy)
 
 
 class OneStepPolicyImprovement:
@@ -416,8 +394,9 @@ class OneStepPolicyImprovement:
 
     def __init__(self, env, pi_learner):
         self.name = 'One-step Policy Improvement'
-        self.V_app = get_v_app(env)
-        self.Pi = pi_learner.init_pi()
+        self.pi_learner = pi_learner
+        self.V_app = self.get_v_app(env)
+        self.Pi = pi_learner.init_pi(env)
         self.g = 0
 
     @staticmethod
@@ -475,8 +454,10 @@ class OneStepPolicyImprovement:
         """One Step of Policy Improvement."""
         s.Pi, _ = pi_learner.policy_improvement(s.V_app, s.W, s.Pi, env.J,
                                                 env.D, env.gamma, env.KEEP_IDLE,
-                                                s.d_i1, s.d_i2, s.d_f, env.P_xy)
+                                                env.d_i1, env.d_i2, env.d_f,
+                                                env.P_xy)
 
-    def calculate_g(s, env, pi_learner):
+    def get_g(s, env):
         """Determine g via Policy Evaluation."""
-        s.g, _ = pi_learner.policy_evaluation(env, s.V, s.W, s.Pi, s.g, s.name)
+        s.g, _ = s.pi_learner.policy_evaluation(env, s.V, s.W, s.Pi, s.g,
+                                                s.name)
