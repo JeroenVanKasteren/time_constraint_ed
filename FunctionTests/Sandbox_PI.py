@@ -12,9 +12,7 @@ from src.Plotting import plot_pi, plot_v
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 np.random.seed(42)
-# env = Env(J=2, S=4, load=0.5, gamma=10., D=25, P=1e3, e=1e-4, trace=True,
-#           print_modulo=100)
-env = Env(J=2, S=3, load=0.75, gamma=5., D=10, P=1e3, e=1e-5, trace=True,
+env = Env(J=2, S=2, load=0.75, gamma=20., D=10, P=1e3, e=1e-5, trace=True,
           convergence_check=10, print_modulo=10)
 # env = Env(J=1, S=1, mu=array([3]), lab=array([1]), t=array([1]), P=1e3,
 #           gamma=1, D=5, e=1e-4, trace=True, print_modulo=100,
@@ -49,8 +47,8 @@ def get_w(V, W, Pi, J, D, gamma,
     r = d_f['r']
     c = d_f['c']
     t = d_f['t']
-    for s_i in nb.prange(len(d_i2['s'])):
-        for x_i in nb.prange(len(d_i2['x'])):
+    for x_i in nb.prange(len(d_i2['x'])):
+        for s_i in nb.prange(len(d_i2['s'])):
             for i in nb.prange(J + 1):
                 x = d_i2['x'][x_i]
                 s = d_i2['s'][s_i]

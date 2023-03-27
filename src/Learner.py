@@ -23,33 +23,11 @@ class PolicyIteration():
     DICT_TYPE_I2 = tp.DictType(tp.unicode_type, tp.i4[:, :])  # int 2D vector
     DICT_TYPE_F = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
 
-    x_states, s_states, P_xy, keep_idle, sizes_i_0, sizes_x, sizes_s, \
-        sizes_x_n, sizes_s_n, t, c, r, J, D, x_n, s_n, gamma = tuple([None]*17)
-
-    def __init__(self, env):
+    def __init__(self):
         self.name = 'Policy Iteration'
         self.g = 0
         self.count = 0
         self.stable = False
-
-        self.s_states = env.s_states
-        self.s_n = len(self.s_states)
-        self.x_states = env.x_states
-        self.x_n = len(self.x_states)
-        self.t = env.t
-        self.c = env.c
-        self.r = env.r
-        self.J = env.J
-        self.D = env.D
-        self.gamma = env.gamma
-        self.P_xy = env.P_xy
-        self.keep_idle = env.KEEP_IDLE
-
-        self.sizes_i_0 = env.sizes_i[0]
-        self.sizes_x = env.sizes_i[1:J + 1]
-        self.sizes_s = env.sizes_i[J + 1:J * 2 + 1]
-        self.sizes_x_n = env.sizes[0:J]  # sizes Next state
-        self.sizes_s_n = env.sizes[J:J * 2]
 
     @staticmethod
     def init_pi(env):
@@ -143,22 +121,22 @@ class PolicyIteration():
                       DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F, tp.f8[:, :, :]),
              parallel=True, error_model='numpy')
     def get_w(V, W, Pi, J, D, gamma,
-              d_i, d_i2, d_f, P_xy):
+              d_i1, d_i2, d_f, P_xy):
         """W given policy."""
-        sizes_x = d_i['sizes_i'][1:J + 1]
-        sizes_s = d_i['sizes_i'][J + 1:J * 2 + 1]
-        sizes_x_n = d_i['sizes'][0:J]  # sizes Next state
-        sizes_s_n = d_i['sizes'][J:J * 2]
+        sizes_x = d_i1['sizes_i'][1:J + 1]
+        sizes_s = d_i1['sizes_i'][J + 1:J * 2 + 1]
+        sizes_x_n = d_i1['sizes'][0:J]  # sizes Next state
+        sizes_s_n = d_i1['sizes'][J:J * 2]
         r = d_f['r']
         c = d_f['c']
         t = d_f['t']
-        for s_i in nb.prange(len(d_i2['s'])):
-            for x_i in nb.prange(len(d_i2['x'])):
+        for x_i in nb.prange(len(d_i2['x'])):
+            for s_i in nb.prange(len(d_i2['s'])):
                 for i in nb.prange(J + 1):
                     x = d_i2['x'][x_i]
                     s = d_i2['s'][s_i]
-                    state = i * d_i['sizes_i'][0] + np.sum(
-                        x * sizes_x + s * sizes_s)
+                    state = (i * d_i1['sizes_i'][0] +
+                             + np.sum(x * sizes_x + s * sizes_s))
                     if Pi[state] > 0:
                         j = Pi[state] - 1
                         W[state] = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
@@ -221,12 +199,9 @@ class PolicyIteration():
         c = d_f['c']
         t = d_f['t']
         stable = 0
-        for s_i in nb.prange(len(d_i2['s'])):
-           for x_i in nb.prange(len(d_i2['x'])):
+        for x_i in nb.prange(len(d_i2['x'])):
+            for s_i in nb.prange(len(d_i2['s'])):
                for i in nb.prange(J + 1):
-                    # for s_i in range(len(d_i2['s'])):
-                    #     for x_i in range(len(d_i2['x'])):
-                    #         for i in range(J + 1):
                     x = d_i2['x'][x_i]
                     s = d_i2['s'][s_i]
                     state = i * d_i['sizes_i'][0] + np.sum(
