@@ -19,13 +19,14 @@ def plot_pi(env, PI_learner, Pi, zero_state, **kwargs):
     elif 'state' in kwargs:  # state = array([0,0,0,0]).astype(object)
         state = kwargs.get('state')
     else:  # Select a random valid states
-        state = np.concatenate((env.x_states[np.random.randint(len(env.x_states))],
+        state = np.concatenate(([0],
+                                env.x_states[np.random.randint(len(env.x_states))],
                                 env.s_states[np.random.randint(len(env.s_states))])).astype(object)
         state[0] = 1 if 'smu' in kwargs else 0
 
     states = state.copy()
     print_states = state.astype('str')
-    if ('i' in kwargs) & (not 'j' in kwargs):
+    if ('i' in kwargs) & ('j' not in kwargs):
         i = kwargs.get('i')
         states[1 + i] = slice(None)  # x_i
         states[1 + i + env.J] = slice(None)  # s_i

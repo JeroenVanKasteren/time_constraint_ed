@@ -11,24 +11,45 @@ The implemented learners are:
 """
 
 import numpy as np
-from numpy import array
 import numba as nb
 from numba import types as tp
 from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy.integrate import quad_vec
 
 
-class PolicyIteration:
+class PolicyIteration():
     """Policy Iteration."""
     DICT_TYPE_I1 = tp.DictType(tp.unicode_type, tp.i4[:])  # int 1D vector
     DICT_TYPE_I2 = tp.DictType(tp.unicode_type, tp.i4[:, :])  # int 2D vector
     DICT_TYPE_F = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
+
+    x_states, s_states, P_xy, keep_idle, sizes_i_0, sizes_x, sizes_s, \
+        sizes_x_n, sizes_s_n, t, c, r, J, D, x_n, s_n, gamma = tuple([None]*17)
 
     def __init__(self, env):
         self.name = 'Policy Iteration'
         self.g = 0
         self.count = 0
         self.stable = False
+
+        self.s_states = env.s_states
+        self.s_n = len(self.s_states)
+        self.x_states = env.x_states
+        self.x_n = len(self.x_states)
+        self.t = env.t
+        self.c = env.c
+        self.r = env.r
+        self.J = env.J
+        self.D = env.D
+        self.gamma = env.gamma
+        self.P_xy = env.P_xy
+        self.keep_idle = env.KEEP_IDLE
+
+        self.sizes_i_0 = env.sizes_i[0]
+        self.sizes_x = env.sizes_i[1:J + 1]
+        self.sizes_s = env.sizes_i[J + 1:J * 2 + 1]
+        self.sizes_x_n = env.sizes[0:J]  # sizes Next state
+        self.sizes_s_n = env.sizes[J:J * 2]
 
     @staticmethod
     def init_pi(env):
@@ -60,6 +81,9 @@ class PolicyIteration:
 
     @staticmethod
     def init_w(env, V, W):
+        """
+        Write good description.
+        """
         for i in range(env.J):
             states = np.append(i, [slice(None)] * (env.J * 2))
             states[1 + i] = slice(env.D)
@@ -200,9 +224,9 @@ class PolicyIteration:
         for s_i in nb.prange(len(d_i2['s'])):
            for x_i in nb.prange(len(d_i2['x'])):
                for i in nb.prange(J + 1):
-        # for s_i in range(len(d_i2['s'])):
-        #     for x_i in range(len(d_i2['x'])):
-        #         for i in range(J + 1):
+                    # for s_i in range(len(d_i2['s'])):
+                    #     for x_i in range(len(d_i2['x'])):
+                    #         for i in range(J + 1):
                     x = d_i2['x'][x_i]
                     s = d_i2['s'][s_i]
                     state = i * d_i['sizes_i'][0] + np.sum(
@@ -256,7 +280,8 @@ class PolicyIteration:
     def policy_iteration(s, env):
         """Docstring."""
         s.V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
-        s.W = np.zeros(env.dim_i, dtype=np.float32)
+        s.V_t = np.empty(env.dim, dtype=np.float32)  # V_{t}
+        s.W = np.empty(env.dim_i, dtype=np.float32)
         s.Pi = s.init_pi(env)
         s.Pi = s.Pi.reshape(env.size_i)
         while not s.stable:
@@ -424,13 +449,11 @@ class OneStepPolicyImprovement:
         frac = (s * mu + env.gamma) / (lab + env.gamma)
         trm = np.exp(a) / a ** (s - 1) * gamma_fun(s) * reg_up_inc_gamma(s, a)
         x = np.arange(1, env.D + 1)
-        v_i[x] = (v_i[0] + (s * mu * r - g) / (
-                    env.gamma * s * mu * (1 - rho) ** 2)
+        v_i[x] = (v_i[0] + (s * mu * r - g) / (env.gamma * s * mu * (1-rho)**2)
                   * (lab + env.gamma - lab * x * (rho - 1)
                      - (lab + env.gamma) * frac ** x)
                   + 1 / (env.gamma * (rho - 1))
-                  * (g - s * mu * r - env.gamma / lab * (
-                            g + (g - lab * r) / rho * trm))
+                  * (g - s*mu*r - env.gamma/lab * (g + (g - lab*r)/rho * trm))
                   * (-rho + frac ** (x - 1)))
         # -1_{x > gamma*t}[...]
         x = np.arange(env.gamma * env.t[i] + 1, env.D + 1).astype(int)
@@ -458,8 +481,8 @@ class OneStepPolicyImprovement:
 
     def one_step_policy_improvement(s, env):
         """One Step of Policy Improvement."""
-        W = s.pi_learner.init_w(env, s.V, s.W)
-        s.V = s.V.reshape(env.size)
+        W = s.pi_learner.init_w(env, s.V_app, s.W)
+        s.V_app = s.V_app.reshape(env.size)
         W = W.reshape(env.size_i)
         s.Pi = s.Pi.reshape(env.size_i)
         s.Pi, _ = s.pi_learner.policy_improvement(s.V_app, W, s.Pi, env.J,

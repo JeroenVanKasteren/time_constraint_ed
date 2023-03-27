@@ -15,45 +15,52 @@ np.random.seed(42)
 # env = Env(J=2, S=4, load=0.5, gamma=10., D=25, P=1e3, e=1e-4, trace=True,
 #           print_modulo=100)
 env = Env(J=2, S=4, load=0.75, gamma=20., D=40, P=1e3, e=1e-5, trace=True,
-          convergence_check=10, print_modulo=10)
+          convergence_check=10, print_modulo=10, max_iter=50)
 # env = Env(J=1, S=1, mu=array([3]), lab=array([1]), t=array([1]), P=1e3,
 #           gamma=1, D=5, e=1e-4, trace=True, print_modulo=100,
 #           max_iter=5)
 
-DICT_TYPE_I1 = tp.DictType(tp.unicode_type, tp.i4[:])  # int 1D vector
-DICT_TYPE_I2 = tp.DictType(tp.unicode_type, tp.i4[:, :])  # int 2D vector
-DICT_TYPE_F = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
+s_states = env.s_states
+s_n = len(s_states)
+x_states = env.x_states
+x_n = len(x_states)
+t = env.t
+c = env.c
+r = env.r
+J = env.J
+D = env.D
+gamma = env.gamma
+P_xy = env.P_xy
+keep_idle = env.KEEP_IDLE
 
-d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i4[:])
-d_i1['sizes'] = env.sizes
-d_i1['sizes_i'] = env.sizes_i
-d_i2 = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i4[:, :])
-d_i2['s'] = env.s_states
-d_i2['x'] = env.x_states
-d_f = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.f8[:])
-d_f['t'] = env.t
-d_f['c'] = env.c
-d_f['r'] = env.r
+sizes_i_0 = env.sizes_i[0]
+sizes_x = env.sizes_i[1:J + 1]
+sizes_s = env.sizes_i[J + 1:J * 2 + 1]
+sizes_x_n = env.sizes[0:J]  # sizes Next state
+sizes_s_n = env.sizes[J:J * 2]
+
+# Value Iteration
+name = 'Value Iteration'
+V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
+V_t = np.empty(env.dim, dtype=np.float32)  # V_{t-1}
+W = np.empty(env.dim_i, dtype=np.float32)
+Pi = env.init_pi()
+Pi = Pi.reshape(env.size_i)
 
 
-@nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i8, tp.i8, tp.f8,
-                  DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F, tp.f8[:, :, :]),
+@nb.njit(tp.f4[:](tp.f4[:], tp.f4[:]),
          parallel=True, error_model='numpy')
-def get_w(V, W, J, D, gamma, d_i, d_i2, d_f, P_xy):
+def get_w(V, W):
     """W given policy."""
-    sizes_x = d_i['sizes_i'][1:J + 1]
-    sizes_s = d_i['sizes_i'][J + 1:J * 2 + 1]
-    sizes_x_n = d_i['sizes'][0:J]  # sizes Next state
-    sizes_s_n = d_i['sizes'][J:J * 2]
-    r = d_f['r']
-    c = d_f['c']
-    t = d_f['t']
-    for s_i in nb.prange(len(d_i2['s'])):
-        for x_i in nb.prange(len(d_i2['x'])):
+    x_i, s_i, i, j, i_not_admitted = 0, 0, 0, 0, 0
+    state, next_state, w = 0.0, 0.0, 0.0
+    s, x = [0]*J, [0]*J
+    for s_i in nb.prange(s_n):
+        for x_i in nb.prange(x_n):
             for i in nb.prange(J + 1):
-                x = d_i2['x'][x_i]
-                s = d_i2['s'][s_i]
-                state = i * d_i['sizes_i'][0] + np.sum(x*sizes_x + s*sizes_s)
+                s = s_states[s_i]
+                x = x_states[x_i]
+                state = i * sizes_i_0 + np.sum(x*sizes_x + s*sizes_s)
                 for j in range(J):
                     if (x[j] > 0) or (j == i):
                         w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
@@ -103,27 +110,20 @@ def get_v(env, V, W):
     return V_t / env.tau
 
 
-@nb.njit(nb.types.Tuple((nb.i4[:], nb.b1))(
-    tp.f4[:], tp.f4[:], tp.i4[:], tp.i8, tp.i8, tp.f8, tp.i8,
-    DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F, tp.f8[:, :, :]),
-    parallel=True, error_model='numpy')
-def policy_improvement(V, W, Pi, J, D, gamma, keep_idle,
-                       d_i, d_i2, d_f, P_xy):
+@nb.njit(nb.types.Tuple((nb.i4[:], nb.b1))(tp.f4[:], tp.f4[:], tp.i4[:]),
+         parallel=True, error_model='numpy')
+def policy_improvement(V, W, Pi):
     """W given policy."""
-    sizes_x = d_i['sizes_i'][1:J + 1]
-    sizes_s = d_i['sizes_i'][J + 1:J * 2 + 1]
-    sizes_x_n = d_i['sizes'][0:J]  # sizes Next state
-    sizes_s_n = d_i['sizes'][J:J * 2]
-    r = d_f['r']
-    c = d_f['c']
-    t = d_f['t']
+    x_i, s_i, i, j, i_not_admitted, pi = 0, 0, 0, 0, 0, 0
+    state, next_state, w, value = 0.0, 0.0, 0.0, 0.0
+    s, x = [0]*J, [0]*J
     stable = 0
-    for s_i in nb.prange(len(d_i2['s'])):
-        for x_i in nb.prange(len(d_i2['x'])):
+    for s_i in nb.prange(s_n):
+        for x_i in nb.prange(x_n):
             for i in nb.prange(J + 1):
-                x = d_i2['x'][x_i]
-                s = d_i2['s'][s_i]
-                state = i * d_i['sizes_i'][0] + np.sum(x*sizes_x + s*sizes_s)
+                s = s_states[s_i]
+                x = x_states[x_i]
+                state = i * sizes_i_0 + np.sum(x*sizes_x + s*sizes_s)
                 pi = Pi[state]
                 if (np.sum(x) > 0) or (i < J):
                     Pi[state] = keep_idle
@@ -147,12 +147,6 @@ def policy_improvement(V, W, Pi, J, D, gamma, keep_idle,
                     stable = stable + 1  # binary operation allows reduction
     return Pi, stable == 0
 
-# Value Iteration
-name = 'Value Iteration'
-V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
-W = np.zeros(env.dim_i, dtype=np.float32)
-Pi = env.init_pi()
-Pi = Pi.reshape(env.size_i)
 
 count = 0
 converged = False
@@ -162,7 +156,7 @@ while not converged:  # Update each state.
     W = env.init_w(V, W)
     V = V.reshape(env.size)
     W = W.reshape(env.size_i)
-    W = get_w(V, W, env.J, env.D, env.gamma, d_i1, d_i2, d_f, env.P_xy)
+    W = get_w(V, W)
     V = V.reshape(env.dim)
     W = W.reshape(env.dim_i)
     V_t = get_v(env, V, W)
@@ -179,8 +173,7 @@ W = env.init_w(V, W)
 Pi = Pi.reshape(env.size_i)
 V = V.reshape(env.size)
 W = W.reshape(env.size_i)
-Pi, stable = policy_improvement(V, W, Pi, env.J, env.D, env.gamma,
-                                env.KEEP_IDLE, d_i1, d_i2, d_f, env.P_xy)
+Pi, stable = policy_improvement(V, W, Pi)
 V = V.reshape(env.dim)
 Pi = Pi.reshape(env.dim_i)
 

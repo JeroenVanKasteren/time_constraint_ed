@@ -126,12 +126,12 @@ class TimeConstraintEDs:
         s.print_modulo = kwargs.get('print_modulo', 1)
         s.convergence_check = kwargs.get('convergence_check', 1)
 
-        s_states = array(list(product(np.arange(s.S + 1), repeat=s.J)))
+        s_states = array(list(product(np.arange(s.S + 1), repeat=s.J)), int)
         # Valid states
         s.s_states_v = s_states[np.sum(s_states, axis=1) <= s.S]
         # Action states
         s.s_states = s.s_states_v[np.sum(s.s_states_v, axis=1) < s.S]
-        s.x_states = array(list(product(np.arange(s.D + 1), repeat=s.J)))
+        s.x_states = array(list(product(np.arange(s.D + 1), repeat=s.J)), int)
 
         s.d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type,
                                         value_type=tp.i4[:])
