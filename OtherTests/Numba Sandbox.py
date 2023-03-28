@@ -91,9 +91,14 @@ def f5a(x, gamma, t):
     """Array creation and bitwise comparing."""
     return x > gamma * t
 
+@njit
+def f5b(x, t):
+    """Array creation and bitwise comparing."""
+    return x * (t - np.array([0, 0, 1, 0]))
+
 
 f5a(x=[10, 5, 4, 8], gamma=1, t=[2, 2, 2, 2])  # Error (would work in python)
-
+f5b(x=array([10, 5, 4, 8]), t=array([2, 2, 2, 2]))
 
 # -----------------------------------------------------------------------
 # ---------------------------- MANIPULATION -----------------------------

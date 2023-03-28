@@ -40,10 +40,10 @@ def summarize_policy(env, learner, pi_learner):
     counts = counts/sum(counts)
     policy = pd.DataFrame(np.asarray((unique, counts)).T, columns=['Policy',
                                                                    'Freq'])
-    policy.Policy = ['Keep Idle' if x == pi_learner.KEEP_IDLE
-                     else 'None Waiting' if x == pi_learner.NONE_WAITING
-                     else 'Servers Full' if x == pi_learner.SERVERS_FULL
-                     else 'Invalid State' if x == pi_learner.NOT_EVALUATED
+    policy.Policy = ['Keep Idle' if x == env.KEEP_IDLE
+                     else 'None Waiting' if x == env.NONE_WAITING
+                     else 'Servers Full' if x == env.SERVERS_FULL
+                     else 'Invalid State' if x == env.NOT_EVALUATED
                      else 'Class ' + str(x) for x in policy.Policy]
     print(learner.name, 'g=', around(learner.g, int(-np.log10(env.e)-1)))   
     print(policy)
