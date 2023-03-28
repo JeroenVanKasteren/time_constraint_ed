@@ -3,7 +3,6 @@ Sandbox Policy Iteration
 """
 
 import numpy as np
-from numpy import array
 import numba as nb
 from numba import types as tp
 from OtherTests.init import Env
@@ -14,24 +13,63 @@ np.set_printoptions(precision=4, linewidth=150, suppress=True)
 np.random.seed(42)
 env = Env(J=2, S=2, load=0.75, gamma=20., D=10, P=1e3, e=1e-5, trace=True,
           convergence_check=10, print_modulo=10)
-# env = Env(J=1, S=1, mu=array([3]), lab=array([1]), t=array([1]), P=1e3,
-#           gamma=1, D=5, e=1e-4, trace=True, print_modulo=100,
+# env = Env(J=1, S=1, mu=np.array([3]), lab=np.array([1]), t=np.array([1]),
+#           P=1e3, gamma=1, D=5, e=1e-4, trace=True, print_modulo=100,
 #           max_iter=5)
 
 DICT_TYPE_I1 = tp.DictType(tp.unicode_type, tp.i4[:])  # int 1D vector
 DICT_TYPE_I2 = tp.DictType(tp.unicode_type, tp.i4[:, :])  # int 2D vector
 DICT_TYPE_F = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
 
-d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i4[:])
-d_i1['sizes'] = env.sizes
-d_i1['sizes_i'] = env.sizes_i
-d_i2 = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i4[:, :])
-d_i2['s'] = env.s_states
-d_i2['x'] = env.x_states
-d_f = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.f8[:])
-d_f['t'] = env.t
-d_f['c'] = env.c
-d_f['r'] = env.r
+
+def init_pi(env):
+    """
+    Take the longest waiting queue into service (or last queue if tied).
+    Take arrivals directly into service.
+    """
+    Pi = env.NOT_EVALUATED * np.ones(env.dim_i, dtype=int)
+    for s in env.s_states_v:
+        states = np.append([slice(None)] * (1 + env.J), s)
+        if np.sum(s) == env.S:
+            Pi[tuple(states)] = env.SERVERS_FULL
+            continue
+        for i in range(env.J):
+            states_ = states.copy()
+            for x in range(1, env.D + 1):
+                states_[1 + i] = x  # x_i = x
+                for j in range(env.J):
+                    if j != i:
+                        states_[1 + j] = slice(0, x + 1)  # 0 <= x_j <= x_i
+                Pi[tuple(states_)] = i + 1
+            states_ = states.copy()
+            states_[0] = i
+            states_[1 + i] = 0
+            Pi[tuple(states_)] = i + 1  # Admit arrival (of i)
+        states = np.concatenate(([env.J], [0] * env.J, s),
+                                axis=0)  # x_i = 0 All i
+        Pi[tuple(states)] = env.NONE_WAITING
+    return Pi
+
+
+def init_w(env, V, W):
+    for i in range(env.J):
+        states = np.append(i, [slice(None)] * (env.J * 2))
+        states[1 + i] = slice(env.D)
+        next_states = [slice(None)] * (env.J * 2)
+        next_states[i] = slice(1, env.D + 1)
+        W[tuple(states)] = V[tuple(next_states)]
+        states[1 + i] = env.D
+        next_states[i] = env.D
+        W[tuple(states)] = V[tuple(next_states)]
+    W[env.J] = V
+    if env.P > 0:
+        states = [slice(None)] * (1 + env.J * 2)
+        for i in range(env.J):
+            states[1 + i] = slice(int(env.gamma * env.t[i]) + 1, env.D + 1)
+        for s in env.s_states:
+            states[1 + env.J:] = s
+            W[tuple(states)] -= env.P
+    return W
 
 
 @nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i4[:], tp.i8, tp.i8, tp.f8,
@@ -115,8 +153,8 @@ def policy_improvement(V, W, Pi, J, D, gamma, keep_idle,
     c = d_f['c']
     t = d_f['t']
     stable = 0
-    for s_i in nb.prange(len(d_i2['s'])):
-        for x_i in nb.prange(len(d_i2['x'])):
+    for x_i in nb.prange(len(d_i2['x'])):
+        for s_i in nb.prange(len(d_i2['s'])):
             for i in nb.prange(J + 1):
                 x = d_i2['x'][x_i]
                 s = d_i2['s'][s_i]
@@ -145,15 +183,16 @@ def policy_improvement(V, W, Pi, J, D, gamma, keep_idle,
     return Pi, stable == 0
 
 
-def policy_evaluation(env, V, W, Pi, name, count=0):
+def policy_evaluation(env, V, W, Pi, g, name, count=0):
     """Policy Evaluation."""
     inner_count = 0
     converged = False
     while not converged:
-        W = env.init_w(V, W)
+        W = init_w(env, V, W)
         V = V.reshape(env.size)
         W = W.reshape(env.size_i)
-        W = get_w(V, W, Pi, env.J, env.D, env.gamma, d_i1, d_i2, d_f, env.P_xy)
+        W = get_w(V, W, Pi, env.J, env.D, env.gamma, env.d_i1, env.d_i2,
+                  env.d_f, env.P_xy)
         V = V.reshape(env.dim)
         W = W.reshape(env.dim_i)
         V_t = get_v(env, V, W)
@@ -166,41 +205,45 @@ def policy_evaluation(env, V, W, Pi, name, count=0):
     return V, g
 
 
-# Policy Iteration
-name = 'Policy Iteration'
-V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
-W = np.zeros(env.dim_i, dtype=np.float32)
-Pi = env.init_pi()
-Pi = Pi.reshape(env.size_i)
+# -------------------------- Policy Iteration --------------------------
+RUN_CODE = False
+if RUN_CODE:
+    name = 'Policy Iteration'
+    V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
+    W = np.zeros(env.dim_i, dtype=np.float32)
+    Pi = init_pi(env)
+    Pi = Pi.reshape(env.size_i)
 
-count = 0
-stable = False
+    count = 0
+    stable = False
 
-env.timer(True, name, env.trace)
-while not stable:
-    V, g = policy_evaluation(env, V, W, Pi, 'Policy Evaluation of PI', count)
-    W = env.init_w(V, W)
-    V = V.reshape(env.size)
-    W = W.reshape(env.size_i)
-    Pi, stable = policy_improvement(V, W, Pi, env.J, env.D, env.gamma,
-                                    env.KEEP_IDLE, d_i1, d_i2, d_f, env.P_xy)
-    V = V.reshape(env.dim)
-    W = W.reshape(env.dim_i)
-    if count > env.max_iter:
-        break
-    count += 1
-env.timer(False, name, env.trace)
+    env.timer(True, name, env.trace)
+    while not stable:
+        V, g = policy_evaluation(env, V, W, Pi, 'Policy Evaluation of PI',
+                                 count)
+        W = init_w(env, V, W)
+        V = V.reshape(env.size)
+        W = W.reshape(env.size_i)
+        Pi, stable = policy_improvement(V, W, Pi, env.J, env.D, env.gamma,
+                                        env.KEEP_IDLE, env.d_i1, env.d_i2,
+                                        env.d_f, env.P_xy)
+        V = V.reshape(env.dim)
+        W = W.reshape(env.dim_i)
+        if count > env.max_iter:
+            break
+        count += 1
+    env.timer(False, name, env.trace)
 
-Pi = Pi.reshape(env.dim_i)
+    Pi = Pi.reshape(env.dim_i)
 
-print("V", V)
-print("Pi", Pi)
-print("g", g)
+    print("V", V)
+    print("Pi", Pi)
+    print("g", g)
 
-if env.J > 1:
-    plot_pi(env, env, Pi, zero_state=True)
-    plot_pi(env, env, Pi, zero_state=False)
-for i in range(env.J):
-    plot_pi(env, env, Pi, zero_state=True, i=i)
-    plot_pi(env, env, Pi, zero_state=True, i=i, smu=True)
-    plot_v(env, V, zero_state=True, i=i)
+    if env.J > 1:
+        plot_pi(env, env, Pi, zero_state=True)
+        plot_pi(env, env, Pi, zero_state=False)
+    for i in range(env.J):
+        plot_pi(env, env, Pi, zero_state=True, i=i)
+        plot_pi(env, env, Pi, zero_state=True, i=i, smu=True)
+        plot_v(env, V, zero_state=True, i=i)

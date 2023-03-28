@@ -22,7 +22,7 @@ env = Env(J=2, S=3, load=0.75, gamma=5., D=10, P=1e3, e=1e-5, trace=True,
           convergence_check=10, print_modulo=100)
 
 # ------ Policy Iteration ------ #
-pi_learner = PolicyIteration(env)
+pi_learner = PolicyIteration()
 pi_learner.policy_iteration(env)
 
 # ------ Value Iteration ------ #

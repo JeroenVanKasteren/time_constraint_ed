@@ -3,9 +3,9 @@ Sandbox Value Iteration
 """
 
 import numpy as np
-from numpy import array
 import numba as nb
 from numba import types as tp
+from Sandbox_PI import init_w, init_pi, get_v, policy_improvement
 from OtherTests.init import Env
 from src.Plotting import plot_pi, plot_v
 
@@ -22,19 +22,8 @@ DICT_TYPE_I1 = tp.DictType(tp.unicode_type, tp.i4[:])  # int 1D vector
 DICT_TYPE_I2 = tp.DictType(tp.unicode_type, tp.i4[:, :])  # int 2D vector
 DICT_TYPE_F = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
 
-d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i4[:])
-d_i1['sizes'] = env.sizes
-d_i1['sizes_i'] = env.sizes_i
-d_i2 = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.i4[:, :])
-d_i2['s'] = env.s_states
-d_i2['x'] = env.x_states
-d_f = nb.typed.Dict.empty(key_type=tp.unicode_type, value_type=tp.f8[:])
-d_f['t'] = env.t
-d_f['c'] = env.c
-d_f['r'] = env.r
 
-
-@nb.njit(tp.f8[:](tp.f8[:], tp.f8[:], tp.i8, tp.i8, tp.f8,
+@nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i8, tp.i8, tp.f8,
                   DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F, tp.f8[:, :, :]),
          parallel=True, error_model='numpy')
 def get_w(V, W, J, D, gamma, d_i1, d_i2, d_f, P_xy):
@@ -69,104 +58,22 @@ def get_w(V, W, J, D, gamma, d_i1, d_i2, d_f, P_xy):
     return W
 
 
-def get_v(env, V, W):
-    """V_t."""
-    states_c = [slice(None)] * (env.J * 2)
-    V_t = env.tau * V
-    for i in range(env.J):
-        states_i = np.append(i, [slice(None)] * (env.J * 2))
-
-        states = states_c.copy()
-        next_states = states_i.copy()
-        states[i] = 0  # x_i = 0
-        next_states[1 + i] = 0
-        V_t[tuple(states)] += env.lab[i] * (W[tuple(next_states)]
-                                            - V[tuple(states)])
-
-        states = states_c.copy()
-        next_states = states_i.copy()
-        states[i] = slice(1, env.D + 1)  # 0 < x_i <= D
-        next_states[1 + i] = slice(1, env.D + 1)  # 0 < x_i <= D
-        V_t[tuple(states)] += env.gamma * (W[tuple(next_states)]
-                                           - V[tuple(states)])
-
-        for s_i in range(1, env.S + 1):  # s_i
-            states = states_c.copy()
-            next_states = states_i.copy()
-            states[env.J + i] = s_i
-            next_states[0] = env.J
-            next_states[1 + env.J + i] = s_i - 1
-            V_t[tuple(states)] += s_i * env.mu[i] * (W[tuple(next_states)]
-                                                     - V[tuple(states)])
-    return V_t / env.tau
-
-
-@nb.njit(nb.types.Tuple((nb.i4[:], nb.b1))(
-    tp.f8[:], tp.f8[:], tp.i4[:], tp.i8, tp.i8, tp.f8, tp.i8,
-    DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F, tp.f8[:, :, :]),
-    parallel=True, error_model='numpy')
-def policy_improvement(V, W, Pi, J, D, gamma, keep_idle,
-                       d_i, d_i2, d_f, P_xy):
-    """W given policy."""
-    x_i, s_i, i, j, i_not_admitted = 0, 0, 0, 0, 0
-    state, next_state, w = 0.0, 0.0, 0.0
-    s, x = [0] * J, [0] * J
-    sizes_x = d_i['sizes_i'][1:J + 1]
-    x_n = len(sizes_x)
-    sizes_s = d_i['sizes_i'][J + 1:J * 2 + 1]
-    s_n = len(sizes_s)
-    sizes_x_n = d_i['sizes'][0:J]  # sizes Next state
-    sizes_s_n = d_i['sizes'][J:J * 2]
-    r = d_f['r']
-    c = d_f['c']
-    t = d_f['t']
-    stable = 0
-    for s_i in nb.prange(s_n):
-        for x_i in nb.prange(x_n):
-            for i in nb.prange(J + 1):
-                x = d_i2['x'][x_i]
-                s = d_i2['s'][s_i]
-                state = i * d_i['sizes_i'][0] + np.sum(x*sizes_x + s*sizes_s)
-                pi = Pi[state]
-                if (np.sum(x) > 0) or (i < J):
-                    Pi[state] = keep_idle
-                w = W[state]
-                for j in range(J):  # j waiting, arrival, or time passing
-                    if (x[j] > 0) or (j == i):
-                        value = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
-                        i_not_admitted = 0
-                        if (i < J) and (i != j) and (x[i] < D):
-                            i_not_admitted = sizes_x_n[i]
-                        for y in range(x[j] + 1):
-                            next_state = (np.sum(x * sizes_x_n + s * sizes_s_n)
-                                          - (x[j] - y) * sizes_x_n[j]
-                                          + i_not_admitted
-                                          + sizes_s_n[j])
-                            value += P_xy[j, x[j], y] * V[next_state]
-                        if value > w:
-                            Pi[state] = j + 1
-                            w = value
-                if pi != Pi[state]:
-                    stable = stable + 1  # binary operation allows reduction
-    return Pi, stable == 0
-
-
 # Value Iteration
 name = 'Value Iteration'
-V = np.zeros(env.dim, dtype=np.float64)  # V_{t-1}
-W = np.zeros(env.dim_i, dtype=np.float64)
-Pi = env.init_pi()
-Pi = Pi.reshape(env.size_i)
+V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
+W = np.zeros(env.dim_i, dtype=np.float32)
+Pi = init_pi(env)
 
 count = 0
 converged = False
 
 env.timer(True, name, env.trace)
 while not converged:  # Update each state.
-    W = env.init_w(V, W)
+    W = init_w(env, V, W)
     V = V.reshape(env.size)
     W = W.reshape(env.size_i)
-    W = get_w(V, W, env.J, env.D, env.gamma, d_i1, d_i2, d_f, env.P_xy)
+    W = get_w(V, W, env.J, env.D, env.gamma, env.d_i1, env.d_i2, env.d_f,
+              env.P_xy)
     V = V.reshape(env.dim)
     W = W.reshape(env.dim_i)
     V_t = get_v(env, V, W)
@@ -179,12 +86,13 @@ while not converged:  # Update each state.
 env.timer(False, name, env.trace)
 
 # Determine policy via Policy Improvement.
-W = env.init_w(V, W)
-Pi = Pi.reshape(env.size_i)
+W = init_w(env, V, W)
 V = V.reshape(env.size)
 W = W.reshape(env.size_i)
-Pi, stable = policy_improvement(V, W, Pi, env.J, env.D, env.gamma,
-                                env.KEEP_IDLE, d_i1, d_i2, d_f, env.P_xy)
+Pi = Pi.reshape(env.size_i)
+Pi, _ = policy_improvement(V, W, Pi, env.J, env.D, env.gamma,
+                           env.KEEP_IDLE, env.d_i1, env.d_i2, env.d_f,
+                           env.P_xy)
 V = V.reshape(env.dim)
 Pi = Pi.reshape(env.dim_i)
 

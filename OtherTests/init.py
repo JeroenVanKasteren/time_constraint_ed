@@ -57,6 +57,7 @@ import numpy as np
 from numpy import array, round
 from numpy.random import randint, uniform
 import numba as nb
+from numba import types as tp
 from itertools import product
 from sys import exit, getsizeof
 from timeit import default_timer
@@ -138,6 +139,21 @@ class Env:
         # Action states
         s.s_states = s.s_states_v[np.sum(s.s_states_v, axis=1) < s.S]
         s.x_states = array(list(product(np.arange(s.D + 1), repeat=s.J)), int)
+
+        s.d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type,
+                                        value_type=tp.i4[:])
+        s.d_i1['sizes'] = s.sizes
+        s.d_i1['sizes_i'] = s.sizes_i
+        s.d_i2 = nb.typed.Dict.empty(key_type=tp.unicode_type,
+                                     value_type=tp.i4[:, :])
+        s.d_i2['s'] = s.s_states
+        s.d_i2['x'] = s.x_states
+        s.d_f = nb.typed.Dict.empty(key_type=tp.unicode_type,
+                                    value_type=tp.f8[:])
+        s.d_f['t'] = s.t
+        s.d_f['c'] = s.c
+        s.d_f['r'] = s.r
+
 
         s.feasibility(kwargs.get('time_check', True))
         # if self.trace:
@@ -230,54 +246,6 @@ class Env:
         for i in range(len(dim) - 2, -1, -1):
             sizes[i] = sizes[i + 1] * dim[i + 1]
         return sizes
-
-    def init_pi(env):
-        """
-        Take the longest waiting queue into service (or last queue if tied).
-        Take arrivals directly into service.
-        """
-        Pi = env.NOT_EVALUATED * np.ones(env.dim_i, dtype=int)
-        for s in env.s_states_v:
-            states = np.append([slice(None)] * (1 + env.J), s)
-            if np.sum(s) == env.S:
-                Pi[tuple(states)] = env.SERVERS_FULL
-                continue
-            for i in range(env.J):
-                states_ = states.copy()
-                for x in range(1, env.D + 1):
-                    states_[1 + i] = x  # x_i = x
-                    for j in range(env.J):
-                        if j != i:
-                            states_[1 + j] = slice(0, x + 1)  # 0 <= x_j <= x_i
-                    Pi[tuple(states_)] = i + 1
-                states_ = states.copy()
-                states_[0] = i
-                states_[1 + i] = 0
-                Pi[tuple(states_)] = i + 1  # Admit arrival (of i)
-            states = np.concatenate(([env.J], [0] * env.J, s),
-                                    axis=0)  # x_i = 0 All i
-            Pi[tuple(states)] = env.NONE_WAITING
-        return Pi
-
-    def init_w(env, V, W):
-        for i in range(env.J):
-            states = np.append(i, [slice(None)] * (env.J * 2))
-            states[1 + i] = slice(env.D)
-            next_states = [slice(None)] * (env.J * 2)
-            next_states[i] = slice(1, env.D + 1)
-            W[tuple(states)] = V[tuple(next_states)]
-            states[1 + i] = env.D
-            next_states[i] = env.D
-            W[tuple(states)] = V[tuple(next_states)]
-        W[env.J] = V
-        if env.P > 0:
-            states = [slice(None)] * (1 + env.J * 2)
-            for i in range(env.J):
-                states[1 + i] = slice(int(env.gamma * env.t[i]) + 1, env.D + 1)
-            for s in env.s_states:
-                states[1 + env.J:] = s
-                W[tuple(states)] -= env.P
-        return W
 
     def timer(self, start: bool, name: str, trace: bool):
         """Only if trace=TRUE, start timer if start=true, else print time."""

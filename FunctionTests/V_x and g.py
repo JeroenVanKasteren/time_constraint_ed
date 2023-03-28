@@ -9,19 +9,17 @@ Moreover, when x=-s then (x+S)*mu=0
 """
 
 import numpy as np
-from numpy import array, exp
 from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy.integrate import quad_vec
-
 from OtherTests.init import Env
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 np.random.seed(42)
-env = Env(J=1, S=2, load=0.75, gamma=20., D=10, P=1e3, e=1e-5, trace=True,
-          convergence_check=10, print_modulo=10)
-# env = Env(J=1, S=1, mu=array([3]), lab=array([1]), t=array([1]), P=1e3,
-#           gamma=1, D=5, e=1e-4, trace=True, print_modulo=100)
+env = Env(J=1, S=1, mu=np.array([3]), lab=np.array([1]), t=np.array([1]),
+          P=1e3, gamma=1, D=10, e=1e-4, trace=True, print_modulo=100)
+# env = Env(J=1, S=2, load=0.75, gamma=20., D=10, P=1e3, e=1e-5, trace=True,
+#           convergence_check=10, print_modulo=10)
 
 S = env.S
 D = env.D
@@ -37,11 +35,11 @@ def V_f(env, g):
     V = np.zeros(S + env.D + 1)
 
     x = np.arange(-S+1, +1)  # V(x) for x<=0, with V(-s)=0
-    v_x_le_0 = lambda y: (1 - (y / a)**(x + S)) / (1 - y/a) * exp(a - y)
+    v_x_le_0 = lambda y: (1 - (y / a)**(x + S)) / (1 - y/a) * np.exp(a - y)
     V[x+S] = (g - lab*r) / lab * quad_vec(v_x_le_0, a, np.inf)[0]
 
     frac = (S * mu + gamma) / (lab + gamma)
-    trm = exp(a) / a ** (S - 1) * gamma_fun(S) * reg_up_inc_gamma(S, a)
+    trm = np.exp(a) / a ** (S - 1) * gamma_fun(S) * reg_up_inc_gamma(S, a)
     x = np.arange(1, env.D + 1)  # V(x) for x>0
     # x = np.arange(0, env.D + 1)  # V(x) for x>=0
     V[x+S] = (V[S] + (S*mu*r - g) / (gamma*S*mu*(1 - rho)**2)

@@ -17,7 +17,7 @@ from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy.integrate import quad_vec
 
 
-class PolicyIteration():
+class PolicyIteration:
     """Policy Iteration."""
     DICT_TYPE_I1 = tp.DictType(tp.unicode_type, tp.i4[:])  # int 1D vector
     DICT_TYPE_I2 = tp.DictType(tp.unicode_type, tp.i4[:, :])  # int 2D vector
@@ -255,8 +255,7 @@ class PolicyIteration():
     def policy_iteration(s, env):
         """Docstring."""
         s.V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
-        s.V_t = np.empty(env.dim, dtype=np.float32)  # V_{t}
-        s.W = np.empty(env.dim_i, dtype=np.float32)
+        s.W = np.zeros(env.dim_i, dtype=np.float32)
         s.Pi = s.init_pi(env)
         s.Pi = s.Pi.reshape(env.size_i)
         while not s.stable:
@@ -287,7 +286,6 @@ class ValueIteration:
         self.name = 'Value Iteration'
         self.pi_learner = pi_learner
         self.V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
-        self.V_t = np.zeros(env.dim, dtype=np.float32)  # V_{t}
         self.W = np.zeros(env.dim_i, dtype=np.float32)
         self.Pi = pi_learner.init_pi(env)
         self.g = 0
@@ -306,8 +304,8 @@ class ValueIteration:
         r = d_f['r']
         c = d_f['c']
         t = d_f['t']
-        for s_i in nb.prange(len(d_i2['s'])):
-            for x_i in nb.prange(len(d_i2['x'])):
+        for x_i in nb.prange(len(d_i2['x'])):
+            for s_i in nb.prange(len(d_i2['s'])):
                 for i in nb.prange(J + 1):
                     x = d_i2['x'][x_i]
                     s = d_i2['s'][s_i]
@@ -330,38 +328,6 @@ class ValueIteration:
                                 W[state] = w
         return W
 
-    def get_v(self, env, V, W):
-        """V_t."""
-        states_c = [slice(None)] * (env.J * 2)
-        self.V_t = env.tau * V
-        for i in range(env.J):
-            states_i = np.append(i, [slice(None)] * (env.J * 2))
-
-            states = states_c.copy()
-            next_states = states_i.copy()
-            states[i] = 0  # x_i = 0
-            next_states[1 + i] = 0
-            self.V_t[tuple(states)] += env.lab[i] * (W[tuple(next_states)]
-                                                     - V[tuple(states)])
-
-            states = states_c.copy()
-            next_states = states_i.copy()
-            states[i] = slice(1, env.D + 1)  # 0 < x_i <= D
-            next_states[1 + i] = slice(1, env.D + 1)  # 0 < x_i <= D
-            self.V_t[tuple(states)] += env.gamma * (W[tuple(next_states)]
-                                                    - V[tuple(states)])
-
-            for s_i in range(1, env.S + 1):  # s_i
-                states = states_c.copy()
-                next_states = states_i.copy()
-                states[env.J + i] = s_i
-                next_states[0] = env.J
-                next_states[1 + env.J + i] = s_i - 1
-                self.V_t[tuple(states)] += (s_i * env.mu[i]
-                                            * (W[tuple(next_states)]
-                                               - V[tuple(states)]))
-        return self.V_t / env.tau
-
     def value_iteration(s, env):
         converged = False
         while not converged:  # Update each state.
@@ -372,10 +338,10 @@ class ValueIteration:
                           env.d_i1, env.d_i2, env.d_f, env.P_xy)
             s.V = s.V.reshape(env.dim)
             s.W = s.W.reshape(env.dim_i)
-            s.V_t = s.get_v(env, s.V, s.W)
+            s.V_t = s.pi_learner.get_v(env, s.V, s.W)
             if s.count % env.convergence_check == 0:
-                converged, g = s.pi_learner.convergence(env, s.V_t, s.V,
-                                                        s.count, s.name)
+                converged, s.g = s.pi_learner.convergence(env, s.V_t, s.V,
+                                                          s.count, s.name)
             s.V = s.V_t - s.V_t[tuple([0] * (env.J * 2))]  # Rescale V_t
             if s.count > env.max_iter:
                 break
@@ -383,7 +349,7 @@ class ValueIteration:
 
     def get_policy(s, env):
         """Determine policy via Policy Improvement."""
-        s.W = s.init_w(env, s.V, s.W)
+        s.W = s.pi_learner.init_w(env, s.V, s.W)
         s.V = s.V.reshape(env.size)
         s.W = s.W.reshape(env.size_i)
         s.Pi = s.Pi.reshape(env.size_i)
@@ -408,12 +374,8 @@ class OneStepPolicyImprovement:
     @staticmethod
     def get_v_app_i(env, i):
         """Calculate V for a single queue."""
-        s = env.s_star[i]
-        lab = env.lab[i]
-        mu = env.mu[i]
-        rho = env.rho[i]
-        a = env.a[i]
-        r = env.r[i]
+        s, lab, mu, r = env.s_star[i], env.lab[i], env.mu[i], env.r[i]
+        rho, a = env.rho[i], env.a[i]
         g = env.g[i]
         v_i = np.zeros(env.D + 1)
 
@@ -456,7 +418,8 @@ class OneStepPolicyImprovement:
 
     def one_step_policy_improvement(s, env):
         """One Step of Policy Improvement."""
-        W = s.pi_learner.init_w(env, s.V_app, s.W)
+        W = np.zeros(env.dim_i, dtype=np.float32)
+        W = s.pi_learner.init_w(env, s.V_app, W)
         s.V_app = s.V_app.reshape(env.size)
         W = W.reshape(env.size_i)
         s.Pi = s.Pi.reshape(env.size_i)
@@ -469,5 +432,8 @@ class OneStepPolicyImprovement:
 
     def get_g(s, env):
         """Determine g via Policy Evaluation."""
-        s.g, _ = s.pi_learner.policy_evaluation(env, s.V_app, s.W, s.Pi, s.g,
+        W = np.zeros(env.dim_i, dtype=np.float32)
+        s.Pi = s.Pi.reshape(env.size_i)
+        s.g, _ = s.pi_learner.policy_evaluation(env, s.V_app, W, s.Pi, s.g,
                                                 s.name)
+        s.Pi = s.Pi.reshape(env.dim_i)

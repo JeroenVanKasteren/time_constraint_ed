@@ -134,7 +134,7 @@ class TimeConstraintEDs:
         s.x_states = array(list(product(np.arange(s.D + 1), repeat=s.J)), int)
 
         s.d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type,
-                                        value_type=tp.i4[:])
+                                     value_type=tp.i4[:])
         s.d_i1['sizes'] = s.sizes
         s.d_i1['sizes_i'] = s.sizes_i
         s.d_i2 = nb.typed.Dict.empty(key_type=tp.unicode_type,
