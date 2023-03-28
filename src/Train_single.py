@@ -34,8 +34,8 @@ vi_learner.get_policy(env)
 ospi_learner = OneStepPolicyImprovement(env, pi_learner)
 ospi_learner.get_g(env)
 
-
-def summarize_policy(env, learner, pi_learner):
+learner = pi_learner
+def summarize_policy(env, learner):
     unique, counts = np.unique(learner.Pi, return_counts=True) 
     counts = counts/sum(counts)
     policy = pd.DataFrame(np.asarray((unique, counts)).T, columns=['Policy',
@@ -56,11 +56,11 @@ def summarize_policy(env, learner, pi_learner):
         states = [slice(None)] * (1 + env.J*2)
         states[1] = x
         counts.loc[x, 'None_Waiting'] = np.sum(learner.Pi[tuple(states)]
-                                               == pi_learner.NONE_WAITING)
+                                               == env.NONE_WAITING)
         counts.loc[x, 'Servers_Full'] = np.sum(learner.Pi[tuple(states)]
-                                               == pi_learner.SERVERS_FULL)
+                                               == env.SERVERS_FULL)
         counts.loc[x, 'Invalid_State'] = np.sum(learner.Pi[tuple(states)]
-                                                == pi_learner.NOT_EVALUATED)
+                                                == env.NOT_EVALUATED)
         total = np.prod(learner.Pi[tuple(states)].shape)
         total_valid = (total - counts.None_Waiting[x] - counts.Servers_Full[x]
                        - counts.Invalid_State[x])
@@ -71,16 +71,16 @@ def summarize_policy(env, learner, pi_learner):
             counts.loc[x, 'Class_'+str(i+1)] = np.sum(learner.Pi[tuple(states)]
                                                       == i+1) / total_valid
         counts.loc[x, 'Keep_Idle'] = (np.sum(learner.Pi[tuple(states)]
-                                             == pi_learner.KEEP_IDLE)
+                                             == env.KEEP_IDLE)
                                       / total_valid)
     counts[['None_Waiting', 'Servers_Full', 'Invalid_State']] = \
         counts[['None_Waiting', 'Servers_Full', 'Invalid_State']] / total
     print(counts)
 
 
-summarize_policy(env, pi_learner, pi_learner)
-summarize_policy(env, vi_learner, pi_learner)
-summarize_policy(env, ospi_learner, pi_learner)
+summarize_policy(env, pi_learner)
+summarize_policy(env, vi_learner)
+summarize_policy(env, ospi_learner)
 
 # x = 0
 # states = [slice(None)]*(env.J*2)
