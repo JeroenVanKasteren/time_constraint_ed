@@ -434,6 +434,6 @@ class OneStepPolicyImprovement:
         """Determine g via Policy Evaluation."""
         W = np.zeros(env.dim_i, dtype=np.float32)
         s.Pi = s.Pi.reshape(env.size_i)
-        s.g, _ = s.pi_learner.policy_evaluation(env, s.V_app, W, s.Pi, s.g,
+        _, s.g = s.pi_learner.policy_evaluation(env, s.V_app, W, s.Pi, s.g,
                                                 s.name)
         s.Pi = s.Pi.reshape(env.dim_i)

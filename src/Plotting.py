@@ -37,6 +37,8 @@ def plot_pi(env, PI_learner, Pi, zero_state, **kwargs):
         print_states[1 + i + env.J] = ':'
         max_ticks = 5
         title = 'Policy, queue: ' + str(i + 1) + ', ' + str(print_states)
+        if 'learner' in kwargs:
+            title = kwargs.get('learner') + ', ' + title
         x_label = 'Servers occupied by queue ' + str(i + 1)
         y_label = 'Waiting time state FIL queue ' + str(i + 1)
         x_ticks = np.arange(0, Pi_i.shape[1], max(1, np.ceil(Pi_i.shape[1]
@@ -61,7 +63,8 @@ def plot_pi(env, PI_learner, Pi, zero_state, **kwargs):
         y_label = 'Waiting time state FIL queue ' + str(i + 1)
         x_ticks = np.arange(0, Pi_i.shape[1], max(1, np.ceil(Pi_i.shape[1]/10)))
         y_ticks = np.arange(0, Pi_i.shape[0], max(1, np.ceil(Pi_i.shape[0]/10)))
-
+    if 'name' in kwargs:
+        title = kwargs.get('name') + ', ' + title
     cols = ['black', 'grey', 'lightyellow', 'lightgrey']
     queues = ['darkblue', 'indigo', 'darkmagenta', 'mediumvioletred', 'crimson']
     cols.extend(queues[0:env.J])
@@ -134,6 +137,8 @@ def plot_v(env, V, zero_state, **kwargs):
         title = 'V(x), ' + str(print_states)
         x_label = 'Waiting time state FIL queue ' + str(j + 1)
         y_label = 'Waiting time state FIL queue ' + str(i + 1)
+    if 'name' in kwargs:
+        title = kwargs.get('name') + ', ' + title
     V_i = V[tuple(states)]
     plt.imshow(V_i, origin='lower')
     plt.colorbar()

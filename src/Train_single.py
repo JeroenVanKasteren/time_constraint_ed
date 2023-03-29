@@ -6,7 +6,6 @@ Created on 19-3-2020.
 """
 
 import numpy as np
-from numpy import array, around
 import pandas as pd
 from src.Plotting import plot_pi, plot_v
 from src.Env import TimeConstraintEDs as Env
@@ -14,12 +13,12 @@ from src.Learner import PolicyIteration, ValueIteration, \
     OneStepPolicyImprovement
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
-# pd.options.display.float_format = '{:.4f}'.format
 np.random.seed(42)
 
 # ---- Problem ---- #
 env = Env(J=2, S=3, load=0.75, gamma=5., D=10, P=1e3, e=1e-5, trace=True,
           convergence_check=10, print_modulo=100)
+to_plot = ['VI', 'OSPI']  # 'VI', 'PI', 'OSPI' (what to plot)
 
 # ------ Policy Iteration ------ #
 pi_learner = PolicyIteration()
@@ -34,7 +33,7 @@ vi_learner.get_policy(env)
 ospi_learner = OneStepPolicyImprovement(env, pi_learner)
 ospi_learner.get_g(env)
 
-learner = pi_learner
+
 def summarize_policy(env, learner):
     unique, counts = np.unique(learner.Pi, return_counts=True) 
     counts = counts/sum(counts)
@@ -45,8 +44,8 @@ def summarize_policy(env, learner):
                      else 'Servers Full' if x == env.SERVERS_FULL
                      else 'Invalid State' if x == env.NOT_EVALUATED
                      else 'Class ' + str(x) for x in policy.Policy]
-    print(learner.name, 'g=', around(learner.g, int(-np.log10(env.e)-1)))   
-    print(policy)
+    print(learner.name, 'g=', np.around(learner.g, int(-np.log10(env.e)-1)))
+    print(policy.to_string(formatters={'Freq': '{:,.2%}'.format}))
     
     feature_list = ['Class_'+str(i+1) for i in range(env.J)]
     feature_list.extend(['Keep_Idle', 'None_Waiting', 'Servers_Full',
@@ -75,46 +74,45 @@ def summarize_policy(env, learner):
                                       / total_valid)
     counts[['None_Waiting', 'Servers_Full', 'Invalid_State']] = \
         counts[['None_Waiting', 'Servers_Full', 'Invalid_State']] / total
-    print(counts)
+    print(counts.to_string(formatters={'Class_1': '{:,.2%}'.format,
+                                       'Class_2': '{:,.2%}'.format,
+                                       'Keep_Idle': '{:,.2%}'.format,
+                                       'None_Waiting': '{:,.2%}'.format,
+                                       'Servers_Full': '{:,.2%}'.format,
+                                       'Invalid_State': '{:,.2%}'.format}))
 
 
 summarize_policy(env, pi_learner)
 summarize_policy(env, vi_learner)
 summarize_policy(env, ospi_learner)
 
-# x = 0
-# states = [slice(None)]*(env.J*2)
-# states[0] = x
-# np.sum(pi_learner.Pi[tuple(states)] == pi_learner.SERVERS_FULL)
-# pi_learner.Pi[tuple(states)]
-# VI_learner.Pi[tuple(states)]
-# ospi_learner.Pi[tuple(states)]
-
-print('g of OSPI:', ospi_learner.g)
-print('g of VI:', vi_learner.g)
-print('g of PI:', pi_learner.g)
-print('Optimality gap (VI)', around(abs(ospi_learner.g-vi_learner.g)
+print('g of OSPI:', np.around(ospi_learner.g, int(-np.log10(env.e)-1)))
+print('g of VI:', np.around(vi_learner.g, int(-np.log10(env.e)-1)))
+print('g of PI:', np.around(pi_learner.g, int(-np.log10(env.e)-1)))
+print('Optimality gap (VI)', np.around(abs(ospi_learner.g-vi_learner.g)
                                     / vi_learner.g,
                                     int(-np.log10(env.e)-1))*100, '%')
-print('Optimality gap (PI)', around(abs(ospi_learner.g-pi_learner.g)
+print('Optimality gap (PI)', np.around(abs(ospi_learner.g-pi_learner.g)
                                     / pi_learner.g,
                                     int(-np.log10(env.e)-1))*100, '%')
 
-plot_learner = 'ospi'  # pi, vi, ospi
-if plot_learner == 'pi':
-    Pi = pi_learner.Pi
-    V = pi_learner.V
-elif plot_learner == 'vi':
-    Pi = vi_learner.Pi
-    V = vi_learner.V
-elif plot_learner == 'ospi':
-    Pi = ospi_learner.Pi
-    V = ospi_learner.V
-
-if env.J > 1:
-    plot_pi(env, env, Pi, zero_state=True)
-    plot_pi(env, env, Pi, zero_state=False)
-for i in range(env.J):
-    plot_pi(env, env, Pi, zero_state=True, i=i)
-    plot_pi(env, env, Pi, zero_state=True, i=i, smu=True)
-    plot_v(env, V, zero_state=True, i=i)
+for plot_learner in to_plot:
+    if plot_learner == 'VI':
+        Pi = vi_learner.Pi
+        V = vi_learner.V
+        name = 'VI'
+    elif plot_learner == 'PI':
+        Pi = pi_learner.Pi
+        V = pi_learner.V
+        name = 'PI'
+    elif plot_learner == 'OSPI':
+        Pi = ospi_learner.Pi
+        V = ospi_learner.V_app
+        name = 'OSPI'
+    if env.J > 1:
+        plot_pi(env, env, Pi, zero_state=True, name=name)
+        plot_pi(env, env, Pi, zero_state=False, name=name)
+    for i in range(env.J):
+        plot_pi(env, env, Pi, zero_state=True, i=i, name=name)
+        plot_pi(env, env, Pi, zero_state=True, i=i, smu=True, name=name)
+        plot_v(env, V, zero_state=True, i=i, name=name)
