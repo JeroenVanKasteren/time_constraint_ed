@@ -80,6 +80,8 @@ class TimeConstraintEDs:
     NOT_EVALUATED: int = -3
 
     def __init__(s, **kwargs):  # **kwargs: Keyword arguments
+        seed = kwargs.get('seed', 42)
+        np.random.seed(seed)
         s.J: int = kwargs.get('J')
         s.S: int = kwargs.get('S', randint(s.S_MIN, s.S_MAX + 1))  # [a, b)
         mu = kwargs.get('mu', uniform(s.mu_MIN, s.mu_MAX, s.J))
