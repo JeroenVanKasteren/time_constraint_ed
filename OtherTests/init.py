@@ -71,11 +71,11 @@ class Env:
     """Class docstrings go here."""
 
     S_MIN: int = 2  # Servers
-    S_MAX: int = 6
+    S_MAX: int = 20
     mu_MIN = 0.1  # Service Rate
     mu_MAX = 1.
     load_MIN = 0.4  # System load
-    load_MAX = 1.
+    load_MAX = 0.95
     imbalance_MIN = 1.  # Imbalance
     imbalance_MAX = 5.
     TARGET = array([1], float)  # Target
@@ -87,6 +87,8 @@ class Env:
 
     def __init__(s, **kwargs):  # **kwargs: Keyword arguments
         """Create all variables describing the environment."""
+        seed = kwargs.get('seed', 42)
+        np.random.seed(seed)
         s.J: int = kwargs.get('J')
         s.S: int = kwargs.get('S', randint(s.S_MIN, s.S_MAX + 1))  # [a, b)
         mu = kwargs.get('mu', uniform(s.mu_MIN, s.mu_MAX, s.J))
@@ -108,7 +110,6 @@ class Env:
         s.c = array(kwargs.get('c', array([1] * s.J)), float)
         s.r = array(kwargs.get('r', array([1] * s.J)), float)
         s.P: int = kwargs.get('P', max(s.c + s.r) * 10)
-        s.D: int = kwargs.get('D')
         s.e = kwargs.get('e', 1e-5)
 
         s.a = array(lab / mu, float)
@@ -116,10 +117,19 @@ class Env:
         s.rho = array(s.a / s.s_star, float)
         s.pi_0 = s.get_pi_0(s.s_star, s.rho)
         s.tail_prob = s.get_tail_prob(s.s_star, s.rho, s.pi_0, s.gamma*s.t)
-        s.cap_prob = s.get_tail_prob(s.s_star, s.rho, s.pi_0, s.D)
         s.g = s.get_g_app(s.pi_0, s.tail_prob)
-        s.P_xy = s.trans_prob()
         s.tau = array(s.S * max(s.mu) + sum(np.maximum(s.lab, s.gamma)), float)
+
+        if 'D' in kwargs:
+            s.D: int = kwargs.get('D')
+        else:
+            s.e_cap = kwargs.get('e_cap', 1e-3)
+            prob_delay = max(s.get_tail_prob(s.s_star, s.rho, s.pi_0, 0))
+            s.D = np.ciel(-np.log(s.e_cap / prob_delay) /
+                          (s.s_star * s.mu - s.lab) * s.gamma)
+            s.D: int = max(3 * s.gamma, min(s.D, 10 * s.gamma))
+            s.cap_prob = s.get_tail_prob(s.s_star, s.rho, s.pi_0, s.D)
+        s.P_xy = s.trans_prob()
 
         s.dim = tuple(np.repeat([s.D + 1, s.S + 1], s.J))
         s.sizes = s.def_sizes(s.dim)

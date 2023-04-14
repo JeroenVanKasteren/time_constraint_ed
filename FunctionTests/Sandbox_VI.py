@@ -5,14 +5,15 @@ Sandbox Value Iteration
 import numpy as np
 import numba as nb
 from numba import types as tp
-from Sandbox_PI import init_w, init_pi, get_v, policy_improvement
+from FunctionTests.Sandbox_PI import init_w, init_pi, get_v, policy_improvement
 from OtherTests.init import Env
 from src.Plotting import plot_pi, plot_v
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 np.random.seed(42)
-env = Env(J=2, S=2, load=0.75, gamma=20., D=10, P=1e3, e=1e-5, trace=True,
+# lab=([0.6726, 0.1794]), mu=([0.8169, 0.2651])
+env = Env(J=2, S=2, gamma=20., P=1e3, e=1e-5, trace=True,
           convergence_check=10, print_modulo=10)
 # env = Env(J=1, S=1, mu=array([3]), lab=array([1]), t=array([1]), P=1e3,
 #           gamma=1, D=5, e=1e-4, trace=True, print_modulo=100,

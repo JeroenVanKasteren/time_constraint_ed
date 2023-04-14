@@ -6,7 +6,7 @@
 #SBATCH --ntasks 1
 #SBATCH --cpus-per-task 1
 #SBATCH --time 0:01:00
-#SBATCH --output Results/print_$SLURM_JOBID_$SLURM_ARRAY_TASK_ID
+#SBATCH --output Results/print_$SLURM_JOBID
 
 #Activate environment
 source activate time_constraint_ed
