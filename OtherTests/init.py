@@ -124,9 +124,11 @@ class Env:
         if 'D' in kwargs:
             s.D: int = kwargs.get('D')
         else:
-            prob_delay = s.get_tail_prob(s.S, s.load, s.pi_0, 0)
+            pi_0 = s.get_pi_0(s.S, s.load) # TODO
+            prob_delay = s.get_tail_prob(s.S, s.load, pi_0, 0)
+            mu = sum(s.lab * s.mu / sum(s.lab))
             s.D = np.ceil(-np.log(s.ZERO_ONE_PERC / prob_delay) /
-                          (s.s_star * s.mu - s.lab) * s.gamma)
+                          (s.S * mu - s.lab) * s.gamma)
             s.D = int(max(2 * s.gamma, min(s.D, 10 * s.gamma)))
         s.cap_prob = s.get_tail_prob(s.s_star, s.rho, s.pi_0, s.D)
         s.P_xy = s.trans_prob()
