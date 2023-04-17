@@ -3,14 +3,14 @@ MDP environment class.
 
 All elements of 'self':
 
-Input variables, Necessairy
+Input variables, Necessary
 'J' classes, int, J > 1
 'gamma' time discritization parameter, float, gamma > 0
 'D' waiting time transitions cap, int, assumed D > 1
 'P' penalty never starting service, flaot, P >= 0
 'e' epsilon (small number), float, used for convergence check, 0 < e << 1
 
-Input Programming variables, Necessairy
+Input Programming variables, Necessary
 'max_iter' of Value or Policy Iteration (VI and PI), int
 'trace' print time and convergence? boolean
 'print_modulo' determine when to print
@@ -74,6 +74,7 @@ class TimeConstraintEDs:
     imbalance_MAX = 5.
     TARGET = array([1], float)  # Target
 
+    ZERO_ONE_PERC = 1e-3
     NONE_WAITING: int = 0
     KEEP_IDLE: int = -1
     SERVERS_FULL: int = -2
@@ -116,12 +117,11 @@ class TimeConstraintEDs:
         if 'D' in kwargs:
             s.D: int = kwargs.get('D')
         else:
-            s.e_cap = kwargs.get('e_cap', 1e-3)
-            prob_delay = max(s.get_tail_prob(s.s_star, s.rho, s.pi_0, 0))
-            s.D = np.ciel(-np.log(s.e_cap / prob_delay) /
+            prob_delay = s.get_tail_prob(s.S, s.load, s.pi_0, 0)
+            s.D = np.ceil(-np.log(s.ZERO_ONE_PERC / prob_delay) /
                           (s.s_star * s.mu - s.lab) * s.gamma)
-            s.D: int = max(3*s.gamma, min(s.D, 10*s.gamma))
-            s.cap_prob = s.get_tail_prob(s.s_star, s.rho, s.pi_0, s.D)
+            s.D = int(max(2 * s.gamma, min(s.D, 10 * s.gamma)))
+        s.cap_prob = s.get_tail_prob(s.s_star, s.rho, s.pi_0, s.D)
         s.P_xy = s.trans_prob()
 
         s.dim = tuple(np.repeat([s.D + 1, s.S + 1], s.J))
@@ -131,7 +131,7 @@ class TimeConstraintEDs:
         s.sizes_i = s.def_sizes(s.dim_i)
         s.size_i = np.prod(s.dim_i)
 
-        s.max_iter = kwargs.get('max_iter', np.Inf)
+        s.max_iter = kwargs.get('max_iter', np.Inf)  # max(size_i^2, 1e3)
         s.trace = kwargs.get('trace', False)
         s.print_modulo = kwargs.get('print_modulo', 1)
         s.convergence_check = kwargs.get('convergence_check', 1)
@@ -175,14 +175,15 @@ class TimeConstraintEDs:
 
     def trans_prob(self):
         """P_xy(i, x, y) transition prob. for class i to jump from x to y."""
-        P_xy = np.zeros((self.J, self.D+1, self.D+1))
+        P_xy = np.zeros((self.J, self.D + 1, self.D + 1))
         gamma = self.gamma
-        A = np.indices((self.D+1, self.D+1))  # x=A[0], y=A[1]
+        A = np.indices((self.D + 1, self.D + 1))  # x=A[0], y=A[1]
         mask_tril = A[0, 1:, 1:] >= A[1, 1:, 1:]
         for i in range(self.J):
             lab = self.lab[i]
             P_xy[i, 1:, 1:][mask_tril] = (gamma / (lab + gamma)) ** \
-                                         (A[0, 1:, 1:][mask_tril] - A[1, 1:, 1:][mask_tril]) * \
+                                         (A[0, 1:, 1:][mask_tril] -
+                                          A[1, 1:, 1:][mask_tril]) * \
                                          lab / (lab + gamma)
             P_xy[i, 1:, 0] = (gamma / (lab + gamma)) ** A[0, 1:, 0]
         P_xy[:, 0, 0] = 1
@@ -199,8 +200,7 @@ class TimeConstraintEDs:
         """P(W>t)."""
         return (pi_0 / (1 - rho) * (env.lab + env.gamma)
                 / (env.gamma + env.lab * pi_0)
-                * (1 - (s * env.mu - env.lab) / (s * env.mu + env.gamma))
-                ** n)
+                * (1 - (s * env.mu - env.lab) / (s * env.mu + env.gamma)) ** n)
 
     def get_g_app(s, pi_0, tail_prob):
         return (s.r - s.c * tail_prob) * (s.lab + pi_0 * s.lab ** 2 / s.gamma)
@@ -210,8 +210,9 @@ class TimeConstraintEDs:
         with np.errstate(divide='ignore', invalid='ignore'):
             rho = env.a / s
             pi_0 = env.get_pi_0(s, rho)
-            tail_prob = env.get_tail_prob(s, rho, pi_0, env.gamma*env.t)
+            tail_prob = env.get_tail_prob(s, rho, pi_0, env.gamma * env.t)
         tail_prob[~np.isfinite(tail_prob)] = 1  # Correct dividing by 0
+        pi_0[~np.isfinite(tail_prob)] = 0  # Correct dividing by 0
         res = env.get_g_app(pi_0, tail_prob)
         return -np.sum(res, axis=len(np.shape(s)) - 1)
 
@@ -223,7 +224,7 @@ class TimeConstraintEDs:
         if sum(s.c + s.r) > 0:
             weighted_load *= (s.c + s.r) / sum(s.c + s.r)
         x0 = s.a + weighted_load / sum(weighted_load) * (s.S - sum(s.a))
-        lb_bound = s.a  # lb <= A.dot(x) <= ub
+        lb_bound = s.a + s.ZERO_ONE_PERC  # lb <= A.dot(x) <= ub
         ub_bound = s.S - np.dot((np.ones((s.J, s.J)) - np.eye(s.J)), s.a)
         bounds = optimize.Bounds(lb_bound, ub_bound)
         cons = array([1] * s.J)
@@ -233,13 +234,6 @@ class TimeConstraintEDs:
         s_star = optimize.minimize(s.server_allocation_cost, x0,
                                    bounds=bounds, constraints=lin_cons).x
         return s_star
-
-    def get_time_cap_prob(self, s, rho, pi_0):
-        """P(W>D)."""
-        tail_prob = pi_0/(1-rho) * \
-            (self.lab+self.gamma) / (self.gamma + self.lab*pi_0) * \
-            (1 - (s*self.mu - self.lab) / (s*self.mu + self.gamma))**self.D
-        return tail_prob
 
     def def_sizes(self, dim):
         """Docstring."""
@@ -258,7 +252,8 @@ class TimeConstraintEDs:
             self.start = default_timer()
         else:
             time = default_timer() - self.start
-            print("Time: ", int(time/60), ":", int(time - 60*int(time/60)))
+            print("Time: ", int(time / 60), ":",
+                  int(time - 60 * int(time / 60)))
             print('Finished ' + name + '.')
             return time
 
@@ -279,8 +274,8 @@ class TimeConstraintEDs:
         memory = np.zeros(self.dim_i)
         name = 'Running time feasibility'
         if self.trace:
-            print("Size of W: ", round(getsizeof(memory) / 10**9, 4), "GB.")
-            print("Size of V: ", round(getsizeof(np.zeros(self.dim)) / 10**9,
+            print("Size of W: ", round(getsizeof(memory) / 10 ** 9, 4), "GB.")
+            print("Size of V: ", round(getsizeof(np.zeros(self.dim)) / 10 ** 9,
                                        4), "GB.")
         if time_check:
             self.timer(True, name, True)
@@ -289,4 +284,3 @@ class TimeConstraintEDs:
             time = self.timer(False, name, True)
             if time > 60:  # in seconds
                 exit("Looping matrix takes more than 60 seconds.")
-

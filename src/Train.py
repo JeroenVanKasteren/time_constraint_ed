@@ -16,10 +16,11 @@ from src.Learner import PolicyIteration, ValueIteration, \
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
-parser.add_argument('- -seed', default=5)  # SLURM_ARRAY_TASK_ID
+parser.add_argument('- -seed', default=27)  # SLURM_ARRAY_TASK_ID
 parser.add_argument('- -multiplier', default=42)  # User input
 parser.add_argument('- -J', default=2)  # User input
-parser.add_argument("- -gamma", default=60)  # User input
+parser.add_argument("- -gamma", default=30)  # User input
+parser.add_argument("- -policy", default=False)  # User input
 args = parser.parse_args()
 
 filepath = 'Results/results.csv'
@@ -28,15 +29,15 @@ seed = args.random_seed * args.random_multiplier
 pi_learner = PolicyIteration()
 
 # ---- Problem ---- #
-env = Env(J=1, S=1, load=0.75, gamma=15., D=100, P=1e3, e=1e-5, trace=True,
-          convergence_check=10, print_modulo=100, max_iter=4000, seed=seed)
+env = Env(J=args.J, S=1, load=0.75, gamma=args.gamma, D=100, P=1e3, e=1e-5,
+          trace=True, convergence_check=10, print_modulo=100, seed=seed)
+# convergence_check ??? relation to size_i
 
-# ------ Value Iteration ------ #
+# ---- Value Iteration ---- #
 vi_learner = ValueIteration(env, pi_learner)
 vi_learner.value_iteration(env)
-vi_learner.get_policy(env)
 
-# ------ One Step Policy Improvement ------ #
+# ---- One Step Policy Improvement ---- #
 ospi_learner = OneStepPolicyImprovement(env, pi_learner)
 ospi_learner.get_g(env)
 
@@ -46,6 +47,13 @@ result = [datetime.today().strftime('%Y-%m-%d'),
           env.t, env.c, env.r, env.lab, env.mu, env.load, env.cap_prob,
           vi_learner.g, ospi_learner.g,
           abs(vi_learner.g-ospi_learner.g)/vi_learner.g]
+
+if args.policy:
+    vi_learner.get_policy(env)
+    np.savez('Results/policy_'+SLURM_ARRAY_TASK_ID+'.npz',
+             vi_learner.Pi, ospi_learner.Pi,
+             vi_learner.V, ospi_learner.V_app)
+    # np.load('Results/policy_SLURM_ARRAY_TASK_ID.npz')
 
 Path(filepath).touch()
 with open(filepath, 'a') as f:  # a = append
