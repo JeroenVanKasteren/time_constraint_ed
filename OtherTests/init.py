@@ -116,21 +116,17 @@ class Env:
         s.a = array(lab / mu, float)
         s.s_star = array(s.server_allocation(), float)
         s.rho = array(s.a / s.s_star, float)
-        s.pi_0 = s.get_pi_0(s.s_star, s.rho)
-        s.tail_prob = s.get_tail_prob(s.s_star, s.rho, s.pi_0, s.gamma*s.t)
+        s.pi_0 = s.get_pi_0(s.s_star, s.rho, s.lab)
+        s.tail_prob = s.get_tail_prob(s.s_star, s.rho, s.lab, s.mu,
+                                      s.pi_0, s.gamma * s.t)
         s.g = s.get_g_app(s.pi_0, s.tail_prob)
         s.tau = array(s.S * max(s.mu) + sum(np.maximum(s.lab, s.gamma)), float)
 
         if 'D' in kwargs:
             s.D: int = kwargs.get('D')
         else:
-            pi_0 = s.get_pi_0(s.S, s.load) # TODO
-            prob_delay = s.get_tail_prob(s.S, s.load, pi_0, 0)
-            mu = sum(s.lab * s.mu / sum(s.lab))
-            s.D = np.ceil(-np.log(s.ZERO_ONE_PERC / prob_delay) /
-                          (s.S * mu - s.lab) * s.gamma)
-            s.D = int(max(2 * s.gamma, min(s.D, 10 * s.gamma)))
-        s.cap_prob = s.get_tail_prob(s.s_star, s.rho, s.pi_0, s.D)
+            s.D: int = s.get_D()
+        s.cap_prob = s.get_tail_prob(s.s_star, s.rho, s.lab, s.mu, s.pi_0, s.D)
         s.P_xy = s.trans_prob()
 
         s.dim = tuple(np.repeat([s.D + 1, s.S + 1], s.J))
@@ -182,6 +178,16 @@ class Env:
               "P(W>D):", s.cap_prob)
         assert s.load < 1, "rho < 1 does not hold"
 
+    def get_D(self):
+        lab = sum(self.lab)
+        mu = lab * self.S / sum(self.lab / self.mu)
+        pi_0 = self.get_pi_0(self.S, self.load, lab)
+        prob_delay = self.get_tail_prob(self.S, self.load, lab, mu, pi_0, 0)
+        D = np.ceil(-np.log(self.ZERO_ONE_PERC / prob_delay) /
+                    (self.S * mu - lab) * self.gamma)
+        D = int(max(2 * self.gamma, min(D, 10 * self.gamma)))
+        return D
+
     def trans_prob(s) -> array:
         """P_xy(i, x, y) transition prob. for class i to jump from x to y."""
         P_xy = np.zeros((s.J, s.D + 1, s.D + 1), dtype=float)
@@ -197,18 +203,18 @@ class Env:
         P_xy[:, 0, 0] = 1
         return P_xy
 
-    def get_pi_0(env, s, rho):
+    def get_pi_0(self, s, rho, lab):
         """Calculate pi(0)."""
         return (1 / (s * np.exp(s * rho) / (s * rho) ** s
                      * gamma_fun(s) * reg_up_inc_gamma(s, s * rho)
-                     + (env.gamma + rho * env.lab) / env.gamma
+                     + (self.gamma + rho * lab) / self.gamma
                      * (1 / (1 - rho))))
 
-    def get_tail_prob(env, s, rho, pi_0, n):
+    def get_tail_prob(env, s, rho, lab, mu, pi_0, n):
         """P(W>t)."""
-        return (pi_0 / (1 - rho) * (env.lab + env.gamma)
-                / (env.gamma + env.lab * pi_0)
-                * (1 - (s * env.mu - env.lab) / (s * env.mu + env.gamma)) ** n)
+        return (pi_0 / (1 - rho) * (lab + env.gamma)
+                / (env.gamma + lab * pi_0)
+                * (1 - (s * mu - lab) / (s * mu + env.gamma)) ** n)
 
     def get_g_app(s, pi_0, tail_prob):
         return (s.r - s.c * tail_prob) * (s.lab + pi_0 * s.lab ** 2 / s.gamma)
@@ -217,8 +223,9 @@ class Env:
         """Sums of g per queue, note that -reward is returned."""
         with np.errstate(divide='ignore', invalid='ignore'):
             rho = env.a / s
-            pi_0 = env.get_pi_0(s, rho)
-            tail_prob = env.get_tail_prob(s, rho, pi_0, env.gamma*env.t)
+            pi_0 = env.get_pi_0(s, rho, env.lab)
+            tail_prob = env.get_tail_prob(s, rho, env.lab, env.mu,
+                                          pi_0, env.gamma * env.t)
         tail_prob[~np.isfinite(tail_prob)] = 1  # Correct dividing by 0
         pi_0[~np.isfinite(tail_prob)] = 0  # Correct dividing by 0
         res = env.get_g_app(pi_0, tail_prob)
