@@ -11,9 +11,8 @@ Created on 19-3-2020.
 import argparse
 import numpy as np
 from datetime import datetime
-from src.Env import TimeConstraintEDs as Env
-from src.Learner import PolicyIteration, ValueIteration, \
-    OneStepPolicyImprovement
+from Env_and_Learners import TimeConstraintEDs as Env, PolicyIteration, \
+    ValueIteration, OneStepPolicyImprovement
 from pathlib import Path
 import re
 

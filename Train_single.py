@@ -7,10 +7,9 @@ Created on 19-3-2020.
 
 import numpy as np
 import pandas as pd
-from src.Plotting import plot_pi, plot_v
-from src.Env import TimeConstraintEDs as Env
-from src.Learner import PolicyIteration, ValueIteration, \
-    OneStepPolicyImprovement
+from Insights import plot_pi, plot_v
+from Env_and_Learners import TimeConstraintEDs as Env, PolicyIteration, \
+    ValueIteration, OneStepPolicyImprovement
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 np.random.seed(42)

@@ -11,4 +11,5 @@ module load Anaconda3/2022.05
 
 echo "Create env"
 time conda create --name time_constraint_ed --file requirements.txt
+# Check if correctly created
 conda activate time_constraint_ed

@@ -6,7 +6,7 @@ import numpy as np
 import numba as nb
 from numba import types as tp
 from OtherTests.init import Env
-from src.Plotting import plot_pi, plot_v
+from Plotting import plot_pi, plot_v
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 

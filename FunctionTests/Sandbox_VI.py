@@ -7,7 +7,7 @@ import numba as nb
 from numba import types as tp
 from FunctionTests.Sandbox_PI import init_w, init_pi, get_v, policy_improvement
 from OtherTests.init import Env
-from src.Plotting import plot_pi, plot_v
+from Plotting import plot_pi, plot_v
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 

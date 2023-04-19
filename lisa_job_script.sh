@@ -8,9 +8,7 @@
 #SBATCH --time 0:01:00
 #SBATCH --output Results/print_$SLURM_JOBID
 
-#Activate environment
 conda activate time_constraint_ed
 #export PYTHONPATH=$PYTHONPATH:$PWD
-
-#Run Train.py
-python $HOME/time_constraint_ed/src/Train.py --id $SLURM_ARRAY_TASK_ID --multiplier 42 --J 2 --gamma 30 --policy False --time %t
+#Run Train.py, $SLURM_ARRAY_TASK_ID, $HOME/time_constraint_ed/
+python Train.py --id $SLURM_ARRAY_TASK_ID --multiplier 42 --J 2 --gamma 30 --policy False --time %t
