@@ -11,7 +11,6 @@ from src.Plotting import plot_pi, plot_v
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
-np.random.seed(42)
 env = Env(J=2, S=2, gamma=30., P=1e3, e=1e-5, trace=True,
           lab=np.array([0.6726, 0.1794]), mu=np.array([0.8169, 0.2651]),
           convergence_check=10, print_modulo=10)

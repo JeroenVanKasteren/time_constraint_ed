@@ -13,4 +13,4 @@ source activate time_constraint_ed
 export PYTHONPATH=$PYTHONPATH:$PWD
 
 #Run Train.py
-Python $HOME/time_constraint_ED/src/Train.py - -id $SLURM_ARRAY_TASK_ID - -multiplier 42 - -J 2 - -gamma 30 - -policy False - -time %t
+Python $HOME/time_constraint_ed/src/Train.py - -id $SLURM_ARRAY_TASK_ID - -multiplier 42 - -J 2 - -gamma 30 - -policy False - -time %t

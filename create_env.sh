@@ -14,5 +14,5 @@ conda init
 #Conda update conda
 conda update conda
 echo "Create env"
-time conda env create -f environment_droplet.yml
+time conda env create -f environment.yml
 conda activate time_constraint_ed
