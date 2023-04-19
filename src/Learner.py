@@ -15,7 +15,7 @@ import numba as nb
 from numba import types as tp
 from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy.integrate import quad_vec
-
+from time import perf_counter as clock
 
 class PolicyIteration:
     """Policy Iteration."""
@@ -96,25 +96,28 @@ class PolicyIteration:
                 break
         converged = delta_max - delta_min < env.e
         max_iter = (i > env.max_iter) | (j > env.max_iter)
+        max_time = (clock() - env.start_time) > env.max_time
         g = (delta_max + delta_min) / 2 * env.tau
-        if ((converged & env.trace)
-                | (env.trace & (((i % env.print_modulo == 0) & (j == -1))
-                                 | (j % env.print_modulo == 0)))):
+        if (converged | (((i % env.print_modulo == 0) & (j == -1))
+                         | (j % env.print_modulo == 0))):
             print("iter: ", i,
                   "inner_iter: ", j,
                   ", delta: ", round(delta_max - delta_min, 2),
                   ', D_min', round(delta_min, 2),
                   ', D_max', round(delta_max, 2),
                   ", g: ", round(g, 4))
-        elif converged:
+        if converged:
             if j == -1:
                 print(name, 'converged in', i, 'iterations. g=', round(g, 4))
             else:
                 print(name, 'converged in', j, 'iterations. g=', round(g, 4))
         elif max_iter:
-            print(name, 'iter:', i, 'reached max_iter =', max_iter, ', g~',
-                  round(g, 4))
-        return converged | max_iter, g
+            print(name, 'iter:', i, '(', j, ') reached max_iter =',
+                  max_iter, ', g~', round(g, 4))
+        elif max_time:
+            print(name, 'iter:', i, '(', j, ') reached max_time =',
+                  max_time, ', g~', round(g, 4))
+        return converged | max_iter | max_time, g
 
     @staticmethod
     @nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i4[:], tp.i8, tp.i8, tp.f8,

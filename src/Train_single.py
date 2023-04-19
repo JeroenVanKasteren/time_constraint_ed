@@ -16,9 +16,9 @@ np.set_printoptions(precision=4, linewidth=150, suppress=True)
 np.random.seed(42)
 
 # ---- Problem ---- #
-env = Env(J=1, S=1, load=0.75, gamma=15., D=250, P=1e3, e=1e-5, trace=True,
-          convergence_check=10, print_modulo=100, max_iter=4000)
-to_plot = ['VI', 'OSPI']  # 'VI', 'PI', 'OSPI' (what to plot)
+env = Env(J=1, S=2, load=0.8, gamma=15., D=40, P=1e3, e=1e-5,
+          convergence_check=10, print_modulo=1, seed=42, max_time='01:30:05')
+to_plot = []  # 'VI', 'PI', 'OSPI' (what to plot)
 
 # ------ Policy Iteration ------ #
 pi_learner = PolicyIteration()

@@ -12,7 +12,6 @@ Input variables, Necessary
 
 Input Programming variables, Necessary
 'max_iter' of Value or Policy Iteration (VI and PI), int
-'trace' print time and convergence? boolean
 'print_modulo' determine when to print
 
 Input variables, Optional
@@ -53,12 +52,12 @@ import numpy as np
 from numpy import array, round
 from numpy.random import randint, uniform
 from itertools import product
-from sys import exit, getsizeof
-from timeit import default_timer
+from sys import getsizeof as size
 import numba as nb
 from numba import types as tp
 from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy import optimize
+from time import perf_counter as clock, strptime
 
 
 class TimeConstraintEDs:
@@ -97,7 +96,7 @@ class TimeConstraintEDs:
         s.gamma = float(kwargs.get('gamma'))
         if any((t % (1 / s.gamma) != 0) | (t < 1 / s.gamma)):
             t = np.floor(t * s.gamma) / s.gamma
-            print("Rounded t down to nearest multiple of 1/gamma.")
+            print('Rounded t down to nearest multiple of 1/gamma.')
         s.lab = array(lab, float)
         s.mu = array(mu, float)
         s.t = array(t, float)
@@ -130,8 +129,13 @@ class TimeConstraintEDs:
         s.size_i = np.prod(s.dim_i)
 
         s.max_iter = kwargs.get('max_iter', np.Inf)  # max(size_i^2, 1e3)
-        s.trace = kwargs.get('trace', False)
-        s.print_modulo = kwargs.get('print_modulo', 1)
+        s.start_time = clock()
+        if 'max_time' in kwargs:
+            x = strptime(kwargs.get('max_time'), '%H:%M:%S')
+            s.max_time = x.tm_hour * 60 * 60 + x.tm_min * 60 + x.tm_sec
+        else:
+            s.max_time = np.Inf
+        s.print_modulo = kwargs.get('print_modulo', np.inf)  # 1 for always
         s.convergence_check = kwargs.get('convergence_check', 1)
 
         s_states = array(list(product(np.arange(s.S + 1), repeat=s.J)), int)
@@ -155,21 +159,21 @@ class TimeConstraintEDs:
         s.d_f['c'] = s.c
         s.d_f['r'] = s.r
 
-        s.feasibility(kwargs.get('time_check', True))
-        # if self.trace:
-        print("J =", s.J, ", D =", s.D, ", s =", s.S,
-              ", gamma =", s.gamma,
-              ", (P=", s.P, ")",
-              ", load=", round(s.load, 4), '\n',
-              "lambda:", round(s.lab, 4), '\n',
-              "mu:", round(s.mu, 4), '\n',
-              "Target:", round(s.t, 4), '\n',
-              "r:", round(s.r, 4), '\n',
-              "c:", round(s.c, 4), '\n',
-              "s_star:", round(s.s_star, 4), '\n',
-              "rho:", round(s.rho, 4), '\n',
-              "P(W>D):", s.cap_prob)
-        assert s.load < 1, "rho < 1 does not hold"
+        print('J =', s.J, ', D =', s.D, ', s =', s.S,
+              ', gamma =', s.gamma,
+              ', (P=', s.P, ')',
+              ', load=', round(s.load, 4), '\n',
+              'lambda:', round(s.lab, 4), '\n',
+              'mu:', round(s.mu, 4), '\n',
+              'Target:', round(s.t, 4), '\n',
+              'r:', round(s.r, 4), '\n',
+              'c:', round(s.c, 4), '\n',
+              's_star:', round(s.s_star, 4), '\n',
+              'rho:', round(s.rho, 4), '\n',
+              'P(W>D):', s.cap_prob, '\n',
+              'W: ', round(size(np.zeros(s.dim_i)) / 10**9, 4), 'GB.', '\n',
+              'V: ', round(size(np.zeros(s.dim)) / 10 ** 9, 4), 'GB.')
+        assert s.load < 1, 'rho < 1 does not hold'
 
     def get_D(self):
         lab = sum(self.lab)
@@ -252,44 +256,6 @@ class TimeConstraintEDs:
             sizes[i] = sizes[i + 1] * dim[i + 1]
         return sizes
 
-    def timer(self, start_boolean, name, trace):
-        """Only if trace=TRUE, start timer if start=true, else print time."""
-        if not trace:
-            pass
-        elif start_boolean:
-            print('Starting ' + name + '.')
-            self.start = default_timer()
-        else:
-            time = default_timer() - self.start
-            print("Time: ", int(time / 60), ":",
-                  int(time - 60 * int(time / 60)))
-            print('Finished ' + name + '.')
-            return time
-
-    @staticmethod
-    @nb.njit
-    def test_loop(memory, size_i, sizes_i, s_states, x_states, J):
-        """Docstring."""
-        memory = memory.reshape(size_i)
-        for s in s_states:
-            for x in x_states:
-                for i in range(J + 1):
-                    state = i * sizes_i[0] + np.sum(
-                        x * sizes_i[1:J + 1] + s * sizes_i[J + 1:J * 2 + 1])
-                    memory[state] = np.random.rand()
-
-    def feasibility(self, time_check):
-        """Check matrix size and looping time."""
-        memory = np.zeros(self.dim_i)
-        name = 'Running time feasibility'
-        if self.trace:
-            print("Size of W: ", round(getsizeof(memory) / 10 ** 9, 4), "GB.")
-            print("Size of V: ", round(getsizeof(np.zeros(self.dim)) / 10 ** 9,
-                                       4), "GB.")
-        if time_check:
-            self.timer(True, name, True)
-            self.test_loop(memory, self.size_i, self.sizes_i, self.s_states,
-                           self.x_states, self.J)
-            time = self.timer(False, name, True)
-            if time > 60:  # in seconds
-                exit("Looping matrix takes more than 60 seconds.")
+    def time_print(self, time):
+        """Convert seconds to readable format."""
+        print('Time: ', int(time / 60), ':', int(time - 60 * int(time / 60)))

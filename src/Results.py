@@ -6,9 +6,8 @@ Load and visualize results.
 
 import pandas as pd
 import matplotlib.pyplot as plt
-import glob
 
-columns = ['Date', 'seed', 'J', 'S', 'D', 'gamma', 'eps',
+columns = ['id', 'Date', 'seed', 'J', 'S', 'D', 'gamma', 'eps',
            't', 'c', 'r', 'lambda', 'mu', 'Rho', 'cap_prob',
            'VI', 'OSPI', 'gap']
 
