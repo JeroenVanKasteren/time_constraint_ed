@@ -18,17 +18,17 @@ from pathlib import Path
 import re
 
 parser = argparse.ArgumentParser()
-parser.add_argument('- -id', default='27')  # SLURM_ARRAY_TASK_ID
-parser.add_argument('- -multiplier', default=42)  # User input
-parser.add_argument('- -J', default=2)  # User input
-parser.add_argument("- -gamma", default=30)  # User input
-parser.add_argument("- -policy", default=False)  # User input
-parser.add_argument("- -time", default=42)  # User input
+parser.add_argument('--id', default='27')  # SLURM_ARRAY_TASK_ID
+parser.add_argument('--multiplier', default=42)  # User input
+parser.add_argument('--J', default=2)  # User input
+parser.add_argument('--gamma', default=30)  # User input
+parser.add_argument('--policy', default=False)  # User input
+parser.add_argument('--time', default=42)  # User input
 args = parser.parse_args()
 
 filepath = 'Results/results.csv'
 
-seed_id = re.sub("[^0-9]", "", args.id)
+seed_id = re.sub('[^0-9]', '', args.id)
 seed = seed_id * args.random_multiplier
 
 pi_learner = PolicyIteration()
@@ -61,4 +61,4 @@ if args.policy:
 
 Path(filepath).touch()
 with open(filepath, 'a') as f:  # a = append
-    f.write(",".join(map(str, result)) + '\n')
+    f.write(','.join(map(str, result)) + '\n')
