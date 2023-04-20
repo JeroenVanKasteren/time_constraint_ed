@@ -253,7 +253,7 @@ class PolicyIteration:
             if count > env.max_iter:
                 return V, g
             inner_count += 1
-        return V, g
+        return V, g, converged
 
     def policy_iteration(s, env):
         """Docstring."""
@@ -262,8 +262,9 @@ class PolicyIteration:
         s.Pi = s.init_pi(env)
         s.Pi = s.Pi.reshape(env.size_i)
         while not s.stable:
-            s.V, s.g = s.policy_evaluation(env, s.V, s.W, s.Pi, s.g,
-                                           'Policy Evaluation of PI', s.count)
+            s.V, s.g, _ = s.policy_evaluation(env, s.V, s.W, s.Pi, s.g,
+                                              'Policy Evaluation of PI',
+                                              s.count)
             s.W = s.init_w(env, s.V, s.W)
             s.V = s.V.reshape(env.size)
             s.W = s.W.reshape(env.size_i)
@@ -293,6 +294,7 @@ class ValueIteration:
         self.Pi = pi_learner.init_pi(env)
         self.g = 0
         self.count = 0
+        self.converged = False
 
     @staticmethod
     @nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i8, tp.i8, tp.f8,
@@ -332,8 +334,8 @@ class ValueIteration:
         return W
 
     def value_iteration(s, env):
-        converged = False
-        while not converged:  # Update each state.
+        s.converged = False
+        while not s.converged:  # Update each state.
             s.W = s.pi_learner.init_w(env, s.V, s.W)
             s.V = s.V.reshape(env.size)
             s.W = s.W.reshape(env.size_i)
@@ -343,8 +345,8 @@ class ValueIteration:
             s.W = s.W.reshape(env.dim_i)
             s.V_t = s.pi_learner.get_v(env, s.V, s.W)
             if s.count % env.convergence_check == 0:
-                converged, s.g = s.pi_learner.convergence(env, s.V_t, s.V,
-                                                          s.count, s.name)
+                s.converged, s.g = s.pi_learner.convergence(env, s.V_t, s.V,
+                                                            s.count, s.name)
             s.V = s.V_t - s.V_t[tuple([0] * (env.J * 2))]  # Rescale V_t
             if s.count > env.max_iter:
                 break
@@ -373,6 +375,7 @@ class OneStepPolicyImprovement:
         self.V_app = self.get_v_app(env)
         self.Pi = pi_learner.init_pi(env)
         self.g = 0
+        self.converged = False
 
     @staticmethod
     def get_v_app_i(env, i):
@@ -437,6 +440,6 @@ class OneStepPolicyImprovement:
         """Determine g via Policy Evaluation."""
         W = np.zeros(env.dim_i, dtype=np.float32)
         s.Pi = s.Pi.reshape(env.size_i)
-        _, s.g = s.pi_learner.policy_evaluation(env, s.V_app, W, s.Pi, s.g,
-                                                s.name)
+        _, s.g, s.converged = s.pi_learner.policy_evaluation(env, s.V_app, W,
+                                                             s.Pi, s.g, s.name)
         s.Pi = s.Pi.reshape(env.dim_i)

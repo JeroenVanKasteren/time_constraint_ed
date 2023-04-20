@@ -9,11 +9,11 @@ import matplotlib.pyplot as plt
 
 columns = ['id', 'Date', 'seed', 'J', 'S', 'D', 'gamma', 'eps',
            't', 'c', 'r', 'lambda', 'mu', 'Rho', 'cap_prob',
-           'VI', 'OSPI', 'gap']
+            'vi_converged', 'ospi_converged', 'VI', 'OSPI', 'gap']
 
 results = pd.read_csv('Results/results.csv', names=columns)
-
-results.boxplot(column='gap', by='J')
+results_conv = results[results['vi_converged'] & results['ospi_converged']]
+results_conv.boxplot(column='gap', by='J')
 plt.title('Optimality Gap')
 plt.show()
 # https://matplotlib.org/stable/gallery/statistics/boxplot_demo.html
