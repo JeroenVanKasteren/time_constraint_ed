@@ -27,17 +27,18 @@ def load_args(raw_args=None):
     parser.add_argument('--policy', default=False)  # User input
     parser.add_argument('--time', default='00:02:00')  # User input
     args = parser.parse_args(raw_args)
+    args.multiplier = int(args.multiplier)
+    args.J = int(args.J)
+    args.gamma = float(args.multiplier)
     args.policy = args.policy == 'True'
     return args
 
 def main(raw_args=None):
     args = load_args(raw_args)
-    print(type(args.id), type(args.multiplier), type(args.J), type(args.gamma),
-          type(args.policy), type(args.time))
     # ---- Problem ---- #
     seed_id = int(re.sub('[^0-9]', '', args.id))
-    seed = seed_id * int(args.multiplier)
-    env = Env(J=int(args.J), S=1, load=0.75, gamma=int(args.gamma), D=100,
+    seed = seed_id * args.multiplier
+    env = Env(J=args.J, S=1, load=0.75, gamma=args.gamma, D=100,
               P=1e3, e=1e-5, trace=True, convergence_check=10, print_modulo=100,
               seed=seed, max_time=args.time)
     pi_learner = PolicyIteration()
