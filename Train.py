@@ -31,7 +31,7 @@ def load_args(raw_args=None):
     args.id = int(args.id)
     args.index = int(args.index)
     args.J = int(args.J)
-    args.gamma = float(args.multiplier)
+    args.gamma = float(args.gamma)
     args.policy = args.policy == 'True'
     return args
 
