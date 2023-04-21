@@ -117,7 +117,7 @@ class PolicyIteration:
         elif max_time:
             print(name, 'iter:', i, '(', j, ') reached max_time =',
                   max_time, ', g~', round(g, 4))
-        return converged | max_iter | max_time, g
+        return converged, max_iter | max_time, g
 
     @staticmethod
     @nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i4[:], tp.i8, tp.i8, tp.f8,
@@ -236,8 +236,9 @@ class PolicyIteration:
     def policy_evaluation(self, env, V, W, Pi, g, name, count=0):
         """Policy Evaluation."""
         inner_count = 0
+        stopped = False
         converged = False
-        while not converged:
+        while not (stopped | converged):
             W = self.init_w(env, V, W)
             V = V.reshape(env.size)
             W = W.reshape(env.size_i)
@@ -247,8 +248,8 @@ class PolicyIteration:
             W = W.reshape(env.dim_i)
             V_t = self.get_v(env, V, W)
             if inner_count % env.convergence_check == 0:
-                converged, g = self.convergence(env, V_t, V, count, name,
-                                                j=inner_count)
+                converged, stopped, g = self.convergence(env, V_t, V, count,
+                                                         name, j=inner_count)
             V = V_t - V_t[tuple([0] * (env.J * 2))]  # Rescale and Save V_t
             if count > env.max_iter:
                 return V, g
@@ -334,8 +335,8 @@ class ValueIteration:
         return W
 
     def value_iteration(s, env):
-        s.converged = False
-        while not s.converged:  # Update each state.
+        stopped = False
+        while not (stopped | s.converged):  # Update each state.
             s.W = s.pi_learner.init_w(env, s.V, s.W)
             s.V = s.V.reshape(env.size)
             s.W = s.W.reshape(env.size_i)
@@ -345,8 +346,8 @@ class ValueIteration:
             s.W = s.W.reshape(env.dim_i)
             s.V_t = s.pi_learner.get_v(env, s.V, s.W)
             if s.count % env.convergence_check == 0:
-                s.converged, s.g = s.pi_learner.convergence(env, s.V_t, s.V,
-                                                            s.count, s.name)
+                s.converged, stopped, s.g = \
+                    s.pi_learner.convergence(env, s.V_t, s.V, s.count, s.name)
             s.V = s.V_t - s.V_t[tuple([0] * (env.J * 2))]  # Rescale V_t
             if s.count > env.max_iter:
                 break
