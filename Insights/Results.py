@@ -7,7 +7,7 @@ Load and visualize results.
 import pandas as pd
 import matplotlib.pyplot as plt
 
-columns = ['id', 'Date', 'seed', 'J', 'S', 'D', 'gamma', 'eps',
+columns = ['id', 'index', 'Date', 'seed', 'J', 'S', 'D', 'gamma', 'eps',
            't', 'c', 'r', 'lambda', 'mu', 'Rho', 'cap_prob',
             'vi_converged', 'ospi_converged', 'time', 'VI', 'OSPI', 'gap']
 

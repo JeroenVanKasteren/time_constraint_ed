@@ -21,14 +21,15 @@ FILEPATH = 'Results/results.csv'
 
 def load_args(raw_args=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--id', default='27_1')  # SLURM_ARRAY_TASK_ID
-    parser.add_argument('--multiplier', default=42)  # User input
+    parser.add_argument('--id', default='27_1')  # SULRM_JOBID
+    parser.add_argument('--index', default='27_1')  # SLURM_ARRAY_TASK_ID
     parser.add_argument('--J', default=2)  # User input
     parser.add_argument('--gamma', default=30)  # User input
     parser.add_argument('--policy', default=False)  # User input
     parser.add_argument('--time', default='00:02:00')  # User input
     args = parser.parse_args(raw_args)
-    args.multiplier = int(args.multiplier)
+    args.id = int(args.id)
+    args.index = int(args.index)
     args.J = int(args.J)
     args.gamma = float(args.multiplier)
     args.policy = args.policy == 'True'
@@ -37,10 +38,9 @@ def load_args(raw_args=None):
 def main(raw_args=None):
     args = load_args(raw_args)
     # ---- Problem ---- #
-    seed_id = int(re.sub('[^0-9]', '', args.id))
-    seed = seed_id * args.multiplier
-    env = Env(J=args.J, S=1, load=0.75, gamma=args.gamma, D=100,
-              P=1e3, e=1e-5, trace=True, convergence_check=10, print_modulo=100,
+    seed = args.id * args.index
+    env = Env(J=args.J, gamma=args.gamma, P=1e3, e=1e-5,
+              trace=True, convergence_check=10, print_modulo=100,
               seed=seed, max_time=args.time)
     pi_learner = PolicyIteration()
 
@@ -52,7 +52,7 @@ def main(raw_args=None):
     ospi_learner = OneStepPolicyImprovement(env, pi_learner)
     ospi_learner.get_g(env)
 
-    result = [args.id, datetime.today().strftime('%Y-%m-%d'),
+    result = [args.id, args.index, datetime.today().strftime('%Y-%m-%d'),
               seed, env.J, env.S, env.D, env.gamma, env.e,
               env.t, env.c, env.r, env.lab, env.mu, env.load, env.cap_prob,
               vi_learner.converged, ospi_learner.converged,
