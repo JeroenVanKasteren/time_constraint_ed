@@ -49,7 +49,7 @@ Created on 19-3-2020.
 """
 
 import numpy as np
-from numpy import array, round
+from numpy import array, round, int32
 from numpy.random import randint, uniform
 from itertools import product
 from sys import getsizeof as size
@@ -126,24 +126,24 @@ class TimeConstraintEDs:
         s.size = np.prod(s.dim)
         s.dim_i = tuple(np.append(s.J + 1, np.repeat([s.D + 1, s.S + 1], s.J)))
         s.sizes_i = s.def_sizes(s.dim_i)
-        s.size_i = np.prod(s.dim_i)
+        s.size_i = np.prod(s.dim_i).astype(int32)
 
         s.max_iter = kwargs.get('max_iter', np.Inf)  # max(size_i^2, 1e3)
         s.start_time = clock()
-        if 'max_time' in kwargs:
+        if 'max_time' in kwargs:  # max time in seconds, 60 seconds slack
             x = strptime(kwargs.get('max_time'), '%H:%M:%S')
-            s.max_time = x.tm_hour * 60 * 60 + x.tm_min * 60 + x.tm_sec
+            s.max_time = x.tm_hour * 60 * 60 + x.tm_min * 60 + x.tm_sec - 60
         else:
             s.max_time = np.Inf
         s.print_modulo = kwargs.get('print_modulo', np.inf)  # 1 for always
         s.convergence_check = kwargs.get('convergence_check', 1)
 
-        s_states = array(list(product(np.arange(s.S + 1), repeat=s.J)), int)
+        s_states = array(list(product(np.arange(s.S + 1), repeat=s.J)), int32)
         # Valid states
         s.s_states_v = s_states[np.sum(s_states, axis=1) <= s.S]
         # Action states
         s.s_states = s.s_states_v[np.sum(s.s_states_v, axis=1) < s.S]
-        s.x_states = array(list(product(np.arange(s.D + 1), repeat=s.J)), int)
+        s.x_states = array(list(product(np.arange(s.D + 1), repeat=s.J)), int32)
 
         s.d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type,
                                      value_type=tp.i4[:])
@@ -250,7 +250,7 @@ class TimeConstraintEDs:
 
     def def_sizes(self, dim):
         """Docstring."""
-        sizes = np.zeros(len(dim), int)
+        sizes = np.zeros(len(dim), int32)
         sizes[-1] = 1
         for i in range(len(dim) - 2, -1, -1):
             sizes[i] = sizes[i + 1] * dim[i + 1]

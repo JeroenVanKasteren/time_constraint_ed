@@ -35,7 +35,7 @@ class PolicyIteration:
         Take the longest waiting queue into service (or last queue if tied).
         Take arrivals directly into service.
         """
-        Pi = env.NOT_EVALUATED * np.ones(env.dim_i, dtype=int)
+        Pi = env.NOT_EVALUATED * np.ones(env.dim_i, dtype=np.int32)
         for s in env.s_states_v:
             states = np.append([slice(None)] * (1 + env.J), s)
             if np.sum(s) == env.S:

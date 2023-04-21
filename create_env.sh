@@ -11,6 +11,5 @@ module load Anaconda3/2022.05
 conda create -n time_constraint_ed python=3.10.10 anaconda
 conda activate time_constraint_ed
 conda env update --name time_constraint_ed -file requirements.txt
-
-# Check if correctly created
-conda activate time_constraint_ed
+# or
+# pip install -r requirements.txt
