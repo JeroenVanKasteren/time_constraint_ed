@@ -11,6 +11,7 @@ Created on 19-3-2020.
 import argparse
 import numpy as np
 from datetime import datetime
+from time import perf_counter as clock
 from Env_and_Learners import TimeConstraintEDs as Env, PolicyIteration, \
     ValueIteration, OneStepPolicyImprovement
 from pathlib import Path
@@ -55,6 +56,7 @@ def main(raw_args=None):
               seed, env.J, env.S, env.D, env.gamma, env.e,
               env.t, env.c, env.r, env.lab, env.mu, env.load, env.cap_prob,
               vi_learner.converged, ospi_learner.converged,
+              (clock() - env.start_time),
               vi_learner.g, ospi_learner.g,
               abs(vi_learner.g - ospi_learner.g) / vi_learner.g]
 
