@@ -12,11 +12,10 @@ from Env_and_Learners import TimeConstraintEDs as Env, PolicyIteration, \
     ValueIteration, OneStepPolicyImprovement
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
-np.random.seed(42)
 
 # ---- Problem ---- #
-env = Env(J=1, S=2, load=0.8, gamma=15., D=40, P=1e3, e=1e-5,
-          convergence_check=10, print_modulo=1, seed=42, max_time='01:30:05')
+env = Env(J=2, gamma=30., P=1e3, e=1e-5, seed = 5*1,
+          convergence_check=10, print_modulo=100, max_time='00:00:35')
 to_plot = []  # 'VI', 'PI', 'OSPI' (what to plot)
 
 # ------ Policy Iteration ------ #

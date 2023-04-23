@@ -39,9 +39,8 @@ def main(raw_args=None):
     args = load_args(raw_args)
     # ---- Problem ---- #
     seed = args.id * args.index
-    env = Env(J=args.J, gamma=args.gamma, P=1e3, e=1e-5,
-              trace=True, convergence_check=10, print_modulo=100,
-              seed=seed, max_time=args.time)
+    env = Env(J=args.J, gamma=args.gamma, P=1e3, e=1e-5, seed=seed,
+              max_time=args.time, convergence_check=10, print_modulo=100)
     pi_learner = PolicyIteration()
 
     # ---- Value Iteration ---- #
