@@ -177,7 +177,7 @@ class TimeConstraintEDs:
 
     def get_D(self):
         lab = sum(self.lab)
-        mu = lab * self.S / sum(self.lab / self.mu)
+        mu = lab / sum(self.lab / self.mu)
         pi_0 = self.get_pi_0(self.S, self.load, lab)
         prob_delay = self.get_tail_prob(self.S, self.load, lab, mu, pi_0, 0)
         D = np.ceil(-np.log(self.ZERO_ONE_PERC / prob_delay) /

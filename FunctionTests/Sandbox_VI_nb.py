@@ -5,15 +5,14 @@ Sandbox Value Iteration
 import numpy as np
 import numba as nb
 from numba import types as tp
-from FunctionTests.Sandbox_PI import init_w, init_pi, get_v, policy_improvement
+from FunctionTests.Sandbox_PI import init_pi, policy_improvement
 from Env_and_Learners import TimeConstraintEDs as Env, PolicyIteration
 from Insights import plot_pi, plot_v
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
-env = Env(J=2, S=2, gamma=30., P=1e3, e=1e-5, trace=True,
-          lab=np.array([0.6726, 0.1794]), mu=np.array([0.8169, 0.2651]),
-          convergence_check=10, print_modulo=10)
+env = Env(J=1, gamma=30, P=1e3, e=1e-5, seed=seed,
+          max_time='00:01:30', convergence_check=10, print_modulo=100)
 # env = Env(J=1, S=1, mu=array([3]), lab=array([1]), t=array([1]), P=1e3,
 #           gamma=1, D=5, e=1e-4, trace=True, print_modulo=100,
 #           max_iter=5)
@@ -138,6 +137,8 @@ def value_iteration(V, W, J, D, gamma, d_i1, d_i2, d_f, P_xy):
     sizes_s = d_i1['sizes_i'][J + 1:J * 2 + 1]
     sizes_x_n = d_i1['sizes'][0:J]  # sizes Next state
     sizes_s_n = d_i1['sizes'][J:J * 2]
+    lab = d_f['lab']
+    mu = d_f['mu']
     r = d_f['r']
     c = d_f['c']
     t = d_f['t']
@@ -151,12 +152,15 @@ def value_iteration(V, W, J, D, gamma, d_i1, d_i2, d_f, P_xy):
                     state_i = i * d_i1['sizes_i'][0] + np.sum(
                         x * sizes_x + s * sizes_s)
                     if x[i] == 0:  # TODO, no labda and mu
-                        V_t[state] += lab[i] * (get_w_i(i, x, s, state_i) - V[state])
+                        V_t[state] += lab[i] * (get_w_i(i, x, s, state_i)
+                                                - V[state])
                     else:
-                        V_t[state] += gamma * (get_w_i(i, x, s, state_i) - V[state])
+                        V_t[state] += gamma * (get_w_i(i, x, s, state_i)
+                                               - V[state])
                     if s[i] > 0:
                         next_state = state_i - sizes_s[i]
-                        V_t[state] += s[i] * mu[i] * (get_w_i(i, x, s, next_state) - V[state])
+                        V_t[state] += s[i] * mu[i] * \
+                                      (get_w_i(i, x, s, next_state) - V[state])
         for x_i in nb.prange(len(d_i2['x'])):
             for s_i in nb.prange(len(d_i2['s'])):  # TODO, sum s == S
                 for i in nb.prange(J + 1):

@@ -89,15 +89,14 @@ f5(D, s, J)  # Error (would work in python)
 @njit
 def f5a(x, gamma, t):
     """Array creation and bitwise comparing."""
-    return x > gamma * t
+    return sum(x > gamma * t)
 
 @njit
 def f5b(x, t):
     """Array creation and bitwise comparing."""
     return x * (t - np.array([0, 0, 1, 0]))
 
-
-f5a(x=[10, 5, 4, 8], gamma=1, t=[2, 2, 2, 2])  # Error (would work in python)
+f5a(x=array([10, 5, 4, 8]), gamma=1, t=array([2, 2, 2, 2]))
 f5b(x=array([10, 5, 4, 8]), t=array([2, 2, 2, 2]))
 
 # -----------------------------------------------------------------------
@@ -275,12 +274,21 @@ def global_test_2(local_variable):
     """Docstring."""
     return global_constant + local_variable
 
-
 print(global_test())
 print(global_test_2(global_variable))
 global_variable = 4
 print(global_test())
 print(global_test_2(global_variable))
+
+@njit
+def global_test_3(x):
+    """Docstring."""
+    V_t = 5 * x
+    V_t[0] = -1
+    return V_t, x
+
+x = np.arange(10)
+print(global_test_3(x))
 
 # -----------------------------------------------------------------------
 # -------------------------- Looping in Numba ---------------------------

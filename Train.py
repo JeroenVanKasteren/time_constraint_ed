@@ -54,6 +54,7 @@ def main(raw_args=None):
     result = [args.id, args.index, datetime.today().strftime('%Y-%m-%d'),
               seed, env.J, env.S, env.D, env.gamma, env.e,
               env.t, env.c, env.r, env.lab, env.mu, env.load, env.cap_prob,
+              np.mean(env.cap_prob) < 0.05,
               vi_learner.converged, ospi_learner.converged,
               (clock() - env.start_time),
               vi_learner.g, ospi_learner.g,
