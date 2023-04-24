@@ -64,7 +64,7 @@ class TimeConstraintEDs:
     """Class docstrings go here."""
 
     S_MIN: int = 2  # Servers
-    S_MAX: int = 6
+    S_MAX: int = 10
     mu_MIN = 0.1  # Service Rate
     mu_MAX = 1.
     load_MIN = 0.4  # System load
@@ -182,7 +182,7 @@ class TimeConstraintEDs:
         prob_delay = self.get_tail_prob(self.S, self.load, lab, mu, pi_0, 0)
         D = np.ceil(-np.log(self.ZERO_ONE_PERC / prob_delay) /
                     (self.S * mu - lab) * self.gamma)
-        D = int(max(2 * self.gamma, min(D, 10 * self.gamma)))
+        D = int(max(3 * self.gamma, min(D, 10 * self.gamma)))
         return D
 
     def trans_prob(self):

@@ -22,23 +22,23 @@ DICT_TYPE_I1 = tp.DictType(tp.unicode_type, tp.i4[:])  # int 1D vector
 DICT_TYPE_I2 = tp.DictType(tp.unicode_type, tp.i4[:, :])  # int 2D vector
 DICT_TYPE_F = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
 
-# def get_w_i(i, x, s, state_i):
-#     w_res = V[state]
-#     for j in range(J):
-#         if (x[j] > 0) or (j == i):
-#             w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
-#             i_not_admitted = 0
-#             if (i < J) and (i != j) and (x[i] < D):
-#                 i_not_admitted = sizes_x_n[i]
-#             for y in range(x[j] + 1):
-#                 next_state = (np.sum(x*sizes_x_n + s*sizes_s_n)
-#                               - (x[j] - y) * sizes_x_n[j]
-#                               + i_not_admitted
-#                               + sizes_s_n[j])
-#                 w += P_xy[j, x[j], y] * V[next_state]
-#             if w > w_res:
-#                 w_res = w  # TODO, does this not copy it?
-#     return W
+def get_w_i(i, x, s, state_i):
+    w_res = V[state]
+    for j in range(J):
+        if (x[j] > 0) or (j == i):
+            w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
+            i_not_admitted = 0
+            if (i < J) and (i != j) and (x[i] < D):
+                i_not_admitted = sizes_x_n[i]
+            for y in range(x[j] + 1):
+                next_state = (np.sum(x*sizes_x_n + s*sizes_s_n)
+                              - (x[j] - y) * sizes_x_n[j]
+                              + i_not_admitted
+                              + sizes_s_n[j])
+                w += P_xy[j, x[j], y] * V[next_state]
+            if w > w_res:
+                w_res = w  # TODO, does this not copy it?
+    return W
 
 @staticmethod
 @nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i8, tp.i8, tp.f8,
