@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 columns = ['id', 'index', 'Date', 'seed', 'J', 'S', 'D', 'size', 'size_i',
            'gamma', 'eps', 't', 'c', 'r', 'lambda', 'mu', 'load', 'cap_prob',
-           'cap_bool', 'vi_converged', 'ospi_converged', 'time', 'VI',
+           'w_cap_prob', 'vi_converged', 'ospi_converged', 'time', 'VI',
            'OSPI', 'gap']
 
 results = pd.read_csv('Results/results.csv', names=columns)
@@ -24,9 +24,9 @@ cols = ['lambda', 'mu', 'cap_prob']
 results.loc[:, cols] = results.loc[:, cols].applymap(strip_split)
 
 # Mark bad results where weighted average of cap_prob is too big >0.05
-# results['cap_bool'] = (results['cap_prob'] * results['lambda'] /
-#                        results['lambda'].apply(sum)).apply(sum)
-# results.to_csv('Results/results.csv', header=False, index=False)
+results['w_cap_prob'] = (results['cap_prob'] * results['lambda']
+                         / results['lambda'].apply(sum)).apply(sum)
+results.to_csv('Results/results.csv', header=False, index=False)
 
 results_conv = results[results['vi_converged'] & results['ospi_converged']]
 

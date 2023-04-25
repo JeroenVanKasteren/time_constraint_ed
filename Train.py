@@ -75,5 +75,6 @@ def main(raw_args=None):
     with open(FILEPATH, 'a') as f:  # a = append
         f.write(','.join(map(str, result)) + '\n')
 
+
 if __name__ == '__main__':
     main()
