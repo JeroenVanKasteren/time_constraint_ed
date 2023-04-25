@@ -8,23 +8,24 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-columns = ['id', 'index', 'Date', 'seed', 'J', 'S', 'D', 'gamma', 'eps',
-           't', 'c', 'r', 'lambda', 'mu', 'load', 'cap_prob', 'cap_bool',
-           'vi_converged', 'ospi_converged', 'time', 'VI', 'OSPI', 'gap']
+columns = ['id', 'index', 'Date', 'seed', 'J', 'S', 'D', 'size', 'size_i',
+           'gamma', 'eps', 't', 'c', 'r', 'lambda', 'mu', 'load', 'cap_prob',
+           'cap_bool', 'vi_converged', 'ospi_converged', 'time', 'VI',
+           'OSPI', 'gap']
 
 results = pd.read_csv('Results/results.csv', names=columns)
 
-strip_split = lambda x: [float(i) for i in x.strip('[]').split()]
+
+def strip_split(x):
+    return np.array([float(i) for i in x.strip('[]').split()])
+
+
 cols = ['lambda', 'mu', 'cap_prob']
 results.loc[:, cols] = results.loc[:, cols].applymap(strip_split)
 
-results['size'] = ((results['D'] + 1) * (results['S'] + 1))**results['J']
-results['size_i'] = ((results['J']+1) * (results['D'] + 1)
-                     * (results['S'] + 1))**results['J']
-
-# Mark bad results where average of cap_prob is too big >0.05
-# results['ospi_converged'] = ((results['cap_prob'].apply(np.mean) < 0.05) &
-#                               results['ospi_converged'])
+# Mark bad results where weighted average of cap_prob is too big >0.05
+# results['cap_bool'] = (results['cap_prob'] * results['lambda'] /
+#                        results['lambda'].apply(sum)).apply(sum)
 # results.to_csv('Results/results.csv', header=False, index=False)
 
 results_conv = results[results['vi_converged'] & results['ospi_converged']]

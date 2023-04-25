@@ -18,6 +18,7 @@ from pathlib import Path
 import re
 
 FILEPATH = 'Results/results.csv'
+WEIGHTED_CAP_PROB_MAX = 0.15
 
 def load_args(raw_args=None):
     parser = argparse.ArgumentParser()
@@ -39,8 +40,12 @@ def main(raw_args=None):
     args = load_args(raw_args)
     # ---- Problem ---- #
     seed = args.id * args.index
-    env = Env(J=args.J, gamma=args.gamma, P=1e3, e=1e-5, seed=seed,
-              max_time=args.time, convergence_check=10, print_modulo=100)
+    weighted_cap_prob = 1
+    while weighted_cap_prob > WEIGHTED_CAP_PROB_MAX:
+        env = Env(J=args.J, gamma=args.gamma, P=1e3, e=1e-5, seed=seed,
+                  max_time=args.time, convergence_check=10, print_modulo=100)
+        weighted_cap_prob = sum(env.cap_prob * env.lab) / sum(env.lab)
+        seed += 1
     pi_learner = PolicyIteration()
 
     # ---- Value Iteration ---- #
@@ -52,11 +57,10 @@ def main(raw_args=None):
     ospi_learner.get_g(env)
 
     result = [args.id, args.index, datetime.today().strftime('%Y-%m-%d'),
-              seed, env.J, env.S, env.D, env.gamma, env.e,
+              seed, env.J, env.S, env.D, env.size, env.size_i, env.gamma, env.e,
               env.t, env.c, env.r, env.lab, env.mu, env.load, env.cap_prob,
-              np.mean(env.cap_prob) < 0.05,
-              vi_learner.converged, ospi_learner.converged,
-              (clock() - env.start_time),
+              env.weighted_cap_prob, vi_learner.converged,
+              ospi_learner.converged, (clock() - env.start_time),
               vi_learner.g, ospi_learner.g,
               abs(vi_learner.g - ospi_learner.g) / vi_learner.g]
 

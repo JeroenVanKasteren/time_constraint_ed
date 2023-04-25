@@ -68,7 +68,7 @@ class TimeConstraintEDs:
     mu_MIN = 0.1  # Service Rate
     mu_MAX = 1.
     load_MIN = 0.4  # System load
-    load_MAX = 1.
+    load_MAX = 0.85
     imbalance_MIN = 1.  # Imbalance
     imbalance_MAX = 5.
     TARGET = array([1], float)  # Target
@@ -119,6 +119,7 @@ class TimeConstraintEDs:
         else:
             s.D: int = s.get_D()
         s.cap_prob = s.get_tail_prob(s.s_star, s.rho, s.lab, s.mu, s.pi_0, s.D)
+        s.weighted_cap_prob = sum(s.cap_prob * s.lab) / sum(s.lab)
         s.P_xy = s.trans_prob()
 
         s.dim = tuple(np.repeat([s.D + 1, s.S + 1], s.J))
@@ -171,6 +172,7 @@ class TimeConstraintEDs:
               's_star:', round(s.s_star, 4), '\n',
               'rho:', round(s.rho, 4), '\n',
               'P(W>D):', s.cap_prob, '\n',
+              'Weighted cap_prob:', round(s.weighted_cap_prob, 4), '\n',
               'W: ', round(size(np.zeros(s.dim_i)) / 10**9, 4), 'GB.', '\n',
               'V: ', round(size(np.zeros(s.dim)) / 10 ** 9, 4), 'GB.')
         assert s.load < 1, 'rho < 1 does not hold'
@@ -182,7 +184,7 @@ class TimeConstraintEDs:
         prob_delay = self.get_tail_prob(self.S, self.load, lab, mu, pi_0, 0)
         D = np.ceil(-np.log(self.ZERO_ONE_PERC / prob_delay) /
                     (self.S * mu - lab) * self.gamma)
-        D = int(max(3 * self.gamma, min(D, 10 * self.gamma)))
+        D = int(max(3 * self.gamma, min(D, 20 * self.gamma)))
         return D
 
     def trans_prob(self):
