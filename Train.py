@@ -4,6 +4,8 @@ Iteratively solves different environments.
 Setup:
 N classes, N=2,3,4 (SIMS := # experiments each)
 
+python Train.py --id=1 --index=1 --J=2 --gamma=25 --policy=False --time=0-00:03:00
+
 @author: Jeroen van Kasteren (j.van.kasteren@vu.nl)
 Created on 19-3-2020.
 """
@@ -15,19 +17,18 @@ from time import perf_counter as clock
 from Env_and_Learners import TimeConstraintEDs as Env, PolicyIteration, \
     ValueIteration, OneStepPolicyImprovement
 from pathlib import Path
-import re
 
 FILEPATH = 'Results/results.csv'
-WEIGHTED_CAP_PROB_MAX = 0.15
+MAX_TARGET_PROB = 0.9
 
 def load_args(raw_args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('--id', default='27_1')  # SULRM_JOBID
     parser.add_argument('--index', default='27_1')  # SLURM_ARRAY_TASK_ID
     parser.add_argument('--J', default=2)  # User input
-    parser.add_argument('--gamma', default=30)  # User input
+    parser.add_argument('--gamma', default=25)  # User input
     parser.add_argument('--policy', default=False)  # User input
-    parser.add_argument('--time', default='00:02:00')  # User input
+    parser.add_argument('--time', default='0-00:02:00')  # User input
     args = parser.parse_args(raw_args)
     args.id = int(args.id)
     args.index = int(args.index)
@@ -40,11 +41,13 @@ def main(raw_args=None):
     args = load_args(raw_args)
     # ---- Problem ---- #
     seed = args.id * args.index
-    weighted_cap_prob = 1
-    while weighted_cap_prob > WEIGHTED_CAP_PROB_MAX:
+    rho = 1
+    smu = 0
+    while smu * (1 - rho) < -np.log(MAX_TARGET_PROB):
         env = Env(J=args.J, gamma=args.gamma, P=1e3, e=1e-5, seed=seed,
                   max_time=args.time, convergence_check=10, print_modulo=100)
-        weighted_cap_prob = sum(env.cap_prob * env.lab) / sum(env.lab)
+        smu = env.S * sum(env.lab) / sum(env.lab / env.mu)
+        rho = env.load
         seed += 1
     pi_learner = PolicyIteration()
 

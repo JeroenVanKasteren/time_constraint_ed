@@ -65,10 +65,10 @@ class TimeConstraintEDs:
 
     S_MIN: int = 2  # Servers
     S_MAX: int = 10
-    mu_MIN = 0.1  # Service Rate
+    mu_MIN = 0.2  # Service Rate
     mu_MAX = 1.
     load_MIN = 0.4  # System load
-    load_MAX = 0.85
+    load_MAX = 0.9
     imbalance_MIN = 1.  # Imbalance
     imbalance_MAX = 5.
     TARGET = array([1], float)  # Target
@@ -132,8 +132,10 @@ class TimeConstraintEDs:
         s.max_iter = kwargs.get('max_iter', np.Inf)  # max(size_i^2, 1e3)
         s.start_time = clock()
         if 'max_time' in kwargs:  # max time in seconds, 60 seconds slack
-            x = strptime(kwargs.get('max_time'), '%H:%M:%S')
-            s.max_time = x.tm_hour * 60 * 60 + x.tm_min * 60 + x.tm_sec - 60
+            days, time = kwargs.get('max_time').split('-')
+            x = strptime(time, '%H:%M:%S')
+            s.max_time = (((int(days) * 24 + x.tm_hour) * 60 + x.tm_min) * 60
+                          + x.tm_sec - 60)
         else:
             s.max_time = np.Inf
         s.print_modulo = kwargs.get('print_modulo', np.inf)  # 1 for always
@@ -184,7 +186,7 @@ class TimeConstraintEDs:
         prob_delay = self.get_tail_prob(self.S, self.load, lab, mu, pi_0, 0)
         D = np.ceil(-np.log(self.ZERO_ONE_PERC / prob_delay) /
                     (self.S * mu - lab) * self.gamma)
-        D = int(max(3 * self.gamma, min(D, 20 * self.gamma)))
+        D = int(max(2 * self.gamma, min(D, 20 * self.gamma)))
         return D
 
     def trans_prob(self):

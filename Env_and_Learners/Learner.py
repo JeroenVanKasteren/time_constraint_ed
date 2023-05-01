@@ -291,6 +291,7 @@ class ValueIteration:
         self.name = 'Value Iteration'
         self.pi_learner = pi_learner
         self.V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
+        self.V_t = np.zeros(env.dim, dtype=np.float32)
         self.W = np.zeros(env.dim_i, dtype=np.float32)
         self.Pi = pi_learner.init_pi(env)
         self.g = 0
@@ -349,8 +350,6 @@ class ValueIteration:
                 s.converged, stopped, s.g = \
                     s.pi_learner.convergence(env, s.V_t, s.V, s.count, s.name)
             s.V = s.V_t - s.V_t[tuple([0] * (env.J * 2))]  # Rescale V_t
-            if s.count > env.max_iter:
-                break
             s.count += 1
 
     def get_policy(s, env):
