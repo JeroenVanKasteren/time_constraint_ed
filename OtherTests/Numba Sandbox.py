@@ -285,10 +285,10 @@ def global_test_3(x):
     """Docstring."""
     V_t = 5 * x
     V_t[0] = -1
-    return V_t, x
+    return V_t
 
 x = np.arange(10)
-print(global_test_3(x))
+print(global_test_3(x), x)
 
 # -----------------------------------------------------------------------
 # -------------------------- Looping in Numba ---------------------------
@@ -540,11 +540,16 @@ def if_any3(x):
     """Docstring."""
     return 5 + A if x[0] < A else 5
 
+@njit
+def sum_bools(x):
+    """Docstring."""
+    return sum(np.arange(5) < 3), sum(np.arange(5) < np.repeat(3, 5))
 
 x = np.arange(5)
 print(if_any1(x))  # Numba can handle one line if statements
 print(if_any2(x))  # np.any works! (base any does not)
 print(if_any3(x))  # This works
+print(sum_bools(x))  # This works
 
 
 # -----------------------------------------------------------------------

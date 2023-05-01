@@ -146,8 +146,15 @@ class TimeConstraintEDs:
         s.s_states_v = s_states[np.sum(s_states, axis=1) <= s.S]
         # Action states
         s.s_states = s.s_states_v[np.sum(s.s_states_v, axis=1) < s.S]
+        s.s_states_full = s.s_states_v[np.sum(s.s_states_v, axis=1) == s.S]
         s.x_states = array(list(product(np.arange(s.D + 1), repeat=s.J)), int32)
 
+        s.d_i0 = nb.typed.Dict.empty(key_type=tp.unicode_type,
+                                     value_type=tp.i8)
+        s.d_i0['J'] = s.J
+        s.d_i0['D'] = s.D
+        s.d_i0['S'] = s.S
+        s.d_i0['P'] = s.P
         s.d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type,
                                      value_type=tp.i4[:])
         s.d_i1['sizes'] = s.sizes
@@ -155,12 +162,15 @@ class TimeConstraintEDs:
         s.d_i2 = nb.typed.Dict.empty(key_type=tp.unicode_type,
                                      value_type=tp.i4[:, :])
         s.d_i2['s'] = s.s_states
+        s.d_i2['s_valid'] = s.s_states_v
         s.d_i2['x'] = s.x_states
         s.d_f = nb.typed.Dict.empty(key_type=tp.unicode_type,
                                     value_type=tp.f8[:])
         s.d_f['t'] = s.t
         s.d_f['c'] = s.c
         s.d_f['r'] = s.r
+        s.d_f['lab'] = s.lab
+        s.d_f['mu'] = s.mu
 
         print('J =', s.J, ', D =', s.D, ', s =', s.S,
               ', gamma =', s.gamma,
