@@ -172,6 +172,8 @@ def value_iteration(V, gamma, d_i0, d_i1, d_i2, d_f, P_xy):
     lab = d_f['lab']
     mu = d_f['mu']
     V_t = env.tau * V  # Copies V
+    delta_max = np.inf
+    delta_min = -np.inf
     while not converged:  # Update each state.
         for x_i in nb.prange(len(d_i2['x'])):
             for s_i in nb.prange(len(d_i2['s_valid'])):
@@ -191,29 +193,42 @@ def value_iteration(V, gamma, d_i0, d_i1, d_i2, d_f, P_xy):
                         next_state = state_i - sizes_s[i]
                         V_t[state] += (s[i] * mu[i] * \
                                        get_w_i(i, x, s, next_state) - V[state])
-            for s_i in nb.prange(len(d_i2['s_full'])):
-                for i in nb.prange(J + 1):
-                    x, s = d_i2['x'][x_i], d_i2['s'][s_i]
-                    state = np.sum(x * sizes_x_n + s * sizes_s_n)
-                    next_state = state + sizes_x[i]
-                    state_i = i * d_i1['sizes_i'][0] + np.sum(
-                        x * sizes_x + s * sizes_s)
-                    if x[i] == 0:  # TODO, no labda and mu
-                        V_t[state] += lab[i] * (V[next_state] - V[state])
-                    else:
-                        V_t[state] += gamma * (V[next_state] - V[state])
-                    state_i = i * d_i1['sizes_i'][0] + np.sum(
-                        x * sizes_x + s * sizes_s) - sizes_s[i]
-                    V_t[state] += s[i] * mu[i] * (
-                                get_w(i, x, s, state_i) - V[state])
-        V_t = V_t / env.tau
-        if s.count % env.convergence_check == 0:
-            s.converged, stopped, s.g = \
-                s.pi_learner.convergence(env, s.V_t, s.V, s.count, s.name)
-        s.V = s.V_t - s.V_t[tuple([0] * (env.J * 2))]  # Rescale V_t
-        if s.count > env.max_iter:
-            break
-        s.count += 1
+                V_t[state] /= env.tau
+
+                diff = V_t[state] - V[state]
+                delta_max = max([delta_max, diff])
+                delta_min = max([delta_min, diff])
+                if abs(delta_max - delta_min) > env.e:
+                    break  # TODO, how to break all loops?
+            converged = delta_max - delta_min < env.e
+            max_iter = (i > env.max_iter) | (j > env.max_iter)
+            max_time = (clock() - env.start_time) > env.max_time
+            g = (delta_max + delta_min) / 2 * env.tau
+                converged += 1
+                converged, max_iter, g = convergence(env, V_t, V, i, 'VI')
+        #     for s_i in nb.prange(len(d_i2['s_full'])):
+        #         for i in nb.prange(J + 1):
+        #             x, s = d_i2['x'][x_i], d_i2['s'][s_i]
+        #             state = np.sum(x * sizes_x_n + s * sizes_s_n)
+        #             next_state = state + sizes_x[i]
+        #             state_i = i * d_i1['sizes_i'][0] + np.sum(
+        #                 x * sizes_x + s * sizes_s)
+        #             if x[i] == 0:  # TODO, no labda and mu
+        #                 V_t[state] += lab[i] * (V[next_state] - V[state])
+        #             else:
+        #                 V_t[state] += gamma * (V[next_state] - V[state])
+        #             state_i = i * d_i1['sizes_i'][0] + np.sum(
+        #                 x * sizes_x + s * sizes_s) - sizes_s[i]
+        #             V_t[state] += s[i] * mu[i] * (
+        #                         get_w(i, x, s, state_i) - V[state])
+        # V_t = V_t / env.tau
+        # if s.count % env.convergence_check == 0:
+        #     s.converged, stopped, s.g = \
+        #         s.pi_learner.convergence(env, s.V_t, s.V, s.count, s.name)
+        # s.V = s.V_t - s.V_t[tuple([0] * (env.J * 2))]  # Rescale V_t
+        # if s.count > env.max_iter:
+        #     break
+        # s.count += 1
 
 
 # Value Iteration
