@@ -10,7 +10,7 @@ PATH = (r"D:\Programs\SURFdrive\VU\Promovendus"
 # PATH = (r"C:\Users\jkn354\surfdrive\VU\Promovendus"
 #         r"\Time constraints in emergency departments\Code")
 os.chdir(PATH)
-from init import Env
+from Env_and_Learners.test_env import Env
 import numpy as np
 from numpy import array, exp, around, ones, eye, dot
 

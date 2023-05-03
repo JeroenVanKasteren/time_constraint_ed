@@ -102,7 +102,7 @@ class TimeConstraintEDs:
         s.t = array(t, float)
         s.c = array(kwargs.get('c', array([1] * s.J)), float)
         s.r = array(kwargs.get('r', array([1] * s.J)), float)
-        s.P: int = kwargs.get('P', max(s.c + s.r) * 10)
+        s.P: int = int(kwargs.get('P', max(s.c + s.r) * 10))
         s.e = kwargs.get('e', 1e-5)
 
         s.a = array(lab / mu, float)
@@ -112,7 +112,7 @@ class TimeConstraintEDs:
         s.tail_prob = s.get_tail_prob(s.s_star, s.rho, s.lab, s.mu,
                                       s.pi_0, s.gamma * s.t)
         s.g = s.get_g_app(s.pi_0, s.tail_prob)
-        s.tau = array(s.S * max(s.mu) + sum(np.maximum(s.lab, s.gamma)), float)
+        s.tau = float(s.S * max(s.mu) + sum(np.maximum(s.lab, s.gamma)))
 
         if 'D' in kwargs:
             s.D: int = kwargs.get('D')
@@ -155,6 +155,8 @@ class TimeConstraintEDs:
         s.d_i0['D'] = s.D
         s.d_i0['S'] = s.S
         s.d_i0['P'] = s.P
+        s.d_i0['convergence_check'] = s.convergence_check
+        s.d_i0['print_modulo'] = s.print_modulo
         s.d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type,
                                      value_type=tp.i4[:])
         s.d_i1['sizes'] = s.sizes
@@ -164,29 +166,34 @@ class TimeConstraintEDs:
         s.d_i2['s'] = s.s_states
         s.d_i2['s_valid'] = s.s_states_v
         s.d_i2['x'] = s.x_states
-        s.d_f = nb.typed.Dict.empty(key_type=tp.unicode_type,
-                                    value_type=tp.f8[:])
-        s.d_f['t'] = s.t
-        s.d_f['c'] = s.c
-        s.d_f['r'] = s.r
-        s.d_f['lab'] = s.lab
-        s.d_f['mu'] = s.mu
+        s.d_f0 = nb.typed.Dict.empty(key_type=tp.unicode_type,
+                                     value_type=tp.f8)
+        s.d_f0['max_iter'] = float(s.max_iter)
+        s.d_f0['start_time'] = float(s.start_time)
+        s.d_f0['max_time'] = float(s.max_time)
+        s.d_f0['tau'] = s.tau
+        s.d_f0['e'] = s.e
+        s.d_f1 = nb.typed.Dict.empty(key_type=tp.unicode_type,
+                                     value_type=tp.f8[:])
+        s.d_f1['t'] = s.t
+        s.d_f1['c'] = s.c
+        s.d_f1['r'] = s.r
+        s.d_f1['lab'] = s.lab
+        s.d_f1['mu'] = s.mu
 
-        print('J =', s.J, ', D =', s.D, ', s =', s.S,
-              ', gamma =', s.gamma,
-              ', (P=', s.P, ')',
-              ', load=', round(s.load, 4), '\n',
-              'lambda:', round(s.lab, 4), '\n',
-              'mu:', round(s.mu, 4), '\n',
-              'Target:', round(s.t, 4), '\n',
-              'r:', round(s.r, 4), '\n',
-              'c:', round(s.c, 4), '\n',
-              's_star:', round(s.s_star, 4), '\n',
-              'rho:', round(s.rho, 4), '\n',
-              'P(W>D):', s.cap_prob, '\n',
-              'Weighted cap_prob:', round(s.weighted_cap_prob, 4), '\n',
-              'W: ', round(size(np.zeros(s.dim_i)) / 10**9, 4), 'GB.', '\n',
-              'V: ', round(size(np.zeros(s.dim)) / 10 ** 9, 4), 'GB.')
+        print(f'J = {s.J} D = {s.D}, s = {s.S}, gamma = {s.gamma}, P = {s.P}',
+              '\n load = ', round(s.load, 4),
+              '\n lambda = ', round(s.lab, 4),
+              '\n mu = ', round(s.mu, 4),
+              '\n target = ', round(s.t, 4),
+              '\n r = ', round(s.r, 4),
+              '\n c = ', round(s.c, 4),
+              '\n s_star = ', round(s.s_star, 4),
+              '\n rho:', round(s.rho, 4),
+              '\n P(W>D):', s.cap_prob,
+              '\n Weighted cap_prob:', round(s.weighted_cap_prob, 4),
+              '\n W: ', round(size(np.zeros(s.dim_i)) / 10**9, 4), 'GB.',
+              '\n V: ', round(size(np.zeros(s.dim)) / 10 ** 9, 4), 'GB.')
         assert s.load < 1, 'rho < 1 does not hold'
 
     def get_D(self):
@@ -272,4 +279,4 @@ class TimeConstraintEDs:
 
     def time_print(self, time):
         """Convert seconds to readable format."""
-        print('Time: ', int(time / 60), ':', int(time - 60 * int(time / 60)))
+        print(f'Time: {time/60:.0f}:{time - 60 * int(time / 60):.0f} min.')

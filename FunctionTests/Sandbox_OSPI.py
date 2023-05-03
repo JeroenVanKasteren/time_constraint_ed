@@ -8,7 +8,7 @@ import numpy as np
 from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy.integrate import quad_vec
 from Sandbox_PI import init_w, init_pi, policy_improvement, policy_evaluation
-from OtherTests.init import Env
+from Env_and_Learners.test_env import Env
 from Plotting import plot_pi, plot_v
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)

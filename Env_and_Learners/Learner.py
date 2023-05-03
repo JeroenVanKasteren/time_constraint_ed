@@ -21,7 +21,7 @@ class PolicyIteration:
     """Policy Iteration."""
     DICT_TYPE_I1 = tp.DictType(tp.unicode_type, tp.i4[:])  # int 1D vector
     DICT_TYPE_I2 = tp.DictType(tp.unicode_type, tp.i4[:, :])  # int 2D vector
-    DICT_TYPE_F = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
+    DICT_TYPE_F1 = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
 
     def __init__(self):
         self.name = 'Policy Iteration'
@@ -108,31 +108,31 @@ class PolicyIteration:
                   ", g: ", round(g, 4))
         if converged:
             if j == -1:
-                print(name, 'converged in', i, 'iterations. g=', round(g, 4))
+                print(f'{name} converged in {i} iterations. g = %0.4f' % g)
             else:
-                print(name, 'converged in', j, 'iterations. g=', round(g, 4))
+                print(f'{name} converged in {j} iterations. g = %0.4f' % g)
         elif max_iter:
-            print(name, 'iter:', i, '(', j, ') reached max_iter =',
-                  max_iter, ', g~', round(g, 4))
+            print(f'{name} iter {i}, ({j}) reached max_iter ({max_iter}) '
+                  f'g ~ %0.4f' % g)
         elif max_time:
-            print(name, 'iter:', i, '(', j, ') reached max_time =',
-                  max_time, ', g~', round(g, 4))
+            print(f'{name} iter {i}, ({j}) reached max_time ({max_time}) '
+                  f'g ~ %0.4f' % g)
         return converged, max_iter | max_time, g
 
     @staticmethod
     @nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i4[:], tp.i8, tp.i8, tp.f8,
-                      DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F, tp.f8[:, :, :]),
+                      DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F1, tp.f8[:, :, :]),
              parallel=True, error_model='numpy')
     def get_w(V, W, Pi, J, D, gamma,
-              d_i1, d_i2, d_f, P_xy):
+              d_i1, d_i2, d_f1, P_xy):
         """W given policy."""
         sizes_x = d_i1['sizes_i'][1:J + 1]
         sizes_s = d_i1['sizes_i'][J + 1:J * 2 + 1]
         sizes_x_n = d_i1['sizes'][0:J]  # sizes Next state
         sizes_s_n = d_i1['sizes'][J:J * 2]
-        r = d_f['r']
-        c = d_f['c']
-        t = d_f['t']
+        r = d_f1['r']
+        c = d_f1['c']
+        t = d_f1['t']
         for x_i in nb.prange(len(d_i2['x'])):
             for s_i in nb.prange(len(d_i2['s'])):
                 for i in nb.prange(J + 1):
@@ -189,18 +189,18 @@ class PolicyIteration:
     @staticmethod
     @nb.njit(nb.types.Tuple((nb.i4[:], nb.b1))(
         tp.f4[:], tp.f4[:], tp.i4[:], tp.i8, tp.i8, tp.f8, tp.i8,
-        DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F, tp.f8[:, :, :]),
+        DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F1, tp.f8[:, :, :]),
         parallel=True, error_model='numpy')
     def policy_improvement(V, W, Pi, J, D, gamma, keep_idle,
-                           d_i, d_i2, d_f, P_xy):
+                           d_i, d_i2, d_f1, P_xy):
         """W given policy."""
         sizes_x = d_i['sizes_i'][1:J + 1]
         sizes_s = d_i['sizes_i'][J + 1:J * 2 + 1]
         sizes_x_n = d_i['sizes'][0:J]  # sizes Next state
         sizes_s_n = d_i['sizes'][J:J * 2]
-        r = d_f['r']
-        c = d_f['c']
-        t = d_f['t']
+        r = d_f1['r']
+        c = d_f1['c']
+        t = d_f1['t']
         stable = 0
         for x_i in nb.prange(len(d_i2['x'])):
             for s_i in nb.prange(len(d_i2['s'])):
@@ -243,7 +243,7 @@ class PolicyIteration:
             V = V.reshape(env.size)
             W = W.reshape(env.size_i)
             W = self.get_w(V, W, Pi, env.J, env.D, env.gamma,
-                           env.d_i1, env.d_i2, env.d_f, env.P_xy)
+                           env.d_i1, env.d_i2, env.d_f1, env.P_xy)
             V = V.reshape(env.dim)
             W = W.reshape(env.dim_i)
             V_t = self.get_v(env, V, W)
@@ -285,7 +285,7 @@ class ValueIteration:
     """Value Iteration."""
     DICT_TYPE_I1 = tp.DictType(tp.unicode_type, tp.i4[:])  # int 1D vector
     DICT_TYPE_I2 = tp.DictType(tp.unicode_type, tp.i4[:, :])  # int 2D vector
-    DICT_TYPE_F = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
+    DICT_TYPE_F1 = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
 
     def __init__(self, env, pi_learner):
         self.name = 'Value Iteration'
@@ -300,17 +300,17 @@ class ValueIteration:
 
     @staticmethod
     @nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i8, tp.i8, tp.f8,
-                      DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F, tp.f8[:, :, :]),
+                      DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F1, tp.f8[:, :, :]),
              parallel=True, error_model='numpy')
-    def get_w(V, W, J, D, gamma, d_i, d_i2, d_f, P_xy):
+    def get_w(V, W, J, D, gamma, d_i, d_i2, d_f1, P_xy):
         """W given policy."""
         sizes_x = d_i['sizes_i'][1:J + 1]
         sizes_s = d_i['sizes_i'][J + 1:J * 2 + 1]
         sizes_x_n = d_i['sizes'][0:J]  # sizes Next state
         sizes_s_n = d_i['sizes'][J:J * 2]
-        r = d_f['r']
-        c = d_f['c']
-        t = d_f['t']
+        r = d_f1['r']
+        c = d_f1['c']
+        t = d_f1['t']
         for x_i in nb.prange(len(d_i2['x'])):
             for s_i in nb.prange(len(d_i2['s'])):
                 for i in nb.prange(J + 1):

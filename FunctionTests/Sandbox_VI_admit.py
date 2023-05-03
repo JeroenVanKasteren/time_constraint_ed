@@ -34,7 +34,7 @@ import numpy as np
 from numba import njit
 from numpy import array, arange, zeros
 
-from OtherTests.init import Env
+from Env_and_Learners.test_env import Env
 from Plotting import plot_Pi, plot_V
 
 np.set_printoptions(precision=9, linewidth=150, suppress=True)

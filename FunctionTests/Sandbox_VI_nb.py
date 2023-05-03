@@ -5,28 +5,27 @@ Sandbox Value Iteration
 import numpy as np
 import numba as nb
 from numba import types as tp
-from FunctionTests.Sandbox_PI import init_pi, policy_improvement
 from Env_and_Learners import TimeConstraintEDs as Env, PolicyIteration
-from Insights import plot_pi, plot_v
+from time import perf_counter as clock
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
-seed = 42
-env = Env(J=1, gamma=30, P=1e3, e=1e-5, seed=seed,
-          max_time='00:01:30', convergence_check=10, print_modulo=100)
 pi_learner = PolicyIteration()
+env = Env(J=2, S=3, gamma=10, D=30, P=1e3, e=1e-5, seed=42,
+          max_time='0-00:05:30', convergence_check=10, print_modulo=100)
 
 DICT_TYPE_I0 = tp.DictType(tp.unicode_type, tp.i4)  # ints
 DICT_TYPE_I1 = tp.DictType(tp.unicode_type, tp.i4[:])  # int 1D vector
 DICT_TYPE_I2 = tp.DictType(tp.unicode_type, tp.i4[:, :])  # int 2D vector
-DICT_TYPE_F = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
+DICT_TYPE_F0 = tp.DictType(tp.unicode_type, tp.f8)  # float 1D vector
+DICT_TYPE_F1 = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
 
 
-@nb.njit(tp.f4[:](tp.f4[:], ..., DICT_TYPE_I0, DICT_TYPE_I1, DICT_TYPE_I2,
-                  DICT_TYPE_F, tp.f8[:, :, :]),
+@nb.njit(tp.f4(tp.f4[:], tp.i8, tp.i4[:], tp.i4[:], tp.i8, tp.f8,
+                  DICT_TYPE_I0, DICT_TYPE_I1, DICT_TYPE_F1, tp.f8[:, :, :]),
          parallel=True, error_model='numpy')
-def get_w_i(V, i, x, s, state, gamma, d_i0, d_i1, d_i2, d_f, P_xy):
-    J, D, r, c, t = d_i0['J'], d_i0['D'], d_f['r'], d_f['c'], d_f['t']
+def get_w_i(V, i, x, s, state, gamma, d_i0, d_i1, d_f1, P_xy):
+    J, D, r, c, t = d_i0['J'], d_i0['D'], d_f1['r'], d_f1['c'], d_f1['t']
     sizes_x_n, sizes_s_n = d_i1['sizes'][0:J], d_i1['sizes'][J:J * 2]
     next_state = state + d_i1['sizes'][i] if x[i] < D else state
     w_res = V[next_state]
@@ -50,12 +49,11 @@ def get_w_i(V, i, x, s, state, gamma, d_i0, d_i1, d_i2, d_f, P_xy):
                 w_res = w
     return w_res
 
-
-@nb.njit(tp.f4[:](tp.f4[:], ..., DICT_TYPE_I0, DICT_TYPE_I1, DICT_TYPE_I2,
-                  DICT_TYPE_F, tp.f8[:, :, :]),
+@nb.njit(tp.f4(tp.f4[:], tp.i4[:], tp.i4[:], tp.i8, tp.f8,
+                  DICT_TYPE_I0, DICT_TYPE_I1, DICT_TYPE_F1, tp.f8[:, :, :]),
          parallel=True, error_model='numpy')
-def get_w(V, x, s, state, gamma, d_i0, d_i1, d_i2, d_f, P_xy):
-    J, D, r, c, t = d_i0['J'], d_i0['D'], d_f['r'], d_f['c'], d_f['t']
+def get_w(V, x, s, state, gamma, d_i0, d_i1, d_f1, P_xy):
+    J, D, r, c, t = d_i0['J'], d_i0['D'], d_f1['r'], d_f1['c'], d_f1['t']
     sizes_x_n, sizes_s_n = d_i1['sizes'][0:J], d_i1['sizes'][J:J * 2]
     w_res = V[state]
     if s == d_i0['S']:
@@ -117,64 +115,26 @@ def get_w(V, x, s, state, gamma, d_i0, d_i1, d_i2, d_f, P_xy):
 #     return W
 
 
-# @staticmethod
-@nb.njit
-def convergence(env, V_t, V, i, name, j=-1):
-    """Convergence check of valid states only."""
-    delta_max = V_t[tuple([0] * (env.J * 2))] - V[tuple([0] * (env.J*2))]
-    delta_min = delta_max.copy()
-    for x_i in nb.prange(len(d_i2['x'])):
-        for s_i in nb.prange(len(d_i2['s'])):
-            for i in nb.prange(J + 1):
-                x = d_i2['x'][x_i]
-                s = d_i2['s'][s_i]
-                diff = V_t[tuple(states)] - V[tuple(states)]
-                delta_max = np.max([np.max(diff), delta_max])
-                delta_min = np.min([np.min(diff), delta_min])
-                if abs(delta_max - delta_min) > env.e:
-                    break  # TODO, how to break all loops?
-    converged = delta_max - delta_min < env.e
-    max_iter = (i > env.max_iter) | (j > env.max_iter)
-    max_time = (clock() - env.start_time) > env.max_time
-    g = (delta_max + delta_min) / 2 * env.tau
-    if (converged | (((i % env.print_modulo == 0) & (j == -1))
-                     | (j % env.print_modulo == 0))):
-        print("iter: ", i,
-              "inner_iter: ", j,
-              ", delta: ", round(delta_max - delta_min, 2),
-              ', D_min', round(delta_min, 2),
-              ', D_max', round(delta_max, 2),
-              ", g: ", round(g, 4))
-    if converged:
-        if j == -1:
-            print(name, 'converged in', i, 'iterations. g=', round(g, 4))
-        else:
-            print(name, 'converged in', j, 'iterations. g=', round(g, 4))
-    elif max_iter:
-        print(name, 'iter:', i, '(', j, ') reached max_iter =',
-              max_iter, ', g~', round(g, 4))
-    elif max_time:
-        print(name, 'iter:', i, '(', j, ') reached max_time =',
-              max_time, ', g~', round(g, 4))
-    return converged, max_iter | max_time, g
-
-
-@nb.njit(tp.f4[:](tp.f4[:], tp.f8, DICT_TYPE_I0, DICT_TYPE_I1, DICT_TYPE_I2,
-                  DICT_TYPE_F, tp.f8[:, :, :]),
+@nb.njit(nb.types.Tuple((tp.f4[:], tp.f8, tp.b1, tp.i8))(
+    tp.f4[:], tp.f4[:], tp.f8, DICT_TYPE_I0, DICT_TYPE_I1, DICT_TYPE_I2,
+    DICT_TYPE_F0, DICT_TYPE_F1, tp.f8[:, :, :]),
          parallel=True, error_model='numpy')
-def value_iteration(V, gamma, d_i0, d_i1, d_i2, d_f, P_xy):
+def value_iteration(V, delta, gamma, d_i0, d_i1, d_i2, d_f0, d_f1, P_xy):
     """W given policy."""
     J = d_i0['J']
     sizes_x = d_i1['sizes_i'][1:J + 1]
     sizes_s = d_i1['sizes_i'][J + 1:J * 2 + 1]
     sizes_x_n = d_i1['sizes'][0:J]  # sizes Next state
     sizes_s_n = d_i1['sizes'][J:J * 2]
-    lab = d_f['lab']
-    mu = d_f['mu']
-    V_t = env.tau * V  # Copies V
-    delta_max = np.inf
-    delta_min = -np.inf
-    while not converged:  # Update each state.
+    lab = d_f1['lab']
+    mu = d_f1['mu']
+    V_t = d_f0['tau'] * V  # Copies V
+    time = d_f0['start_time']
+    converged = False
+    count = int(0)
+    g = float(0)
+    while ((not converged) and (count < d_f0['max_iter'])
+           and (time < d_f0['max_time'])):
         for x_i in nb.prange(len(d_i2['x'])):
             for s_i in nb.prange(len(d_i2['s_valid'])):
                 x, s = d_i2['x'][x_i], d_i2['s_valid'][s_i]
@@ -183,86 +143,56 @@ def value_iteration(V, gamma, d_i0, d_i1, d_i2, d_f, P_xy):
                     state_i = (i * d_i1['sizes_i'][0]
                                + np.sum(x * sizes_x + s * sizes_s))
                     if x[i] == 0:
-                        V_t[state] += lab[i] * (get_w_i(i, x, s, state_i, state,
-                                                        d_i1, d_i2, d_f, P_xy)
-                                                - V[state])
+                        V_t[state] += lab[i] * (
+                            get_w_i(V, i, x, s, state, gamma,
+                                    d_i0, d_i1, d_f1, P_xy) - V[state])
                     else:
-                        V_t[state] += gamma * (get_w_i(i, x, s, state_i)
-                                               - V[state])
+                        V_t[state] += gamma * (
+                                get_w_i(V, i, x, s, state, gamma, d_i0,
+                                        d_i1, d_f1, P_xy) - V[state])
                     if s[i] > 0:
                         next_state = state_i - sizes_s[i]
-                        V_t[state] += (s[i] * mu[i] * \
-                                       get_w_i(i, x, s, next_state) - V[state])
-                V_t[state] /= env.tau
-
-                diff = V_t[state] - V[state]
-                delta_max = max([delta_max, diff])
-                delta_min = max([delta_min, diff])
-                if abs(delta_max - delta_min) > env.e:
-                    break  # TODO, how to break all loops?
-            converged = delta_max - delta_min < env.e
-            max_iter = (i > env.max_iter) | (j > env.max_iter)
-            max_time = (clock() - env.start_time) > env.max_time
-            g = (delta_max + delta_min) / 2 * env.tau
-                converged += 1
-                converged, max_iter, g = convergence(env, V_t, V, i, 'VI')
-        #     for s_i in nb.prange(len(d_i2['s_full'])):
-        #         for i in nb.prange(J + 1):
-        #             x, s = d_i2['x'][x_i], d_i2['s'][s_i]
-        #             state = np.sum(x * sizes_x_n + s * sizes_s_n)
-        #             next_state = state + sizes_x[i]
-        #             state_i = i * d_i1['sizes_i'][0] + np.sum(
-        #                 x * sizes_x + s * sizes_s)
-        #             if x[i] == 0:  # TODO, no labda and mu
-        #                 V_t[state] += lab[i] * (V[next_state] - V[state])
-        #             else:
-        #                 V_t[state] += gamma * (V[next_state] - V[state])
-        #             state_i = i * d_i1['sizes_i'][0] + np.sum(
-        #                 x * sizes_x + s * sizes_s) - sizes_s[i]
-        #             V_t[state] += s[i] * mu[i] * (
-        #                         get_w(i, x, s, state_i) - V[state])
-        # V_t = V_t / env.tau
-        # if s.count % env.convergence_check == 0:
-        #     s.converged, stopped, s.g = \
-        #         s.pi_learner.convergence(env, s.V_t, s.V, s.count, s.name)
-        # s.V = s.V_t - s.V_t[tuple([0] * (env.J * 2))]  # Rescale V_t
-        # if s.count > env.max_iter:
-        #     break
-        # s.count += 1
-
+                        V_t[state] += (s[i] * mu[i]
+                                       * (get_w_i(V, i, x, s, next_state, gamma,
+                                                  d_i0, d_i1, d_f1, P_xy)
+                                          - V[state]))
+                V_t[state] /= d_f0['tau']
+                delta[state] = abs(V_t[state] - V[state])
+        if count % d_i0['convergence_check'] == 0:
+            delta_max = np.float32(-np.inf)
+            delta_min = np.float32(np.inf)
+            for x_i in range(len(d_i2['x'])):
+                for s_i in range(len(d_i2['s_valid'])):
+                    x, s = d_i2['x'][x_i], d_i2['s_valid'][s_i]
+                    state = np.sum(x * sizes_x_n + s * sizes_s_n)
+                    if delta[state] > delta_max:
+                        delta_max = delta[state]
+                    if delta[state] < delta_min:
+                        delta_min = delta[state]
+                    if delta_max - delta_min > d_f0['e']:
+                        break
+                if delta_max - delta_min > d_f0['e']:
+                    break
+            converged = delta_max - delta_min < d_f0['e']
+            g = (delta_max + delta_min) / 2 * d_f0['tau']
+            # with objmode(time1='f8'):
+            #     time = clock()
+        if count % d_i0['print_modulo'] == 0:
+            print(f'iter: {count}, delta: %.4f, d_min %.4f, d_max %.4f, '
+                  f'g: %.4f' % delta_max - delta_min, g, delta_min, delta_max)
+        count += 1
+    return V_t, g, converged, count
 
 # Value Iteration
 name = 'Value Iteration'
-V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
-Pi = init_pi(env)
-
+V = np.zeros(env.size, dtype=np.float32)  # V_{t-1}
+delta = np.ones(env.size, dtype=np.float32) * np.inf
 count = 0
 converged = False
 
-env.timer(True, name, env.trace)
-value_iteration(V, env.J, env.D, env.gamma, env.d_i1, env.d_i2, env.d_f,
-                env.P_xy)
-env.timer(False, name, env.trace)
-
-# Determine policy via Policy Improvement.
-W = init_w(env, V, W)
-V = V.reshape(env.size)
-W = W.reshape(env.size_i)
-Pi = Pi.reshape(env.size_i)
-Pi, _ = policy_improvement(V, W, Pi, env.J, env.D, env.gamma,
-                           env.KEEP_IDLE, env.d_i1, env.d_i2, env.d_f,
-                           env.P_xy)
-V = V.reshape(env.dim)
-Pi = Pi.reshape(env.dim_i)
-
-print("V", V)
-print("Pi", Pi)
-print("g", g)
-
-if env.J > 1:
-    plot_pi(env, env, Pi, zero_state=True)
-    plot_pi(env, env, Pi, zero_state=False)
-for i in range(env.J):
-    plot_pi(env, env, Pi, zero_state=True, i=i)
-    plot_pi(env, env, Pi, zero_state=True, i=i, smu=True)
-    plot_v(env, V, zero_state=True, i=i)
+start_VI = clock()
+V, g, converged, count = value_iteration(V, delta, env.J, env.D, env.gamma,
+                                         env.d_i1, env.d_i2, env.d_f0, env.d_f0,
+                                         env.P_xy)
+print(f"time_VI {start_VI - clock()}, g %.3f, converged {converged}, "
+      f"count {count} " % g)
