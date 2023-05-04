@@ -20,7 +20,6 @@ Numba classes
 https://numba.pydata.org/numba-doc/latest/user/jitclass.html?highlight=class#basic-usage
 """
 
-# ---------------------------- TUPLES CREATION -----------------------------
 import timeit
 from numpy import arange, array, prod, dot, zeros
 import numpy as np
@@ -28,6 +27,17 @@ from itertools import product
 from numba import njit
 import numba as nb
 
+# ---------------------------- ARITHMATIC -----------------------------
+@njit
+def f_modulo():
+    """modulo."""
+    x = int(0)
+    return 12 % 5 == 2
+
+
+print(f_modulo())  # works
+
+# ---------------------------- TUPLES CREATION -----------------------------
 # from Tools_FL import create_tuple_creator, unravel_index, ravel_multi_index
 
 # get all x_i or s_i from multi_state tuple

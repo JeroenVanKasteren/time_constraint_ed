@@ -12,8 +12,9 @@ np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 # -------------------------- Value Iteration --------------------------------
 pi_learner = PolicyIteration()
-env = Env(J=2, S=3, gamma=10, D=30, P=1e3, e=1e-5, seed=42,
-          max_time='0-00:05:30', convergence_check=10, print_modulo=100)
+env = Env(J=2, S=2, gamma=5, D=10, P=1e3, e=1e-5, seed=42,
+          max_time='0-00:10:30', convergence_check=1, print_modulo=1,
+          max_iter=100)
 vi_learner = ValueIteration(env, pi_learner)
 
 name = 'Value Iteration'
@@ -52,8 +53,8 @@ Pi, _ = pi_learner.policy_improvement(V, W, Pi, env.J, env.D, env.gamma,
 V = V.reshape(env.dim)
 Pi = Pi.reshape(env.dim_i)
 
-print("V", V)
-print("Pi", Pi)
+# print("V", V)
+# print("Pi", Pi)
 print("g", g)
 
 if env.J > 1:

@@ -100,6 +100,7 @@ class PolicyIteration:
         g = (delta_max + delta_min) / 2 * env.tau
         if (converged | (((i % env.print_modulo == 0) & (j == -1))
                          | (j % env.print_modulo == 0))):
+            env.time_print(clock() - env.start_time)
             print("iter: ", i,
                   "inner_iter: ", j,
                   ", delta: ", round(delta_max - delta_min, 2),
@@ -107,14 +108,17 @@ class PolicyIteration:
                   ', D_max', round(delta_max, 2),
                   ", g: ", round(g, 4))
         if converged:
+            env.time_print(clock() - env.start_time)
             if j == -1:
                 print(f'{name} converged in {i} iterations. g = %0.4f' % g)
             else:
                 print(f'{name} converged in {j} iterations. g = %0.4f' % g)
         elif max_iter:
+            env.time_print(clock() - env.start_time)
             print(f'{name} iter {i}, ({j}) reached max_iter ({max_iter}) '
                   f'g ~ %0.4f' % g)
         elif max_time:
+            env.time_print(clock() - env.start_time)
             print(f'{name} iter {i}, ({j}) reached max_time ({max_time}) '
                   f'g ~ %0.4f' % g)
         return converged, max_iter | max_time, g
@@ -271,7 +275,7 @@ class PolicyIteration:
             s.W = s.W.reshape(env.size_i)
             s.Pi, s.stable = s.policy_improvement(s.V, s.W, s.Pi, env.J, env.D,
                                                   env.gamma, env.KEEP_IDLE,
-                                                  env.d_i1, env.d_i2, env.d_f,
+                                                  env.d_i1, env.d_i2, env.d_f1,
                                                   env.P_xy)
             s.V = s.V.reshape(env.dim)
             s.W = s.W.reshape(env.dim_i)
@@ -342,7 +346,7 @@ class ValueIteration:
             s.V = s.V.reshape(env.size)
             s.W = s.W.reshape(env.size_i)
             s.W = s.get_w(s.V, s.W, env.J, env.D, env.gamma,
-                          env.d_i1, env.d_i2, env.d_f, env.P_xy)
+                          env.d_i1, env.d_i2, env.d_f1, env.P_xy)
             s.V = s.V.reshape(env.dim)
             s.W = s.W.reshape(env.dim_i)
             s.V_t = s.pi_learner.get_v(env, s.V, s.W)
@@ -360,7 +364,7 @@ class ValueIteration:
         s.Pi = s.Pi.reshape(env.size_i)
         s.Pi, _ = s.pi_learner.policy_improvement(s.V, s.W, s.Pi, env.J, env.D,
                                                   env.gamma, env.KEEP_IDLE,
-                                                  env.d_i1, env.d_i2, env.d_f,
+                                                  env.d_i1, env.d_i2, env.d_f1,
                                                   env.P_xy)
         s.V = s.V.reshape(env.dim)
         s.W = s.W.reshape(env.dim_i)
@@ -432,7 +436,7 @@ class OneStepPolicyImprovement:
         s.Pi, _ = s.pi_learner.policy_improvement(s.V_app, W, s.Pi, env.J,
                                                   env.D, env.gamma,
                                                   env.KEEP_IDLE, env.d_i1,
-                                                  env.d_i2, env.d_f, env.P_xy)
+                                                  env.d_i2, env.d_f1, env.P_xy)
         s.V_app = s.V_app.reshape(env.dim)
         s.Pi = s.Pi.reshape(env.dim_i)
 

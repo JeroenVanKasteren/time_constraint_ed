@@ -24,10 +24,6 @@ while weighted_cap_prob > WEIGHTED_CAP_PROB_MAX:
     weighted_cap_prob = sum(env.cap_prob * env.lab) / sum(env.lab)
     seed += 1
 
-print(env.load)
-print(env.D)
-print(sum(env.cap_prob*env.lab)/sum(env.lab))
-
 to_plot = []  # 'VI', 'PI', 'OSPI' (what to plot)
 
 # ------ Policy Iteration ------ #

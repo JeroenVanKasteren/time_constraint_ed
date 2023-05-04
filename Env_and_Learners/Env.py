@@ -192,8 +192,10 @@ class TimeConstraintEDs:
               '\n rho:', round(s.rho, 4),
               '\n P(W>D):', s.cap_prob,
               '\n Weighted cap_prob:', round(s.weighted_cap_prob, 4),
-              '\n W: ', round(size(np.zeros(s.dim_i)) / 10**9, 4), 'GB.',
-              '\n V: ', round(size(np.zeros(s.dim)) / 10 ** 9, 4), 'GB.')
+              '\n W: ', round(size(np.zeros(s.dim_i, dtype=np.float32)) / 10**9,
+                              4), 'GB.',
+              '\n V: ', round(size(np.zeros(s.dim, dtype=np.float32)) / 10 ** 9,
+                              4), 'GB.')
         assert s.load < 1, 'rho < 1 does not hold'
 
     def get_D(self):
