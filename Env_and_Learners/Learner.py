@@ -318,10 +318,9 @@ class ValueIteration:
         for x_i in nb.prange(len(d_i2['x'])):
             for s_i in nb.prange(len(d_i2['s'])):
                 for i in nb.prange(J + 1):
-                    x = d_i2['x'][x_i]
-                    s = d_i2['s'][s_i]
-                    state = i * d_i['sizes_i'][0] + np.sum(
-                        x * sizes_x + s * sizes_s)
+                    x, s = d_i2['x'][x_i], d_i2['s'][s_i]
+                    state = (i * d_i['sizes_i'][0]
+                             + np.sum(x * sizes_x + s * sizes_s))
                     for j in range(J):
                         if (x[j] > 0) or (j == i):
                             w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]

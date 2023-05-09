@@ -11,9 +11,9 @@ from time import perf_counter as clock
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 pi_learner = PolicyIteration()
-env = Env(J=2, S=2, gamma=5, D=30, P=1e3, e=1e-5, seed=42,
+env = Env(J=1, S=1, gamma=5, D=15, P=1e3, e=1e-5, seed=42,
           max_time='0-00:10:30', convergence_check=1, print_modulo=1,
-          max_iter=100)
+          max_iter=10)
 
 DICT_TYPE_I0 = tp.DictType(tp.unicode_type, tp.i8)  # ints
 DICT_TYPE_I1 = tp.DictType(tp.unicode_type, tp.i4[:])  # int 1D vector
@@ -31,23 +31,22 @@ def init_w(V, W, gamma, d_i0, d_i1, d_i2, d_f1, P_xy):
     S, D = d_i0['S'], d_i0['D']
     sizes_x, sizes_s = d_i1['sizes_i'][1:J + 1], d_i1['sizes_i'][J + 1:J*2 + 1]
     sizes_x_n, sizes_s_n = d_i1['sizes'][0:J], d_i1['sizes'][J:J * 2]
-    for x_i in nb.prange(len(d_i2['x'])):
-        x = d_i2['x'][x_i]
-        over_target = 0
-        for k in range(J):
-            over_target += x[k] > t[k] * gamma
+    for x_i in nb.prange(len(d_i2['x'])):  # nb.prange
         for s_i in nb.prange(len(d_i2['s_valid'])):
+            x = d_i2['x'][x_i]
             s = d_i2['s_valid'][s_i]
             state = np.sum(x * sizes_x_n + s * sizes_s_n)
-            for i in nb.prange(J+1):
-                state_i = (J * d_i1['sizes_i'][0]
+            over_target = 0
+            for k in range(J):
+                over_target += x[k] > t[k] * gamma
+            for i in range(J + 1):
+                state_i = (i * d_i1['sizes_i'][0]
                            + np.sum(x * sizes_x + s * sizes_s))
                 if (i < J) and (x[i] < D):
                     W[state_i] = V[state + sizes_x_n[i]]
                 else:
                     W[state_i] = V[state]
                 if sum(s) < S:
-                    # next_state = state + sizes_x_n[i] if x[i] < D else state
                     if over_target == J:
                         W[state_i] -= P
                     for j in range(J):
@@ -65,7 +64,6 @@ def init_w(V, W, gamma, d_i0, d_i1, d_i2, d_f1, P_xy):
                                 w += P_xy[j, x[j], y] * V[next_state]
                             if w > W[state_i]:
                                 W[state_i] = w
-
     return W
 
 
@@ -91,11 +89,11 @@ def value_iteration(V, W, delta, gamma, d_i0, d_i1, d_i2, d_f0, d_f1, P_xy):
     while ((not converged) and (count < d_f0['max_iter'])
            and (time < d_f0['max_time'])):
         W = init_w(V, W, gamma, d_i0, d_i1, d_i2, d_f1, P_xy)
-        for x_i in nb.prange(len(d_i2['x'])):
-            for s_i in nb.prange(len(d_i2['s_valid'])):
+        for x_i in range(len(d_i2['x'])):  # nb.prange
+            for s_i in range(len(d_i2['s_valid'])):
                 x, s = d_i2['x'][x_i], d_i2['s_valid'][s_i]
                 state = np.sum(x * sizes_x_n + s * sizes_s_n)
-                for i in nb.prange(J):
+                for i in range(J):
                     state_i = (i * d_i1['sizes_i'][0]
                                + np.sum(x * sizes_x + s * sizes_s))
                     if x[i] == 0:
@@ -103,6 +101,8 @@ def value_iteration(V, W, delta, gamma, d_i0, d_i1, d_i2, d_f0, d_f1, P_xy):
                     else:
                         V_t[state] += gamma * (W[state_i] - V[state])
                     if s[i] > 0:
+                        state_i = (J * d_i1['sizes_i'][0]
+                                   + np.sum(x * sizes_x + s * sizes_s))
                         state_i -= sizes_s[i]
                         V_t[state] += (s[i] * mu[i] * (W[state_i] - V[state]))
                 V_t[state] /= d_f0['tau']

@@ -124,7 +124,7 @@ def value_iteration(V, delta, gamma, d_i0, d_i1, d_i2, d_f0, d_f1, P_xy):
                                 get_w_i(V, i, x, s, state, gamma, d_i0,
                                         d_i1, d_f1, P_xy) - V[state])
                     if s[i] > 0:
-                        state_i = (i * d_i1['sizes_i'][0]
+                        state_i = (J * d_i1['sizes_i'][0]
                                    + np.sum(x * sizes_x + s * sizes_s))
                         next_state = state_i - sizes_s[i]
                         V_t[state] += (s[i] * mu[i]
