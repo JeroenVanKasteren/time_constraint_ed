@@ -12,9 +12,9 @@ np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 # -------------------------- Value Iteration --------------------------------
 pi_learner = PolicyIteration()
-env = Env(J=2, S=2, gamma=5, D=10, P=1e3, e=1e-5, seed=42,
-          max_time='0-00:10:30', convergence_check=1, print_modulo=1,
-          max_iter=100)
+env = Env(J=2, S=4, gamma=10, D=50, P=1e3, e=1e-5, seed=42,
+          max_time='0-00:10:30', convergence_check=10, print_modulo=100)
+
 vi_learner = ValueIteration(env, pi_learner)
 
 name = 'Value Iteration'

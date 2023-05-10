@@ -172,14 +172,12 @@ class PolicyIteration:
             next_states[1 + i] = 0
             V_t[tuple(states)] += env.lab[i] * (W[tuple(next_states)]
                                                 - V[tuple(states)])
-
             states = states_c.copy()
             next_states = states_i.copy()
             states[i] = slice(1, env.D + 1)  # 0 < x_i <= D
             next_states[1 + i] = slice(1, env.D + 1)  # 0 < x_i <= D
             V_t[tuple(states)] += env.gamma * (W[tuple(next_states)]
                                                - V[tuple(states)])
-
             for s_i in range(1, env.S + 1):  # s_i
                 states = states_c.copy()
                 next_states = states_i.copy()

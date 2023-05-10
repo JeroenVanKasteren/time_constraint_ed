@@ -99,9 +99,7 @@ def value_iteration(V, delta, gamma, d_i0, d_i1, d_i2, d_f0, d_f1, P_xy):
     sizes_s = d_i1['sizes_i'][J + 1:J * 2 + 1]
     sizes_x_n = d_i1['sizes'][0:J]  # sizes Next state
     sizes_s_n = d_i1['sizes'][J:J * 2]
-    lab = d_f1['lab']
-    mu = d_f1['mu']
-    V_t = tp.float32(d_f0['tau']) * V  # Copies V
+    lab, mu = d_f1['lab'], d_f1['mu']
     time = 0
     converged = False
     count = tp.int64(0)
@@ -110,6 +108,7 @@ def value_iteration(V, delta, gamma, d_i0, d_i1, d_i2, d_f0, d_f1, P_xy):
     delta_min = np.float32(np.inf)
     while ((not converged) and (count < d_f0['max_iter'])
            and (time < d_f0['max_time'])):
+        V_t = tp.float32(d_f0['tau']) * V  # Copies V
         for x_i in nb.prange(len(d_i2['x'])):
             for s_i in nb.prange(len(d_i2['s_valid'])):
                 x, s = d_i2['x'][x_i], d_i2['s_valid'][s_i]
@@ -126,9 +125,9 @@ def value_iteration(V, delta, gamma, d_i0, d_i1, d_i2, d_f0, d_f1, P_xy):
                     if s[i] > 0:
                         state_i = (J * d_i1['sizes_i'][0]
                                    + np.sum(x * sizes_x + s * sizes_s))
-                        next_state = state_i - sizes_s[i]
+                        state_i -= sizes_s[i]
                         V_t[state] += (s[i] * mu[i]
-                                       * (get_w_i(V, i, x, s, next_state, gamma,
+                                       * (get_w_i(V, i, x, s, state_i, gamma,
                                                   d_i0, d_i1, d_f1, P_xy)
                                           - V[state]))
                 V_t[state] /= d_f0['tau']

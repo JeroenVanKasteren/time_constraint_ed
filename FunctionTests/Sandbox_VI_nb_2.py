@@ -11,9 +11,8 @@ from time import perf_counter as clock
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 pi_learner = PolicyIteration()
-env = Env(J=1, S=1, gamma=5, D=15, P=1e3, e=1e-5, seed=42,
-          max_time='0-00:10:30', convergence_check=1, print_modulo=1,
-          max_iter=10)
+env = Env(J=2, S=4, gamma=10, D=50, P=1e3, e=1e-5, seed=42,
+          max_time='0-00:10:30', convergence_check=10, print_modulo=100)
 
 DICT_TYPE_I0 = tp.DictType(tp.unicode_type, tp.i8)  # ints
 DICT_TYPE_I1 = tp.DictType(tp.unicode_type, tp.i4[:])  # int 1D vector
@@ -22,16 +21,16 @@ DICT_TYPE_F0 = tp.DictType(tp.unicode_type, tp.f8)  # float 1D vector
 DICT_TYPE_F1 = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
 
 
-# @nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.f8, DICT_TYPE_I0,
-#                   DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F1, tp.f8[:, :, :]),
-#          parallel=True, error_model='numpy')
+@nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.f8, DICT_TYPE_I0,
+                  DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F1, tp.f8[:, :, :]),
+         parallel=True, error_model='numpy')
 def init_w(V, W, gamma, d_i0, d_i1, d_i2, d_f1, P_xy):
     """W given policy."""
     r, c, t, J, P = d_f1['r'], d_f1['c'], d_f1['t'], d_i0['J'], d_i0['P']
     S, D = d_i0['S'], d_i0['D']
     sizes_x, sizes_s = d_i1['sizes_i'][1:J + 1], d_i1['sizes_i'][J + 1:J*2 + 1]
     sizes_x_n, sizes_s_n = d_i1['sizes'][0:J], d_i1['sizes'][J:J * 2]
-    for x_i in nb.prange(len(d_i2['x'])):  # nb.prange
+    for x_i in nb.prange(len(d_i2['x'])):
         for s_i in nb.prange(len(d_i2['s_valid'])):
             x = d_i2['x'][x_i]
             s = d_i2['s_valid'][s_i]
@@ -67,10 +66,10 @@ def init_w(V, W, gamma, d_i0, d_i1, d_i2, d_f1, P_xy):
     return W
 
 
-# @nb.njit(nb.types.Tuple((tp.f4[:], tp.f8, tp.b1, tp.i8))(
-#     tp.f4[:], tp.f4[:], tp.f4[:], tp.f8, DICT_TYPE_I0, DICT_TYPE_I1,
-#     DICT_TYPE_I2, DICT_TYPE_F0, DICT_TYPE_F1, tp.f8[:, :, :]),
-#          parallel=True, error_model='numpy')
+@nb.njit(nb.types.Tuple((tp.f4[:], tp.f8, tp.b1, tp.i8))(
+    tp.f4[:], tp.f4[:], tp.f4[:], tp.f8, DICT_TYPE_I0, DICT_TYPE_I1,
+    DICT_TYPE_I2, DICT_TYPE_F0, DICT_TYPE_F1, tp.f8[:, :, :]),
+         parallel=True, error_model='numpy')
 def value_iteration(V, W, delta, gamma, d_i0, d_i1, d_i2, d_f0, d_f1, P_xy):
     """W given policy."""
     J = d_i0['J']
@@ -79,7 +78,6 @@ def value_iteration(V, W, delta, gamma, d_i0, d_i1, d_i2, d_f0, d_f1, P_xy):
     sizes_x_n = d_i1['sizes'][0:J]  # sizes Next state
     sizes_s_n = d_i1['sizes'][J:J * 2]
     lab, mu = d_f1['lab'], d_f1['mu']
-    V_t = tp.float32(d_f0['tau']) * V  # Copies V
     time = 0
     converged = False
     count = tp.int64(0)
@@ -89,8 +87,9 @@ def value_iteration(V, W, delta, gamma, d_i0, d_i1, d_i2, d_f0, d_f1, P_xy):
     while ((not converged) and (count < d_f0['max_iter'])
            and (time < d_f0['max_time'])):
         W = init_w(V, W, gamma, d_i0, d_i1, d_i2, d_f1, P_xy)
-        for x_i in range(len(d_i2['x'])):  # nb.prange
-            for s_i in range(len(d_i2['s_valid'])):
+        V_t = tp.float32(d_f0['tau']) * V  # Copies V
+        for x_i in nb.prange(len(d_i2['x'])):
+            for s_i in nb.prange(len(d_i2['s_valid'])):
                 x, s = d_i2['x'][x_i], d_i2['s_valid'][s_i]
                 state = np.sum(x * sizes_x_n + s * sizes_s_n)
                 for i in range(J):
