@@ -24,9 +24,9 @@ cols = ['lambda', 'mu', 'cap_prob']
 results.loc[:, cols] = results.loc[:, cols].applymap(strip_split)
 
 # Mark bad results where weighted average of cap_prob is too big >0.05
-results['w_cap_prob'] = (results['cap_prob'] * results['lambda']
-                         / results['lambda'].apply(sum)).apply(sum)
-results.to_csv('Results/results.csv', header=False, index=False)
+# results['w_cap_prob'] = (results['cap_prob'] * results['lambda']
+#                          / results['lambda'].apply(sum)).apply(sum)
+# results.to_csv('Results/results.csv', header=False, index=False)
 
 results_conv = results[results['vi_converged'] & results['ospi_converged']]
 
@@ -52,12 +52,6 @@ plt.ylabel('Load')
 plt.title('Running time vs. Load')
 plt.show()
 
-plt.scatter(results_conv['time']/(60*60), results_conv['cap_prob'].apply(max))
-plt.xlabel('Running time (hours)')
-plt.ylabel('max cap_prob')
-plt.title('Running time vs. max cap_prob')
-plt.show()
-
 plt.scatter(results_conv['time']/(60*60), results_conv['size'])
 plt.xlabel('Running time (hours)')
 plt.ylabel('State space size')
@@ -71,28 +65,10 @@ plt.ylabel('average cap_prob')
 plt.title('Running time vs. average cap_prob')
 plt.show()
 
-plt.scatter(results_conv['D'], results_conv['load'])
-plt.xlabel('D')
-plt.ylabel('load')
-plt.title('D vs. load')
-plt.show()
-
 plt.scatter(results_conv['load'], results_conv['gap'])
 plt.xlabel('load')
 plt.ylabel('Optimality Gap')
 plt.title('Load vs. Optimality Gap')
-plt.show()
-
-plt.scatter(results_conv['cap_prob'].apply(max), results_conv['gap'])
-plt.xlabel('max cap_prob')
-plt.ylabel('Optimality Gap')
-plt.title('average cap_prob vs. max cap_prob')
-plt.show()
-
-plt.scatter(results_conv['cap_prob'].apply(np.mean), results_conv['gap'])
-plt.xlabel('average cap_prob')
-plt.ylabel('Optimality Gap')
-plt.title('average cap_prob vs. Optimality Gap')
 plt.show()
 
 results_conv[results_conv['J'] == 2].boxplot(column='gap', by='S')
