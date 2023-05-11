@@ -95,9 +95,12 @@ class TimeConstraintEDs:
             lab = mu * s.S * s.load * weight / sum(weight)
         t = array(kwargs.get('t', s.rng.choice(s.TARGET, s.J)), float)
         s.gamma = float(kwargs.get('gamma'))
+
+        s.b_out_file = kwargs.get('b_out_file', False)
+        s.out_f = kwargs.get('out_f', 'tmp.txt')
         if any((t % (1 / s.gamma) != 0) | (t < 1 / s.gamma)):
             t = np.floor(t * s.gamma) / s.gamma
-            print('Rounded t down to nearest multiple of 1/gamma.')
+            print('Rounded t down to nearest multiple of 1/gamma.\n')
         s.lab = array(lab, float)
         s.mu = array(mu, float)
         s.t = array(t, float)
@@ -182,41 +185,39 @@ class TimeConstraintEDs:
         s.d_f1['lab'] = s.lab
         s.d_f1['mu'] = s.mu
 
-        s.b_out_f = kwargs.get('b_out_file', False)
-        s.out_f = kwargs.get('out_f', 'tmp.txt')
-        if s.b_out_f:
+        if s.b_out_file:
             with open(s.out_f, 'w') as f:
                 f.write(f'J = {s.J} D = {s.D}, s = {s.S}, gamma = {s.gamma},'
                         f'P = {s.P} \n'
-                        f'load = {s.load}\n'
-                        f'lambda = {s.lab}\n'
-                        f'mu = {s.mu}\n'
-                        f'target = {s.t}\n'
+                        f'load = {s.load:.4f}\n'
+                        f'lambda = {round(s.lab, 4)}\n'
+                        f'mu = {round(s.mu, 4)}\n'
+                        f'target = {round(s.t, 4)}\n'
                         f'r = {s.r}\n'
                         f'c = {s.c}\n'
-                        f's_star = {s.s_star}\n'
-                        f'rho: {s.rho}\n'
-                        f'P(W>D): {s.cap_prob}\n'
-                        f'Weighted cap_prob: {s.weighted_cap_prob}\n'
-                        f'W: {size(np.zeros(s.dim_i, dtype=np.float32)) / 10**9} GB.\n')
-                f.flush()
+                        f's_star = {round(s.s_star, 4)}\n'
+                        f'rho: {round(s.rho, 4)}\n'
+                        f'P(W>D): {round(s.cap_prob, 4)}\n'
+                        f'Weighted cap_prob: {round(s.weighted_cap_prob, 4)}\n'
+                        f'size: {s.size_i}\n'
+                        f'W: {size(np.zeros(s.dim_i, dtype=np.float32)) / 10 ** 9:.4f} GB.\n'
+                        f'V: {size(np.zeros(s.dim, dtype=np.float32)) / 10 ** 9:.4f} GB.\n')
         else:
             print(f'J = {s.J} D = {s.D}, s = {s.S}, gamma = {s.gamma},'
-                  f' P = {s.P}',
-                  '\n load = ', round(s.load, 4),
-                  '\n lambda = ', round(s.lab, 4),
-                  '\n mu = ', round(s.mu, 4),
-                  '\n target = ', round(s.t, 4),
-                  '\n r = ', round(s.r, 4),
-                  '\n c = ', round(s.c, 4),
-                  '\n s_star = ', round(s.s_star, 4),
-                  '\n rho:', round(s.rho, 4),
-                  '\n P(W>D):', s.cap_prob,
-                  '\n Weighted cap_prob:', round(s.weighted_cap_prob, 4),
-                  '\n W: ', round(size(np.zeros(s.dim_i, dtype=np.float32)) / 10**9,
-                                  4), 'GB.',
-                  '\n V: ', round(size(np.zeros(s.dim, dtype=np.float32)) / 10 ** 9,
-                                  4), 'GB.')
+                  f'P = {s.P} \n'
+                  f'load = {s.load:.4f}\n'
+                  f'lambda = {round(s.lab, 4)}\n'
+                  f'mu = {round(s.mu, 4)}\n'
+                  f'target = {round(s.t, 4)}\n'
+                  f'r = {s.r}\n'
+                  f'c = {s.c}\n'
+                  f's_star = {round(s.s_star, 4)}\n'
+                  f'rho: {round(s.rho, 4)}\n'
+                  f'P(W>D): {round(s.cap_prob, 4)}\n'
+                  f'Weighted cap_prob: {round(s.weighted_cap_prob, 4)}\n'
+                  f'size: {s.size_i}\n'
+                  f'W: {size(np.zeros(s.dim_i, dtype=np.float32)) / 10 ** 9:.4f} GB.\n'
+                  f'V: {size(np.zeros(s.dim, dtype=np.float32)) / 10 ** 9:.4f} GB.\n')
         assert s.load < 1, 'rho < 1 does not hold'
 
     def get_D(self):
@@ -302,9 +303,9 @@ class TimeConstraintEDs:
 
     def time_print(self, time):
         """Convert seconds to readable format."""
-        if self.b_out_f:
-            with open(self.out_f, 'w') as f:
+        if self.b_out_file:
+            with open(self.out_f, 'a') as f:
                 f.write(f'Time: {time / 60:.0f}'
                         f':{time - 60 * int(time / 60):.0f} min.')
         else:
-            print(f'Time: {time/60:.0f}:{time - 60 * int(time / 60):.0f} min.')
+            print(f'Time: {time/60:.0f}:{time - 60 * int(time / 60):.0f} min.\n')
