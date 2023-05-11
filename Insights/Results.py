@@ -30,8 +30,8 @@ results.loc[:, cols] = results.loc[:, cols].applymap(strip_split)
 
 results_conv = results[results['vi_converged'] & results['ospi_converged']]
 
-plt.hist(results_conv['gap'])
-plt.show()
+# plt.hist(results_conv['gap'])
+# plt.show()
 results_conv.boxplot(column='gap', by='J')
 plt.title('Optimality Gap versus queues')
 plt.show()
@@ -63,6 +63,12 @@ plt.scatter(results_conv['time']/(60*60),
 plt.xlabel('Running time (hours)')
 plt.ylabel('average cap_prob')
 plt.title('Running time vs. average cap_prob')
+plt.show()
+
+plt.scatter(results_conv['D'], results_conv['load'])
+plt.xlabel('D')
+plt.ylabel('load')
+plt.title('D vs. load')
 plt.show()
 
 plt.scatter(results_conv['load'], results_conv['gap'])

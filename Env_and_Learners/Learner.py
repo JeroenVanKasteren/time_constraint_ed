@@ -100,27 +100,39 @@ class PolicyIteration:
         g = (delta_max + delta_min) / 2 * env.tau
         if (converged | (((i % env.print_modulo == 0) & (j == -1))
                          | (j % env.print_modulo == 0))):
-            env.time_print(clock() - env.start_time)
-            print("iter: ", i,
-                  "inner_iter: ", j,
-                  ", delta: ", round(delta_max - delta_min, 2),
-                  ', D_min', round(delta_min, 2),
-                  ', D_max', round(delta_max, 2),
-                  ", g: ", round(g, 4))
-        if converged:
-            env.time_print(clock() - env.start_time)
-            if j == -1:
-                print(f'{name} converged in {i} iterations. g = %0.4f' % g)
+            if env.b_out_f:
+                with open(env.out_f, 'w') as f:
+                    f.write(f'iter: {i}, inner_iter: {j}, '
+                            f'delta: {delta_max - delta_min:.2f}, '
+                            f'd_min: {delta_min:.2f}, d_max: {delta_max:.2f}, '
+                            f'g: {g:.4f}')
             else:
-                print(f'{name} converged in {j} iterations. g = %0.4f' % g)
+                env.time_print(clock() - env.start_time)
+                print("iter: ", i,
+                      "inner_iter: ", j,
+                      ", delta: ", round(delta_max - delta_min, 2),
+                      ', D_min', round(delta_min, 2),
+                      ', D_max', round(delta_max, 2),
+                      ", g: ", round(g, 4))
+                env.time_print(clock() - env.start_time)
+        if converged:
+            with open(env.out_f, 'w') as f:
+                iter = i if j == -1 else j
+                if env.b_out_f:
+                    f.write(f'{name} converged in {iter} iterations. '
+                            f'g = %0.4f' % g)
+                else:
+                    print(f'{name} converged in {iter} iterations. '
+                          f'g = %0.4f' % g)
+                env.time_print(clock() - env.start_time)
         elif max_iter:
-            env.time_print(clock() - env.start_time)
             print(f'{name} iter {i}, ({j}) reached max_iter ({max_iter}) '
                   f'g ~ %0.4f' % g)
-        elif max_time:
             env.time_print(clock() - env.start_time)
+        elif max_time:
             print(f'{name} iter {i}, ({j}) reached max_time ({max_time}) '
                   f'g ~ %0.4f' % g)
+            env.time_print(clock() - env.start_time)
         return converged, max_iter | max_time, g
 
     @staticmethod
