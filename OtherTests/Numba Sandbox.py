@@ -763,3 +763,32 @@ print(np.mean(timeit.repeat("w_numba(J, d_i, d_i2)",
                     "DICT_TYPE_I, DICT_TYPE_I2, J, d_i, d_i2;"
                     "import numpy as np; import numba as nb",
                     repeat=5, number=3))/3)
+
+
+# ------------------------- SIMULATION ---------------------------
+
+'''
+Key things to consider:
+The Numba type of a typed.List is a types.ListType.
+One cannot call typeof from inside a jitted region, 
+(Workaround, mytype = typeof(mytype_instance) globally and refer to mytype)
+typed.List.empty_list and typed.Dict.empty take Numba types as arguments.
+'''
+
+import numba as nb
+import heapq as hq
+
+entry_type = nb.typeof((0.0, 0, 'event'))
+
+@njit
+def heapsort(iterable):
+    time = 0
+    heap = nb.typed.List.empty_list(entry_type)
+    for i in range(len(iterable)):
+        hq.heappush(heap, (iterable[i], 0, 'arrival'))
+        time += iterable[i]
+    return heap, time
+
+x = nb.typed.List([1.232, 3.21, 5.21, 7.54, 9.765, 2.35, 4.85, 6.00, 8.1, 0.23])
+print(heapsort(x))
+

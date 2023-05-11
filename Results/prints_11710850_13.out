@@ -1,0 +1,53 @@
+Rounded t down to nearest multiple of 1/gamma.
+J = 2 , D = 84 , s = 10 , gamma = 25.0 , (P= 1000.0 ) , load= 0.7108 
+ lambda: [2.4875 1.6073] 
+ mu: [0.4839 0.8168] 
+ Target: [1. 1.] 
+ r: [1. 1.] 
+ c: [1. 1.] 
+ s_star: [6.9191 3.0809] 
+ rho: [0.7429 0.6387] 
+ P(W>D): [0.0299363 0.0246651] 
+ Weighted cap_prob: 0.0279 
+ W:  0.021 GB. 
+ V:  0.007 GB.
+iter:  0 inner_iter:  -1 , delta:  0.86 , D_min 0.0 , D_max 0.86 , g:  25.0
+iter:  100 inner_iter:  -1 , delta:  0.01 , D_min 0.06 , D_max 0.07 , g:  3.8512
+iter:  200 inner_iter:  -1 , delta:  0.01 , D_min 0.07 , D_max 0.07 , g:  3.9594
+iter:  300 inner_iter:  -1 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  3.9984
+iter:  400 inner_iter:  -1 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  4.0125
+iter:  500 inner_iter:  -1 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  4.0188
+iter:  600 inner_iter:  -1 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  4.0218
+iter:  700 inner_iter:  -1 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  4.0234
+iter:  800 inner_iter:  -1 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  4.0242
+iter:  900 inner_iter:  -1 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  4.0246
+iter:  1000 inner_iter:  -1 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  4.0249
+iter:  1100 inner_iter:  -1 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  4.025
+iter:  1200 inner_iter:  -1 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  4.0251
+iter:  1300 inner_iter:  -1 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  4.0251
+iter:  1400 inner_iter:  -1 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  4.0251
+iter:  1500 inner_iter:  -1 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  4.025
+iter:  1600 inner_iter:  -1 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  4.025
+iter:  1650 inner_iter:  -1 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  4.025
+Value Iteration converged in 1650 iterations. g= 4.025
+iter:  0 inner_iter:  0 , delta:  2.72 , D_min 0.07 , D_max 2.79 , g:  83.0866
+iter:  0 inner_iter:  100 , delta:  0.01 , D_min 0.06 , D_max 0.07 , g:  3.8698
+iter:  0 inner_iter:  200 , delta:  0.0 , D_min 0.06 , D_max 0.07 , g:  3.863
+iter:  0 inner_iter:  300 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  3.8732
+iter:  0 inner_iter:  400 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  3.8736
+iter:  0 inner_iter:  500 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  3.8715
+iter:  0 inner_iter:  600 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  3.8708
+iter:  0 inner_iter:  700 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  3.8707
+iter:  0 inner_iter:  800 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  3.8709
+iter:  0 inner_iter:  900 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  3.871
+iter:  0 inner_iter:  1000 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  3.8711
+iter:  0 inner_iter:  1100 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  3.8713
+iter:  0 inner_iter:  1200 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  3.8714
+iter:  0 inner_iter:  1300 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  3.8714
+iter:  0 inner_iter:  1400 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  3.8714
+iter:  0 inner_iter:  1500 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  3.8714
+iter:  0 inner_iter:  1600 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  3.8713
+iter:  0 inner_iter:  1700 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  3.8713
+iter:  0 inner_iter:  1800 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  3.8715
+iter:  0 inner_iter:  1900 , delta:  0.0 , D_min 0.07 , D_max 0.07 , g:  3.8715
+One-step Policy Improvement iter: 0 ( 1920 ) reached max_time = True , g~ 3.8714

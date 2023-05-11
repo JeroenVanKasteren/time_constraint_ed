@@ -1,0 +1,63 @@
+Rounded t down to nearest multiple of 1/gamma.
+J = 2 , D = 192 , s = 2 , gamma = 25.0 , (P= 1000.0 ) , load= 0.582 
+ lambda: [0.4705 0.6366] 
+ mu: [0.9554 0.948 ] 
+ Target: [1. 1.] 
+ r: [1. 1.] 
+ c: [1. 1.] 
+ s_star: [0.8417 1.1583] 
+ rho: [0.5851 0.5797] 
+ P(W>D): [0.05126557 0.01805353] 
+ Weighted cap_prob: 0.0322 
+ W:  0.008 GB. 
+ V:  0.0027 GB.
+iter:  0 inner_iter:  -1 , delta:  0.96 , D_min 0.0 , D_max 0.96 , g:  25.0
+iter:  100 inner_iter:  -1 , delta:  0.01 , D_min 0.01 , D_max 0.02 , g:  0.6701
+iter:  200 inner_iter:  -1 , delta:  0.01 , D_min 0.01 , D_max 0.02 , g:  0.7265
+iter:  300 inner_iter:  -1 , delta:  0.01 , D_min 0.01 , D_max 0.02 , g:  0.7804
+iter:  400 inner_iter:  -1 , delta:  0.0 , D_min 0.01 , D_max 0.02 , g:  0.8261
+iter:  500 inner_iter:  -1 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8596
+iter:  600 inner_iter:  -1 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8831
+iter:  700 inner_iter:  -1 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8989
+iter:  800 inner_iter:  -1 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.9092
+iter:  900 inner_iter:  -1 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.9161
+iter:  1000 inner_iter:  -1 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.9206
+iter:  1100 inner_iter:  -1 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.9236
+iter:  1200 inner_iter:  -1 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.9255
+iter:  1300 inner_iter:  -1 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.9267
+iter:  1400 inner_iter:  -1 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.9276
+iter:  1500 inner_iter:  -1 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.9281
+iter:  1600 inner_iter:  -1 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.9285
+iter:  1700 inner_iter:  -1 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.9287
+iter:  1800 inner_iter:  -1 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.9288
+iter:  1900 inner_iter:  -1 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.9289
+iter:  2000 inner_iter:  -1 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.9289
+iter:  2010 inner_iter:  -1 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.929
+Value Iteration converged in 2010 iterations. g= 0.929
+iter:  0 inner_iter:  0 , delta:  1.75 , D_min 0.02 , D_max 1.77 , g:  46.5446
+iter:  0 inner_iter:  100 , delta:  0.0 , D_min 0.01 , D_max 0.02 , g:  0.8172
+iter:  0 inner_iter:  200 , delta:  0.0 , D_min 0.01 , D_max 0.02 , g:  0.8287
+iter:  0 inner_iter:  300 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8388
+iter:  0 inner_iter:  400 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8461
+iter:  0 inner_iter:  500 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8544
+iter:  0 inner_iter:  600 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8619
+iter:  0 inner_iter:  700 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8679
+iter:  0 inner_iter:  800 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8727
+iter:  0 inner_iter:  900 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8763
+iter:  0 inner_iter:  1000 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.879
+iter:  0 inner_iter:  1100 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8809
+iter:  0 inner_iter:  1200 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8824
+iter:  0 inner_iter:  1300 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8835
+iter:  0 inner_iter:  1400 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8842
+iter:  0 inner_iter:  1500 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8848
+iter:  0 inner_iter:  1600 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8852
+iter:  0 inner_iter:  1700 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8854
+iter:  0 inner_iter:  1800 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8857
+iter:  0 inner_iter:  1900 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8858
+iter:  0 inner_iter:  2000 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8859
+iter:  0 inner_iter:  2100 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.886
+iter:  0 inner_iter:  2200 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.886
+iter:  0 inner_iter:  2300 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8861
+iter:  0 inner_iter:  2400 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8861
+iter:  0 inner_iter:  2450 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  0.8862
+One-step Policy Improvement converged in 2450 iterations. g= 0.8862

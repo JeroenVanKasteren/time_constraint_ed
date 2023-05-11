@@ -25,10 +25,11 @@ def load_args(raw_args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('--id', default='27_1')  # SULRM_JOBID
     parser.add_argument('--index', default='27_1')  # SLURM_ARRAY_TASK_ID
-    parser.add_argument('--J', default=2)  # User input
+    parser.add_argument('--J', default=1)  # User input
     parser.add_argument('--gamma', default=25)  # User input
     parser.add_argument('--policy', default=False)  # User input
     parser.add_argument('--time', default='0-00:02:00')  # User input
+    parser.add_argument('--b_out_f', default=True)  # User input
     args = parser.parse_args(raw_args)
     args.id = int(args.id)
     args.index = int(args.index)
@@ -41,11 +42,13 @@ def main(raw_args=None):
     args = load_args(raw_args)
     # ---- Problem ---- #
     seed = args.id * args.index
+    f_name = 'Results/' + str(args.id) + '_' + str(args.index) + 'Py.txt'
     rho = 1
     smu = 0
     while smu * (1 - rho) < -np.log(MAX_TARGET_PROB):
         env = Env(J=args.J, gamma=args.gamma, P=1e3, e=1e-5, seed=seed,
-                  max_time=args.time, convergence_check=10, print_modulo=100)
+                  max_time=args.time, convergence_check=10, print_modulo=100,
+                  b_out_f=args.b_out_file, out_f=f_name)
         smu = env.S * sum(env.lab) / sum(env.lab / env.mu)
         rho = env.load
         seed += 1

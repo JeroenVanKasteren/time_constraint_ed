@@ -81,18 +81,19 @@ class TimeConstraintEDs:
 
     def __init__(s, **kwargs):  # **kwargs: Keyword arguments
         seed = kwargs.get('seed', 42)
-        np.random.seed(seed)
+        s.rng = np.random.default_rng(seed)
         s.J: int = kwargs.get('J')
-        s.S: int = kwargs.get('S', randint(s.S_MIN, s.S_MAX + 1))  # [a, b)
-        mu = kwargs.get('mu', uniform(s.mu_MIN, s.mu_MAX, s.J))
+        s.S: int = kwargs.get('S',
+                              s.rng.integers(s.S_MIN, s.S_MAX + 1))  # [a, b)
+        mu = kwargs.get('mu', s.rng.uniform(s.mu_MIN, s.mu_MAX, s.J))
         if 'lab' in kwargs:
             lab = kwargs.get('lab')
             s.load: float = sum(lab / mu) / s.S
         else:  # Determine arrival rate based on desired load.
-            s.load = kwargs.get('load', uniform(s.load_MIN, s.load_MAX))
-            weight = uniform(s.imbalance_MIN, s.imbalance_MAX, s.J)
+            s.load = kwargs.get('load', s.rng.uniform(s.load_MIN, s.load_MAX))
+            weight = s.rng.uniform(s.imbalance_MIN, s.imbalance_MAX, s.J)
             lab = mu * s.S * s.load * weight / sum(weight)
-        t = array(kwargs.get('t', np.random.choice(s.TARGET, s.J)), float)
+        t = array(kwargs.get('t', s.rng.choice(s.TARGET, s.J)), float)
         s.gamma = float(kwargs.get('gamma'))
         if any((t % (1 / s.gamma) != 0) | (t < 1 / s.gamma)):
             t = np.floor(t * s.gamma) / s.gamma
@@ -181,21 +182,41 @@ class TimeConstraintEDs:
         s.d_f1['lab'] = s.lab
         s.d_f1['mu'] = s.mu
 
-        print(f'J = {s.J} D = {s.D}, s = {s.S}, gamma = {s.gamma}, P = {s.P}',
-              '\n load = ', round(s.load, 4),
-              '\n lambda = ', round(s.lab, 4),
-              '\n mu = ', round(s.mu, 4),
-              '\n target = ', round(s.t, 4),
-              '\n r = ', round(s.r, 4),
-              '\n c = ', round(s.c, 4),
-              '\n s_star = ', round(s.s_star, 4),
-              '\n rho:', round(s.rho, 4),
-              '\n P(W>D):', s.cap_prob,
-              '\n Weighted cap_prob:', round(s.weighted_cap_prob, 4),
-              '\n W: ', round(size(np.zeros(s.dim_i, dtype=np.float32)) / 10**9,
-                              4), 'GB.',
-              '\n V: ', round(size(np.zeros(s.dim, dtype=np.float32)) / 10 ** 9,
-                              4), 'GB.')
+        s.b_out_f = kwargs.get('b_out_file', False)
+        s.out_f = kwargs.get('out_f', 'tmp.txt')
+        if s.b_out_f:
+            with open(s.out_f, 'w') as f:
+                f.write(f'J = {s.J} D = {s.D}, s = {s.S}, gamma = {s.gamma},'
+                        f'P = {s.P} \n'
+                        f'load = {s.load}\n'
+                        f'lambda = {s.lab}\n'
+                        f'mu = {s.mu}\n'
+                        f'target = {s.t}\n'
+                        f'r = {s.r}\n'
+                        f'c = {s.c}\n'
+                        f's_star = {s.s_star}\n'
+                        f'rho: {s.rho}\n'
+                        f'P(W>D): {s.cap_prob}\n'
+                        f'Weighted cap_prob: {s.weighted_cap_prob}\n'
+                        f'W: {size(np.zeros(s.dim_i, dtype=np.float32)) / 10**9} GB.\n')
+                f.flush()
+        else:
+            print(f'J = {s.J} D = {s.D}, s = {s.S}, gamma = {s.gamma},'
+                  f' P = {s.P}',
+                  '\n load = ', round(s.load, 4),
+                  '\n lambda = ', round(s.lab, 4),
+                  '\n mu = ', round(s.mu, 4),
+                  '\n target = ', round(s.t, 4),
+                  '\n r = ', round(s.r, 4),
+                  '\n c = ', round(s.c, 4),
+                  '\n s_star = ', round(s.s_star, 4),
+                  '\n rho:', round(s.rho, 4),
+                  '\n P(W>D):', s.cap_prob,
+                  '\n Weighted cap_prob:', round(s.weighted_cap_prob, 4),
+                  '\n W: ', round(size(np.zeros(s.dim_i, dtype=np.float32)) / 10**9,
+                                  4), 'GB.',
+                  '\n V: ', round(size(np.zeros(s.dim, dtype=np.float32)) / 10 ** 9,
+                                  4), 'GB.')
         assert s.load < 1, 'rho < 1 does not hold'
 
     def get_D(self):
@@ -281,4 +302,9 @@ class TimeConstraintEDs:
 
     def time_print(self, time):
         """Convert seconds to readable format."""
-        print(f'Time: {time/60:.0f}:{time - 60 * int(time / 60):.0f} min.')
+        if self.b_out_f:
+            with open(self.out_f, 'w') as f:
+                f.write(f'Time: {time / 60:.0f}'
+                        f':{time - 60 * int(time / 60):.0f} min.')
+        else:
+            print(f'Time: {time/60:.0f}:{time - 60 * int(time / 60):.0f} min.')

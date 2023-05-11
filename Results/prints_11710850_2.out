@@ -1,0 +1,19 @@
+Rounded t down to nearest multiple of 1/gamma.
+J = 2 , D = 297 , s = 5 , gamma = 25.0 , (P= 1000.0 ) , load= 0.6153 
+ lambda: [0.243  0.5071] 
+ mu: [0.3136 0.2203] 
+ Target: [1. 1.] 
+ r: [1. 1.] 
+ c: [1. 1.] 
+ s_star: [1.3993 3.6007] 
+ rho: [0.5537 0.6392] 
+ P(W>D): [0.04847267 0.01340826] 
+ Weighted cap_prob: 0.0248 
+ W:  0.0767 GB. 
+ V:  0.0256 GB.
+iter:  0 inner_iter:  -1 , delta:  0.97 , D_min 0.0 , D_max 0.97 , g:  25.0
+iter:  100 inner_iter:  -1 , delta:  0.01 , D_min 0.01 , D_max 0.01 , g:  0.5116
+iter:  200 inner_iter:  -1 , delta:  0.01 , D_min 0.01 , D_max 0.01 , g:  0.5254
+Value Iteration iter: 260 ( -1 ) reached max_time = True , g~ 0.5334
+iter:  0 inner_iter:  0 , delta:  2.16 , D_min 0.01 , D_max 2.17 , g:  56.4107
+One-step Policy Improvement iter: 0 ( 0 ) reached max_time = True , g~ 56.4107

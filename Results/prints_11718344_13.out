@@ -1,0 +1,36 @@
+Rounded t down to nearest multiple of 1/gamma.
+J = 2 , D = 52 , s = 9 , gamma = 25.0 , (P= 1000.0 ) , load= 0.6575 
+ lambda: [1.7097 3.2885] 
+ mu: [0.931  0.8058] 
+ Target: [1. 1.] 
+ r: [1. 1.] 
+ c: [1. 1.] 
+ s_star: [3.0366 5.9634] 
+ rho: [0.6047 0.6844] 
+ P(W>D): [0.04430829 0.0224923 ] 
+ Weighted cap_prob: 0.03 
+ W:  0.0067 GB. 
+ V:  0.0022 GB.
+iter:  0 inner_iter:  -1 , delta:  0.86 , D_min 0.0 , D_max 0.86 , g:  25.0
+iter:  100 inner_iter:  -1 , delta:  0.0 , D_min 0.09 , D_max 0.09 , g:  5.1413
+iter:  200 inner_iter:  -1 , delta:  0.0 , D_min 0.09 , D_max 0.09 , g:  5.138
+iter:  300 inner_iter:  -1 , delta:  0.0 , D_min 0.09 , D_max 0.09 , g:  5.1431
+iter:  400 inner_iter:  -1 , delta:  0.0 , D_min 0.09 , D_max 0.09 , g:  5.1432
+iter:  500 inner_iter:  -1 , delta:  0.0 , D_min 0.09 , D_max 0.09 , g:  5.143
+iter:  580 inner_iter:  -1 , delta:  0.0 , D_min 0.09 , D_max 0.09 , g:  5.1431
+Value Iteration converged in 580 iterations. g= 5.1431
+iter:  0 inner_iter:  0 , delta:  2.33 , D_min 0.09 , D_max 2.42 , g:  73.041
+iter:  0 inner_iter:  100 , delta:  0.0 , D_min 0.08 , D_max 0.09 , g:  5.0261
+iter:  0 inner_iter:  200 , delta:  0.0 , D_min 0.08 , D_max 0.09 , g:  4.9718
+iter:  0 inner_iter:  300 , delta:  0.0 , D_min 0.08 , D_max 0.09 , g:  4.9515
+iter:  0 inner_iter:  400 , delta:  0.0 , D_min 0.08 , D_max 0.08 , g:  4.9433
+iter:  0 inner_iter:  500 , delta:  0.0 , D_min 0.08 , D_max 0.08 , g:  4.9395
+iter:  0 inner_iter:  600 , delta:  0.0 , D_min 0.08 , D_max 0.08 , g:  4.9376
+iter:  0 inner_iter:  700 , delta:  0.0 , D_min 0.08 , D_max 0.08 , g:  4.9367
+iter:  0 inner_iter:  800 , delta:  0.0 , D_min 0.08 , D_max 0.08 , g:  4.9363
+iter:  0 inner_iter:  900 , delta:  0.0 , D_min 0.08 , D_max 0.08 , g:  4.936
+iter:  0 inner_iter:  1000 , delta:  0.0 , D_min 0.08 , D_max 0.08 , g:  4.936
+iter:  0 inner_iter:  1100 , delta:  0.0 , D_min 0.08 , D_max 0.08 , g:  4.936
+iter:  0 inner_iter:  1200 , delta:  0.0 , D_min 0.08 , D_max 0.08 , g:  4.936
+iter:  0 inner_iter:  1260 , delta:  0.0 , D_min 0.08 , D_max 0.08 , g:  4.936
+One-step Policy Improvement converged in 1260 iterations. g= 4.936

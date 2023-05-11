@@ -1,0 +1,25 @@
+Rounded t down to nearest multiple of 1/gamma.
+J = 2 , D = 227 , s = 4 , gamma = 25.0 , (P= 1000.0 ) , load= 0.6966 
+ lambda: [0.6807 0.8602] 
+ mu: [0.442  0.6901] 
+ Target: [1. 1.] 
+ r: [1. 1.] 
+ c: [1. 1.] 
+ s_star: [2.054 1.946] 
+ rho: [0.7497 0.6406] 
+ P(W>D): [0.08720076 0.0077325 ] 
+ Weighted cap_prob: 0.0428 
+ W:  0.0312 GB. 
+ V:  0.0104 GB.
+iter:  0 inner_iter:  -1 , delta:  0.95 , D_min 0.0 , D_max 0.95 , g:  25.0
+iter:  100 inner_iter:  -1 , delta:  0.02 , D_min 0.01 , D_max 0.03 , g:  0.9374
+iter:  200 inner_iter:  -1 , delta:  0.02 , D_min 0.01 , D_max 0.03 , g:  1.0117
+iter:  300 inner_iter:  -1 , delta:  0.01 , D_min 0.01 , D_max 0.03 , g:  1.0713
+iter:  400 inner_iter:  -1 , delta:  0.01 , D_min 0.02 , D_max 0.03 , g:  1.1238
+iter:  500 inner_iter:  -1 , delta:  0.01 , D_min 0.02 , D_max 0.03 , g:  1.1595
+iter:  600 inner_iter:  -1 , delta:  0.01 , D_min 0.02 , D_max 0.03 , g:  1.1766
+iter:  700 inner_iter:  -1 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  1.1935
+iter:  800 inner_iter:  -1 , delta:  0.0 , D_min 0.02 , D_max 0.02 , g:  1.2095
+Value Iteration iter: 880 ( -1 ) reached max_time = True , g~ 1.2211
+iter:  0 inner_iter:  0 , delta:  2.24 , D_min 0.03 , D_max 2.27 , g:  60.7438
+One-step Policy Improvement iter: 0 ( 0 ) reached max_time = True , g~ 60.7438

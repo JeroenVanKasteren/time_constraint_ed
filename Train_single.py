@@ -13,15 +13,18 @@ from Env_and_Learners import TimeConstraintEDs as Env, PolicyIteration, \
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
-WEIGHTED_CAP_PROB_MAX = 0.15
+MAX_TARGET_PROB = 0.9
 
 # ---- Problem ---- #
 seed = np.random.randint(0, 1e8)
-weighted_cap_prob = 1
-while weighted_cap_prob > WEIGHTED_CAP_PROB_MAX:
-    env = Env(J=2, gamma=30., P=1e3, e=1e-5, seed=seed,
-              convergence_check=10, print_modulo=100, max_time='00:01:35')
-    weighted_cap_prob = sum(env.cap_prob * env.lab) / sum(env.lab)
+rho = 1
+smu = 0
+while smu * (1 - rho) < -np.log(MAX_TARGET_PROB):
+    env = Env(J=2, S=2, gamma=5, D=10, P=1e3, e=1e-5, seed=seed,
+              max_time='0-00:10:30', convergence_check=1, print_modulo=1,
+              max_iter=10)
+    smu = env.S * sum(env.lab) / sum(env.lab / env.mu)
+    rho = env.load
     seed += 1
 
 to_plot = []  # 'VI', 'PI', 'OSPI' (what to plot)
