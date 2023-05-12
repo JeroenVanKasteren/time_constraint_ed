@@ -118,21 +118,21 @@ class PolicyIteration:
             if env.b_out_file:
                 f = open(env.out_f, 'a')
                 f.write(f'{name} converged in {iter} iterations. '
-                        f'g = %0.4f\n' % g)
+                        f'g = {g:.4f}\n')
                 f.close()
             else:
                 print(f'{name} converged in {iter} iterations. '
-                      f'g = %0.4f' % g)
+                      f'g = {g:.4f}')
             env.time_print(clock() - env.start_time)
         elif max_iter:
             if env.b_out_file:
                 f = open(env.out_f, 'a')
                 f.write(f'{name} iter {i}, ({j}) reached max_iter '
-                        f'({max_iter}), g ~ %0.4f\n' % g)
+                        f'({max_iter}), g ~ {g:.4f}\n')
                 f.close()
             else:
                 print(f'{name} iter {i}, ({j}) reached max_iter '
-                      f'({max_iter}), g ~ %0.4f' % g)
+                      f'({max_iter}), g ~ {g:.4f}')
             env.time_print(clock() - env.start_time)
         elif max_time:
             if env.b_out_file:
