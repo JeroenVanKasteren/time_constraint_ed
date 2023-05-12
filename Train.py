@@ -48,7 +48,7 @@ def main(raw_args=None):
     while smu * (1 - rho) < -np.log(MAX_TARGET_PROB):
         env = Env(J=args.J, gamma=args.gamma, P=1e3, e=1e-5, seed=seed,
                   max_time=args.time, convergence_check=10, print_modulo=100,
-                  b_out_f=args.b_out_file, out_f=f_name)
+                  b_out_f=args.b_out_f, out_f=f_name)
         smu = env.S * sum(env.lab) / sum(env.lab / env.mu)
         rho = env.load
         seed += 1
