@@ -12,9 +12,9 @@ np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 # -------------------------- Value Iteration --------------------------------
 pi_learner = PolicyIteration()
-env = Env(J=1, S=4, gamma=25, D=60, P=1e3, e=1e-4, seed=42,
-          max_time='0-00:10:30', convergence_check=10, print_modulo=100,
-          b_out_file=True)
+env = Env(J=2, S=3, gamma=5, D=30, P=1e3, e=5e-4, seed=42,
+          max_time='0-00:15:30', convergence_check=20, print_modulo=100,
+          max_iter=1000)
 
 vi_learner = ValueIteration(env, pi_learner)
 
@@ -58,10 +58,10 @@ Pi = Pi.reshape(env.dim_i)
 # print("Pi", Pi)
 print("g", g)
 
-if env.J > 1:
-    plot_pi(env, env, Pi, zero_state=True)
-    plot_pi(env, env, Pi, zero_state=False)
-for i in range(env.J):
-    plot_pi(env, env, Pi, zero_state=True, i=i)
-    plot_pi(env, env, Pi, zero_state=True, i=i, smu=True)
-    plot_v(env, V, zero_state=True, i=i)
+# if env.J > 1:
+#     plot_pi(env, env, Pi, zero_state=True)
+#     plot_pi(env, env, Pi, zero_state=False)
+# for i in range(env.J):
+#     plot_pi(env, env, Pi, zero_state=True, i=i)
+#     plot_pi(env, env, Pi, zero_state=True, i=i, smu=True)
+#     plot_v(env, V, zero_state=True, i=i)

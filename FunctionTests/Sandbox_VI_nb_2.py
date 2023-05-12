@@ -1,5 +1,8 @@
 """
 Sandbox Value Iteration
+
+Try to make DP faster by putting everything in numba njit.
+W is matrix calculated once every loop.
 """
 
 import numpy as np
@@ -11,8 +14,9 @@ from time import perf_counter as clock
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 pi_learner = PolicyIteration()
-env = Env(J=2, S=4, gamma=10, D=50, P=1e3, e=1e-5, seed=42,
-          max_time='0-00:10:30', convergence_check=10, print_modulo=100)
+env = Env(J=2, S=3, gamma=5, D=30, P=1e3, e=5e-4, seed=42,
+          max_time='0-00:15:30', convergence_check=20, print_modulo=100,
+          max_iter=1000)
 
 DICT_TYPE_I0 = tp.DictType(tp.unicode_type, tp.i8)  # ints
 DICT_TYPE_I1 = tp.DictType(tp.unicode_type, tp.i4[:])  # int 1D vector
@@ -23,21 +27,17 @@ DICT_TYPE_F1 = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
 
 @nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.f8, DICT_TYPE_I0,
                   DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F1, tp.f8[:, :, :]),
-         parallel=True, error_model='numpy')
+         error_model='numpy')
 def init_w(V, W, gamma, d_i0, d_i1, d_i2, d_f1, P_xy):
     """W given policy."""
-    r, c, t, J, P = d_f1['r'], d_f1['c'], d_f1['t'], d_i0['J'], d_i0['P']
-    S, D = d_i0['S'], d_i0['D']
+    r, c, t, J = d_f1['r'], d_f1['c'], d_f1['t'], d_i0['J']
+    S, D, P_m = d_i0['S'], d_i0['D'], d_i1['P_m']
     sizes_x, sizes_s = d_i1['sizes_i'][1:J + 1], d_i1['sizes_i'][J + 1:J*2 + 1]
     sizes_x_n, sizes_s_n = d_i1['sizes'][0:J], d_i1['sizes'][J:J * 2]
-    for x_i in nb.prange(len(d_i2['x'])):
-        for s_i in nb.prange(len(d_i2['s_valid'])):
-            x = d_i2['x'][x_i]
-            s = d_i2['s_valid'][s_i]
+    for x_i in range(len(d_i2['x'])):
+        for s_i in range(len(d_i2['s_valid'])):
+            x, s = d_i2['x'][x_i], d_i2['s_valid'][s_i]
             state = np.sum(x * sizes_x_n + s * sizes_s_n)
-            over_target = 0
-            for k in range(J):
-                over_target += x[k] > t[k] * gamma
             for i in range(J + 1):
                 state_i = (i * d_i1['sizes_i'][0]
                            + np.sum(x * sizes_x + s * sizes_s))
@@ -46,8 +46,7 @@ def init_w(V, W, gamma, d_i0, d_i1, d_i2, d_f1, P_xy):
                 else:
                     W[state_i] = V[state]
                 if sum(s) < S:
-                    if over_target == J:
-                        W[state_i] -= P
+                    W[state_i] -= P_m[state]
                     for j in range(J):
                         if (x[j] > 0) or (j == i):
                             w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
@@ -69,7 +68,7 @@ def init_w(V, W, gamma, d_i0, d_i1, d_i2, d_f1, P_xy):
 @nb.njit(nb.types.Tuple((tp.f4[:], tp.f8, tp.b1, tp.i8))(
     tp.f4[:], tp.f4[:], tp.f4[:], tp.f8, DICT_TYPE_I0, DICT_TYPE_I1,
     DICT_TYPE_I2, DICT_TYPE_F0, DICT_TYPE_F1, tp.f8[:, :, :]),
-         parallel=True, error_model='numpy')
+    error_model='numpy')
 def value_iteration(V, W, delta, gamma, d_i0, d_i1, d_i2, d_f0, d_f1, P_xy):
     """W given policy."""
     J = d_i0['J']
@@ -88,8 +87,8 @@ def value_iteration(V, W, delta, gamma, d_i0, d_i1, d_i2, d_f0, d_f1, P_xy):
            and (time < d_f0['max_time'])):
         W = init_w(V, W, gamma, d_i0, d_i1, d_i2, d_f1, P_xy)
         V_t = tp.float32(d_f0['tau']) * V  # Copies V
-        for x_i in nb.prange(len(d_i2['x'])):
-            for s_i in nb.prange(len(d_i2['s_valid'])):
+        for x_i in range(len(d_i2['x'])):
+            for s_i in range(len(d_i2['s_valid'])):
                 x, s = d_i2['x'][x_i], d_i2['s_valid'][s_i]
                 state = np.sum(x * sizes_x_n + s * sizes_s_n)
                 for i in range(J):
@@ -128,8 +127,8 @@ def value_iteration(V, W, delta, gamma, d_i0, d_i1, d_i2, d_f0, d_f1, P_xy):
         if count % d_i0['print_modulo'] == 0:
             print('iter:', count,
                   'delta:', delta_max - delta_min,
-                  '[d_min, d_max] : [', delta_min, ',', delta_max,
-                  '] g:', g)
+                  '[d_min, d_max] : [', delta_min, ',',
+                  np.round(delta_max, 4), '] g:', g)
         V = V_t - V_t[0]
         count += 1
     return V, g, converged, count

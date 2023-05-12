@@ -1,8 +1,8 @@
 """
 Sandbox Value Iteration
 
-w(x,s) is a function call. This approach is not efficient.
-Very slow, probably due to compiling time.
+Try to make DP faster by putting everything in numba njit.
+W is matrix calculated once every loop.
 """
 
 import numpy as np
@@ -25,66 +25,16 @@ DICT_TYPE_F0 = tp.DictType(tp.unicode_type, tp.f8)  # float 1D vector
 DICT_TYPE_F1 = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
 
 
-@nb.njit(tp.f4(tp.f4[:], tp.i8, tp.i4[:], tp.i4[:], tp.i8, tp.f8,
-               DICT_TYPE_I0, DICT_TYPE_I1, DICT_TYPE_F1, tp.f8[:, :, :]),
-         parallel=True, error_model='numpy')
-def get_w_i(V, i, x, s, state, gamma, d_i0, d_i1, d_f1, P_xy):
-    J, D, r, c, t = d_i0['J'], d_i0['D'], d_f1['r'], d_f1['c'], d_f1['t']
-    P_m = d_i1['P_m']
-    sizes_x_n, sizes_s_n = d_i1['sizes'][0:J], d_i1['sizes'][J:J * 2]
-    next_state = state + d_i1['sizes'][i] if x[i] < D else state
-    w_res = V[next_state]
-    if sum(s) == d_i0['S']:
-        return w_res
-    else:
-        w_res -= P_m[state]
-    for j in range(J):
-        if (x[j] > 0) or (j == i):
-            w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
-            i_not_admitted = 0
-            if (i < J) and (i != j) and (x[i] < D):
-                i_not_admitted = sizes_x_n[i]
-            for y in range(x[j] + 1):
-                next_state = (np.sum(x*sizes_x_n + s*sizes_s_n)
-                              - (x[j] - y) * sizes_x_n[j]
-                              + i_not_admitted
-                              + sizes_s_n[j])
-                w += P_xy[j, x[j], y] * V[next_state]
-            if w > w_res:
-                w_res = w
-    return w_res
-
-@nb.njit(tp.f4(tp.f4[:], tp.i8, tp.i4[:], tp.i4[:], tp.i8, tp.f8,
-               DICT_TYPE_I0, DICT_TYPE_I1, DICT_TYPE_F1, tp.f8[:, :, :]),
-         parallel=True, error_model='numpy')
-def get_w(V, i, x, s, state, gamma, d_i0, d_i1, d_f1, P_xy):
-    J, D, r, c, t = d_i0['J'], d_i0['D'], d_f1['r'], d_f1['c'], d_f1['t']
-    P_m = d_i1['P_m']
-    sizes_x_n, sizes_s_n = d_i1['sizes'][0:J], d_i1['sizes'][J:J * 2]
-    w_res = V[state] - P_m[state]
-    for j in range(J):
-        if x[j] > 0:
-            w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
-            for y in range(x[j] + 1):
-                next_state = (np.sum(x*sizes_x_n + s*sizes_s_n)
-                              - sizes_s_n[i]
-                              - (x[j] - y) * sizes_x_n[j]
-                              + sizes_s_n[j])
-                w += P_xy[j, x[j], y] * V[next_state]
-            if w > w_res:
-                w_res = w
-    return w_res
-
-
 @nb.njit(nb.types.Tuple((tp.f4[:], tp.f8, tp.b1, tp.i8))(
-    tp.f4[:], tp.f4[:], tp.f8, DICT_TYPE_I0, DICT_TYPE_I1, DICT_TYPE_I2,
-    DICT_TYPE_F0, DICT_TYPE_F1, tp.f8[:, :, :]),
+    tp.f4[:], tp.f4[:], tp.f4[:], tp.f8, DICT_TYPE_I0, DICT_TYPE_I1,
+    DICT_TYPE_I2, DICT_TYPE_F0, DICT_TYPE_F1, tp.f8[:, :, :]),
          parallel=True, error_model='numpy')
-def value_iteration(V, delta, gamma, d_i0, d_i1, d_i2, d_f0, d_f1, P_xy):
+def value_iteration(V, W, delta, gamma, d_i0, d_i1, d_i2, d_f0, d_f1, P_xy):
     """W given policy."""
-    J = d_i0['J']
+    r, c, t, J = d_f1['r'], d_f1['c'], d_f1['t'], d_i0['J']
+    S, D, P_m = d_i0['S'], d_i0['D'], d_i1['P_m']
     sizes_x = d_i1['sizes_i'][1:J + 1]
-    sizes_s = d_i1['sizes_i'][J + 1:J * 2 + 1]
+    sizes_s = d_i1['sizes_i'][J + 1:J*2 + 1]
     sizes_x_n = d_i1['sizes'][0:J]  # sizes Next state
     sizes_s_n = d_i1['sizes'][J:J * 2]
     lab, mu = d_f1['lab'], d_f1['mu']
@@ -96,29 +46,51 @@ def value_iteration(V, delta, gamma, d_i0, d_i1, d_i2, d_f0, d_f1, P_xy):
     delta_min = np.float32(np.inf)
     while ((not converged) and (count < d_f0['max_iter'])
            and (time < d_f0['max_time'])):
+        for x_i in nb.prange(len(d_i2['x'])):
+            for s_i in nb.prange(len(d_i2['s_valid'])):
+                x, s = d_i2['x'][x_i], d_i2['s_valid'][s_i]
+                state = np.sum(x * sizes_x_n + s * sizes_s_n)
+                for i in range(J + 1):
+                    state_i = (i * d_i1['sizes_i'][0]
+                               + np.sum(x * sizes_x + s * sizes_s))
+                    if (i < J) and (x[i] < D):
+                        W[state_i] = V[state + sizes_x_n[i]]
+                    else:
+                        W[state_i] = V[state]
+                    if sum(s) < S:
+                        W[state_i] -= P_m[state]
+                        for j in range(J):
+                            if (x[j] > 0) or (j == i):
+                                w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
+                                i_not_admitted = 0
+                                if (i < J) and (i != j) and (x[i] < D):
+                                    i_not_admitted = sizes_x_n[i]
+                                for y in range(x[j] + 1):
+                                    next_state = (np.sum(x * sizes_x_n
+                                                         + s * sizes_s_n)
+                                                  - (x[j] - y) * sizes_x_n[j]
+                                                  + i_not_admitted
+                                                  + sizes_s_n[j])
+                                    w += P_xy[j, x[j], y] * V[next_state]
+                                if w > W[state_i]:
+                                    W[state_i] = w
         V_t = tp.float32(d_f0['tau']) * V  # Copies V
         for x_i in nb.prange(len(d_i2['x'])):
             for s_i in nb.prange(len(d_i2['s_valid'])):
                 x, s = d_i2['x'][x_i], d_i2['s_valid'][s_i]
                 state = np.sum(x * sizes_x_n + s * sizes_s_n)
                 for i in range(J):
+                    state_i = (i * d_i1['sizes_i'][0]
+                               + np.sum(x * sizes_x + s * sizes_s))
                     if x[i] == 0:
-                        V_t[state] += lab[i] * (
-                            get_w_i(V, i, x, s, state, gamma,
-                                    d_i0, d_i1, d_f1, P_xy) - V[state])
+                        V_t[state] += lab[i] * (W[state_i] - V[state])
                     else:
-                        V_t[state] += gamma * (
-                                get_w_i(V, i, x, s, state, gamma, d_i0,
-                                        d_i1, d_f1, P_xy) - V[state])
+                        V_t[state] += gamma * (W[state_i] - V[state])
                     if s[i] > 0:
                         state_i = (J * d_i1['sizes_i'][0]
                                    + np.sum(x * sizes_x + s * sizes_s))
                         state_i -= sizes_s[i]
-                        next_state = state - sizes_s_n[i]
-                        V_t[state] += (s[i] * mu[i]
-                                       * (get_w(V, i, x, s, next_state, gamma,
-                                                d_i0, d_i1, d_f1, P_xy)
-                                          - V[state]))
+                        V_t[state] += (s[i] * mu[i] * (W[state_i] - V[state]))
                 V_t[state] /= d_f0['tau']
                 delta[state] = abs(V_t[state] - V[state])
         if count % d_i0['convergence_check'] == 0:
@@ -152,10 +124,11 @@ def value_iteration(V, delta, gamma, d_i0, d_i1, d_i2, d_f0, d_f1, P_xy):
 # Value Iteration
 name = 'Value Iteration'
 V = np.zeros(env.size, dtype=np.float32)  # V_{t-1}
+W = np.zeros(env.size_i, dtype=np.float32)
 delta = np.ones(env.size, dtype=np.float32) * np.inf
 
 start_VI = clock()
-V, g, converged, count = value_iteration(V, delta, env.gamma, env.d_i0,
+V, g, converged, count = value_iteration(V, W, delta, env.gamma, env.d_i0,
                                          env.d_i1, env.d_i2, env.d_f0, env.d_f1,
                                          env.P_xy)
 env.time_print(clock()-start_VI)

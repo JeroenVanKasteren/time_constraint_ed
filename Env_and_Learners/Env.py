@@ -165,6 +165,7 @@ class TimeConstraintEDs:
                                      value_type=tp.i4[:])
         s.d_i1['sizes'] = s.sizes
         s.d_i1['sizes_i'] = s.sizes_i
+        s.d_i1['P_m'] = s.get_P_m()
         s.d_i2 = nb.typed.Dict.empty(key_type=tp.unicode_type,
                                      value_type=tp.i4[:, :])
         s.d_i2['s'] = s.s_states
@@ -186,7 +187,7 @@ class TimeConstraintEDs:
         s.d_f1['mu'] = s.mu
 
         if s.b_out_file:
-            with open(s.out_f, 'w') as f:
+            with open(s.out_f, 'w+') as f:
                 f.write(f'J = {s.J} D = {s.D}, s = {s.S}, gamma = {s.gamma},'
                         f'P = {s.P} \n'
                         f'load = {s.load:.4f}\n'
@@ -300,6 +301,19 @@ class TimeConstraintEDs:
         for i in range(len(dim) - 2, -1, -1):
             sizes[i] = sizes[i + 1] * dim[i + 1]
         return sizes
+
+    def get_P_m(self):
+        """
+        Make a matrix with Penalty P.
+        """
+        P_m = np.zeros(self.dim, dtype=np.int32)
+        states = [slice(None)] * (1 + self.J * 2)
+        for i in range(self.J):
+            states[i] = slice(int(self.gamma * self.t[i]) + 1, self.D + 1)
+        for s in self.s_states:
+            states[self.J:] = s
+            P_m[tuple(states)] = self.P
+        return P_m.reshape(self.size)
 
     def time_print(self, time):
         """Convert seconds to readable format."""
