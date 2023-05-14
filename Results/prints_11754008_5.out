@@ -1,0 +1,58 @@
+Run code: Task id 11754008, 5
+Rounded t down to nearest multiple of 1/gamma.
+
+J = 2 D = 38, s = 7, gamma = 15.0,P = 1000 
+load = 0.6113
+lambda = [1.7157 1.6759]
+mu = [0.7756 0.8107]
+target = [1. 1.]
+r = [1. 1.]
+c = [1. 1.]
+s_star = [3.5937 3.4063]
+rho: [0.6155 0.6069]
+P(W>D): [0.0336 0.0326]
+Weighted cap_prob: 0.0331
+size: 292032
+W: 0.0012 GB.
+V: 0.0004 GB.
+
+iter: 0, inner_iter: -1, delta: 0.841, d_min: 0.000, d_max: 0.841, g: 15.0000
+Time: 0:4 min.
+
+iter: 100, inner_iter: -1, delta: 0.002, d_min: 0.095, d_max: 0.097, g: 3.4256
+Time: 2:9 min.
+
+iter: 200, inner_iter: -1, delta: 0.000, d_min: 0.096, d_max: 0.097, g: 3.4470
+Time: 4:13 min.
+
+iter: 300, inner_iter: -1, delta: 0.000, d_min: 0.097, d_max: 0.097, g: 3.4495
+Time: 6:17 min.
+
+iter: 360, inner_iter: -1, delta: 0.000, d_min: 0.097, d_max: 0.097, g: 3.4487
+Time: 8:32 min.
+
+Value Iteration converged in 360 iterations. g = 3.4487
+Time: 8:32 min.
+
+iter: 0, inner_iter: 0, delta: 1.767, d_min: 0.095, d_max: 1.862, g: 34.9174
+Time: 8:32 min.
+
+iter: 0, inner_iter: 100, delta: 0.002, d_min: 0.093, d_max: 0.095, g: 3.3456
+Time: 9:56 min.
+
+iter: 0, inner_iter: 200, delta: 0.001, d_min: 0.093, d_max: 0.094, g: 3.3251
+Time: 10:19 min.
+
+iter: 0, inner_iter: 300, delta: 0.000, d_min: 0.093, d_max: 0.093, g: 3.3193
+Time: 12:42 min.
+
+iter: 0, inner_iter: 400, delta: 0.000, d_min: 0.093, d_max: 0.093, g: 3.3177
+Time: 13:5 min.
+
+iter: 0, inner_iter: 490, delta: 0.000, d_min: 0.093, d_max: 0.093, g: 3.3178
+Time: 14:20 min.
+
+One-step Policy Improvement converged in 490 iterations. g = 3.3178
+Time: 14:20 min.
+
+Done

@@ -53,6 +53,7 @@ from numpy import array, round, int32
 from numpy.random import randint, uniform
 from itertools import product
 from sys import getsizeof as size
+import os
 import numba as nb
 from numba import types as tp
 from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
@@ -321,5 +322,7 @@ class TimeConstraintEDs:
             with open(self.out_f, 'a') as f:
                 f.write(f'Time: {time / 60:.0f}'
                         f':{time - 60 * int(time / 60):.0f} min.')
+                f.flush()
+                os.fsync()
         else:
             print(f'Time: {time/60:.0f}:{time - 60 * int(time / 60):.0f} min.\n')

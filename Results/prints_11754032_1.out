@@ -1,0 +1,37 @@
+Run code: Task id 11754319, 1
+Rounded t down to nearest multiple of 1/gamma.
+
+J = 2 D = 101, s = 5, gamma = 20.0,P = 1000 
+load = 0.6487
+lambda = [0.9237 1.1951]
+mu = [0.5425 0.7757]
+target = [1. 1.]
+r = [1. 1.]
+c = [1. 1.]
+s_star = [2.5114 2.4886]
+rho: [0.678  0.6191]
+P(W>D): [0.0628 0.014 ]
+Weighted cap_prob: 0.0353
+size: 1123632
+W: 0.0045 GB.
+V: 0.0015 GB.
+
+iter: 0, inner_iter: -1, delta: 0.912, d_min: 0.000, d_max: 0.912, g: 20.0000
+Time: 0:16 min.
+
+iter: 100, inner_iter: -1, delta: 0.016, d_min: 0.031, d_max: 0.046, g: 1.6947
+Time: 22:1 min.
+
+iter: 200, inner_iter: -1, delta: 0.008, d_min: 0.038, d_max: 0.046, g: 1.8424
+Time: 44:48 min.
+
+Value Iteration iter 270, (-1) reached max_time (True) g ~ 1.8848
+Time: 59:2 min.
+
+iter: 0, inner_iter: 0, delta: 2.065, d_min: 0.048, d_max: 2.113, g: 47.4152
+Time: 59:10 min.
+
+One-step Policy Improvement iter 0, (0) reached max_time (True) g ~ 47.4152
+Time: 59:10 min.
+
+Done

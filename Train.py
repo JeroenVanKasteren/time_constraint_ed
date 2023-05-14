@@ -80,7 +80,8 @@ def main(raw_args=None):
     Path(FILEPATH).touch()
     with open(FILEPATH, 'a') as f:  # a = append
         f.write(','.join(map(str, result)) + '\n')
-
+        f.flush()
+        os.fsync()
 
 if __name__ == '__main__':
     main()

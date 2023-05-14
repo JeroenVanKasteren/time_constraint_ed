@@ -12,6 +12,7 @@ The implemented learners are:
 
 import numpy as np
 import numba as nb
+import os
 from numba import types as tp
 from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy.integrate import quad_vec
@@ -106,6 +107,8 @@ class PolicyIteration:
                         f'delta: {delta_max - delta_min:.3f}, '
                         f'd_min: {delta_min:.3f}, d_max: {delta_max:.3f}, '
                         f'g: {g:.4f}\n')
+                f.flush()
+                os.fsync()
                 f.close()
             else:
                 print(f'iter: {i}, inner_iter: {j}, '
@@ -119,6 +122,8 @@ class PolicyIteration:
                 f = open(env.out_f, 'a')
                 f.write(f'{name} converged in {iter} iterations. '
                         f'g = {g:.4f}\n')
+                f.flush()
+                os.fsync()
                 f.close()
             else:
                 print(f'{name} converged in {iter} iterations. '
@@ -129,6 +134,8 @@ class PolicyIteration:
                 f = open(env.out_f, 'a')
                 f.write(f'{name} iter {i}, ({j}) reached max_iter '
                         f'({max_iter}), g ~ {g:.4f}\n')
+                f.flush()
+                os.fsync()
                 f.close()
             else:
                 print(f'{name} iter {i}, ({j}) reached max_iter '
@@ -139,6 +146,8 @@ class PolicyIteration:
                 f = open(env.out_f, 'a')
                 f.write(f'{name} iter {i}, ({j}) reached max_time ({max_time}) '
                         f'g ~ %0.4f\n' % g)
+                f.flush()
+                os.fsync()
                 f.close()
             else:
                 print(f'{name} iter {i}, ({j}) reached max_time ({max_time}) '

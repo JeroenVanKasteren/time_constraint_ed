@@ -28,7 +28,8 @@ results.loc[:, cols] = results.loc[:, cols].applymap(strip_split)
 #                          / results['lambda'].apply(sum)).apply(sum)
 # results.to_csv('Results/results.csv', header=False, index=False)
 
-results_conv = results[results['vi_converged'] & results['ospi_converged']]
+results_conv = results[results['vi_converged'] & results['ospi_converged']
+                       & (results['J'] > 1)]
 
 # plt.hist(results_conv['gap'])
 # plt.show()
