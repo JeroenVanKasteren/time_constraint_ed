@@ -460,10 +460,14 @@ class OneStepPolicyImprovement:
         s.V_app = s.V_app.reshape(env.dim)
         s.Pi = s.Pi.reshape(env.dim_i)
 
-    def get_g(s, env):
+    def get_g(s, env, **kwargs):
         """Determine g via Policy Evaluation."""
         W = np.zeros(env.dim_i, dtype=np.float32)
         s.Pi = s.Pi.reshape(env.size_i)
-        _, s.g, s.converged = s.pi_learner.policy_evaluation(env, s.V_app, W,
-                                                             s.Pi, s.g, s.name)
+        if 'V' in kwargs:
+            _, s.g, s.converged = s.pi_learner.policy_evaluation(
+                env, kwargs.get('V'), W, s.Pi, s.g, s.name)
+        else:
+            _, s.g, s.converged = s.pi_learner.policy_evaluation(
+                env, s.V_app, W, s.Pi, s.g, s.name)
         s.Pi = s.Pi.reshape(env.dim_i)

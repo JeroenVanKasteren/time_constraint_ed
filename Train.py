@@ -60,7 +60,7 @@ def main(raw_args=None):
 
     # ---- One Step Policy Improvement ---- #
     ospi_learner = OneStepPolicyImprovement(env, pi_learner)
-    ospi_learner.get_g(env)
+    ospi_learner.get_g(env, V=vi_learner.V)
 
     result = [args.id, args.index, datetime.today().strftime('%Y-%m-%d'),
               seed, env.J, env.S, env.D, env.size, env.size_i, env.gamma, env.e,
