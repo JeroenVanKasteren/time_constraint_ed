@@ -33,7 +33,7 @@ results_conv = results[results['vi_converged'] & results['ospi_converged']
 
 # plt.hist(results_conv['gap'])
 # plt.show()
-results_conv.boxplot(column='gap', by='J')
+results_conv.boxplot(column='gap', by='gamma')
 plt.title('Optimality Gap versus queues')
 plt.show()
 # https://matplotlib.org/stable/gallery/statistics/boxplot_demo.html
@@ -70,6 +70,12 @@ plt.scatter(results_conv['D'], results_conv['load'])
 plt.xlabel('D')
 plt.ylabel('load')
 plt.title('D vs. load')
+plt.show()
+
+plt.scatter(results_conv['size'], results_conv['load'])
+plt.xlabel('size')
+plt.ylabel('load')
+plt.title('size vs. load')
 plt.show()
 
 plt.scatter(results_conv['load'], results_conv['gap'])

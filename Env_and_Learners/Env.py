@@ -97,7 +97,7 @@ class TimeConstraintEDs:
         t = array(kwargs.get('t', s.rng.choice(s.TARGET, s.J)), float)
         s.gamma = float(kwargs.get('gamma'))
 
-        s.b_out_file = kwargs.get('b_out_file', False)
+        s.b_out_file = kwargs.get('b_out_f', False)
         s.out_f = kwargs.get('out_f', 'tmp.txt')
         if any((t % (1 / s.gamma) != 0) | (t < 1 / s.gamma)):
             t = np.floor(t * s.gamma) / s.gamma
