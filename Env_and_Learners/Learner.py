@@ -285,7 +285,7 @@ class PolicyIteration:
                 converged, stopped, g = self.convergence(env, V_t, V, count,
                                                          name, j=inner_count)
             V = V_t - V_t[tuple([0] * (env.J * 2))]  # Rescale and Save V_t
-            if count > env.max_iter:
+            if inner_count > env.max_iter:
                 return V, g
             inner_count += 1
         return V, g, converged

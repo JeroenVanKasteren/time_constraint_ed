@@ -81,8 +81,7 @@ class TimeConstraintEDs:
     NOT_EVALUATED: int = -3
 
     def __init__(s, **kwargs):  # **kwargs: Keyword arguments
-        seed = kwargs.get('seed', 42)
-        s.rng = np.random.default_rng(seed)
+        s.rng = np.random.default_rng(kwargs.get('seed', 42))
         s.J: int = kwargs.get('J')
         s.S: int = kwargs.get('S',
                               s.rng.integers(s.S_MIN, s.S_MAX + 1))  # [a, b)
