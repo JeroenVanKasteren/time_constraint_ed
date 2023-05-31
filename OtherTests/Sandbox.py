@@ -26,22 +26,24 @@ V[0, 0] = 1
 print(W, V)
 
 alpha = arange(2, 20, 0.1)
-s = 3
-mu = [0.2, 0.4, 0.6]
-rho = [0.8, 0.9]
+s = [2, 10]
+mu = [1/4, 1/2]
+rho = [0.5, 0.8, 0.9]
 for rho_i in rho:
     p_w_d = []
     legends = []
     for mu_i in mu:
-        p_w_d.append(tuple(np.exp(-s * mu_i * (1 - rho_i) * alpha)))
-        legends.append('mu=' + str(mu_i) + ', rho=' + str(rho_i) +
-                       ', smu(1-rho)=' +
-                       str(np.around(s * mu_i * (1 - rho_i), 2)))
+        for s_i in s:
+            p_w_d.append(tuple(np.exp(-s_i * mu_i * (1 - rho_i) * alpha)))
+            legends.append('mu=' + str(mu_i) + ', rho=' + str(rho_i) +
+                           ', s=' + str(s_i) + ', smu(1-rho)=' +
+                           str(np.around(s_i * mu_i * (1 - rho_i), 2)))
     for y in p_w_d:
         plt.plot(alpha, y)
     plt.legend(legends)
     plt.title('P(W>D), rho='+str(rho_i))
-    plt.xlabel('gamma')
+    plt.ylim([0, 1])
+    plt.xlabel('alpha')
     plt.ylabel('P(W>D)')
     plt.grid()
     plt.show()

@@ -6,7 +6,7 @@ N classes, N=2,3,4 (SIMS := # experiments each)
 
 python Train.py --id=1 --index=1 --J=2 --gamma=25 --policy=False --time=0-00:03:00
 
-@author: Jeroen van Kasteren (j.van.kasteren@vu.nl)
+@author: Jeroen van Kasteren (jeroen.van.kasteren@vu.nl)
 Created on 19-3-2020.
 """
 
@@ -71,12 +71,11 @@ def main(raw_args=None):
               vi_learner.g, ospi_learner.g,
               abs(vi_learner.g - ospi_learner.g) / vi_learner.g]
 
-    if args.policy:
-        vi_learner.get_policy(env)
-        np.savez('Results/policy_' + args.id + '.npz',
-                 vi_learner.Pi, ospi_learner.Pi,
-                 vi_learner.V, ospi_learner.V_app)
-        # np.load('Results/policy_SLURM_ARRAY_TASK_ID.npz')
+    vi_learner.get_policy(env)
+    np.savez('Results/policy_' + args.id + '.npz',
+             vi_learner.Pi, ospi_learner.Pi,
+             vi_learner.V, ospi_learner.V_app)
+    # np.load('Results/policy_SLURM_ARRAY_TASK_ID.npz')
 
     Path(FILEPATH).touch()
     with open(FILEPATH, 'a') as f:  # a = append

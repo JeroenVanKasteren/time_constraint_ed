@@ -1,8 +1,0 @@
-Traceback (most recent call last):
-  File "/home/jvkasteren/time_constraint_ed/Train.py", line 83, in <module>
-    main()
-  File "/home/jvkasteren/time_constraint_ed/Train.py", line 47, in main
-    env = Env(J=args.J, gamma=args.gamma, P=1e3, e=1e-5, seed=seed,
-  File "/home/jvkasteren/time_constraint_ed/Env_and_Learners/Env.py", line 178, in __init__
-    'W: ', round(size(np.zeros(s.dim_i)) / 10**9, 4), 'GB.', '\n',
-numpy.core._exceptions._ArrayMemoryError: Unable to allocate 233. GiB for an array with shape (4, 397, 397, 397, 5, 5, 5) and data type float64

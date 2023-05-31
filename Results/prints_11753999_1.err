@@ -1,7 +1,0 @@
-/var/spool/slurm/slurmd/job11753999/slurm_script: line 14: time_constraint_ed: No such file or directory
-Traceback (most recent call last):
-  File "/home/jvkasteren/time_constraint_ed/Train.py", line 86, in <module>
-    main()
-  File "/home/jvkasteren/time_constraint_ed/Train.py", line 51, in main
-    b_out_f=args.b_out_file, out_f=f_name)
-AttributeError: 'Namespace' object has no attribute 'b_out_file'

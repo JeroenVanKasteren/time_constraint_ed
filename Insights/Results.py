@@ -8,12 +8,13 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-columns = ['id', 'index', 'Date', 'seed', 'J', 'S', 'D', 'size', 'size_i',
+FILEPATH = 'Results/instances.csv'
+COLUMNS = ['id', 'index', 'Date', 'seed', 'J', 'S', 'D', 'size', 'size_i',
            'gamma', 'eps', 't', 'c', 'r', 'lambda', 'mu', 'load', 'cap_prob',
-           'w_cap_prob', 'vi_converged', 'ospi_converged', 'time', 'VI',
+           'vi_converged', 'ospi_converged', 'time', 'VI',
            'OSPI', 'gap']
 
-results = pd.read_csv('Results/results.csv', names=columns)
+results = pd.read_csv('Results/results.csv', names=COLUMNS)
 
 
 def strip_split(x):

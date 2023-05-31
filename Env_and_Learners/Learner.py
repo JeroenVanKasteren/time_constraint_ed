@@ -101,57 +101,23 @@ class PolicyIteration:
         g = (delta_max + delta_min) / 2 * env.tau
         if (converged | (((i % env.print_modulo == 0) & (j == -1))
                          | (j % env.print_modulo == 0))):
-            if env.b_out_file:
-                f = open(env.out_f, 'a')
-                f.write(f'iter: {i}, inner_iter: {j}, '
-                        f'delta: {delta_max - delta_min:.3f}, '
-                        f'd_min: {delta_min:.3f}, d_max: {delta_max:.3f}, '
-                        f'g: {g:.4f}\n')
-                f.flush()
-                os.fsync()
-                f.close()
-            else:
-                print(f'iter: {i}, inner_iter: {j}, '
-                      f'delta: {delta_max - delta_min:.3f}, '
-                      f'd_min: {delta_min:.3f}, d_max: {delta_max:.3f}, '
-                      f'g: {g:.4f}')
+            print(f'iter: {i}, inner_iter: {j}, '
+                  f'delta: {delta_max - delta_min:.3f}, '
+                  f'd_min: {delta_min:.3f}, d_max: {delta_max:.3f}, '
+                  f'g: {g:.4f}')
             env.time_print(clock() - env.start_time)
         if converged:
             iter = i if j == -1 else j
-            if env.b_out_file:
-                f = open(env.out_f, 'a')
-                f.write(f'{name} converged in {iter} iterations. '
-                        f'g = {g:.4f}\n')
-                f.flush()
-                os.fsync()
-                f.close()
-            else:
-                print(f'{name} converged in {iter} iterations. '
-                      f'g = {g:.4f}')
+            print(f'{name} converged in {iter} iterations. '
+                  f'g = {g:.4f}')
             env.time_print(clock() - env.start_time)
         elif max_iter:
-            if env.b_out_file:
-                f = open(env.out_f, 'a')
-                f.write(f'{name} iter {i}, ({j}) reached max_iter '
-                        f'({max_iter}), g ~ {g:.4f}\n')
-                f.flush()
-                os.fsync()
-                f.close()
-            else:
-                print(f'{name} iter {i}, ({j}) reached max_iter '
-                      f'({max_iter}), g ~ {g:.4f}')
+            print(f'{name} iter {i}, ({j}) reached max_iter '
+                  f'({max_iter}), g ~ {g:.4f}')
             env.time_print(clock() - env.start_time)
         elif max_time:
-            if env.b_out_file:
-                f = open(env.out_f, 'a')
-                f.write(f'{name} iter {i}, ({j}) reached max_time ({max_time}) '
-                        f'g ~ %0.4f\n' % g)
-                f.flush()
-                os.fsync()
-                f.close()
-            else:
-                print(f'{name} iter {i}, ({j}) reached max_time ({max_time}) '
-                      f'g ~ %0.4f' % g)
+            print(f'{name} iter {i}, ({j}) reached max_time ({max_time}) '
+                  f'g ~ %0.4f' % g)
             env.time_print(clock() - env.start_time)
         return converged, max_iter | max_time, g
 

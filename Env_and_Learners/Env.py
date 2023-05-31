@@ -96,8 +96,6 @@ class TimeConstraintEDs:
         t = array(kwargs.get('t', s.rng.choice(s.TARGET, s.J)), float)
         s.gamma = float(kwargs.get('gamma'))
 
-        s.b_out_file = kwargs.get('b_out_f', False)
-        s.out_f = kwargs.get('out_f', 'tmp.txt')
         if any((t % (1 / s.gamma) != 0) | (t < 1 / s.gamma)):
             t = np.floor(t * s.gamma) / s.gamma
             print('Rounded t down to nearest multiple of 1/gamma.\n')
@@ -123,7 +121,6 @@ class TimeConstraintEDs:
         else:
             s.D: int = s.get_D()
         s.cap_prob = s.get_tail_prob(s.s_star, s.rho, s.lab, s.mu, s.pi_0, s.D)
-        s.weighted_cap_prob = sum(s.cap_prob * s.lab) / sum(s.lab)
         s.P_xy = s.trans_prob()
 
         s.dim = tuple(np.repeat([s.D + 1, s.S + 1], s.J))
@@ -186,39 +183,20 @@ class TimeConstraintEDs:
         s.d_f1['lab'] = s.lab
         s.d_f1['mu'] = s.mu
 
-        if s.b_out_file:
-            with open(s.out_f, 'w+') as f:
-                f.write(f'J = {s.J} D = {s.D}, s = {s.S}, gamma = {s.gamma},'
-                        f'P = {s.P} \n'
-                        f'load = {s.load:.4f}\n'
-                        f'lambda = {round(s.lab, 4)}\n'
-                        f'mu = {round(s.mu, 4)}\n'
-                        f'target = {round(s.t, 4)}\n'
-                        f'r = {s.r}\n'
-                        f'c = {s.c}\n'
-                        f's_star = {round(s.s_star, 4)}\n'
-                        f'rho: {round(s.rho, 4)}\n'
-                        f'P(W>D): {round(s.cap_prob, 4)}\n'
-                        f'Weighted cap_prob: {round(s.weighted_cap_prob, 4)}\n'
-                        f'size: {s.size_i}\n'
-                        f'W: {size(np.zeros(s.dim_i, dtype=np.float32)) / 10 ** 9:.4f} GB.\n'
-                        f'V: {size(np.zeros(s.dim, dtype=np.float32)) / 10 ** 9:.4f} GB.\n')
-        else:
-            print(f'J = {s.J} D = {s.D}, s = {s.S}, gamma = {s.gamma},'
-                  f'P = {s.P} \n'
-                  f'load = {s.load:.4f}\n'
-                  f'lambda = {round(s.lab, 4)}\n'
-                  f'mu = {round(s.mu, 4)}\n'
-                  f'target = {round(s.t, 4)}\n'
-                  f'r = {s.r}\n'
-                  f'c = {s.c}\n'
-                  f's_star = {round(s.s_star, 4)}\n'
-                  f'rho: {round(s.rho, 4)}\n'
-                  f'P(W>D): {round(s.cap_prob, 4)}\n'
-                  f'Weighted cap_prob: {round(s.weighted_cap_prob, 4)}\n'
-                  f'size: {s.size_i}\n'
-                  f'W: {size(np.zeros(s.dim_i, dtype=np.float32)) / 10 ** 9:.4f} GB.\n'
-                  f'V: {size(np.zeros(s.dim, dtype=np.float32)) / 10 ** 9:.4f} GB.\n')
+        print(f'J = {s.J} D = {s.D}, s = {s.S}, gamma = {s.gamma},'
+              f'P = {s.P} \n'
+              f'load = {s.load:.4f}\n'
+              f'lambda = {round(s.lab, 4)}\n'
+              f'mu = {round(s.mu, 4)}\n'
+              f'target = {round(s.t, 4)}\n'
+              f'r = {s.r}\n'
+              f'c = {s.c}\n'
+              f's_star = {round(s.s_star, 4)}\n'
+              f'rho: {round(s.rho, 4)}\n'
+              f'P(W>D): {round(s.cap_prob, 4)}\n'
+              f'size: {s.size_i}\n'
+              f'W: {size(np.zeros(s.dim_i, dtype=np.float32)) /10**9:.4f} GB.\n'
+              f'V: {size(np.zeros(s.dim, dtype=np.float32)) /10**9:.4f} GB.\n')
         assert s.load < 1, 'rho < 1 does not hold'
 
     def get_D(self):
@@ -228,7 +206,7 @@ class TimeConstraintEDs:
         prob_delay = self.get_tail_prob(self.S, self.load, lab, mu, pi_0, 0)
         D = np.ceil(-np.log(self.ZERO_ONE_PERC / prob_delay) /
                     (self.S * mu - lab) * self.gamma)
-        D = int(max(2 * self.gamma, min(D, 20 * self.gamma)))
+        D = int(max(D, 2 * self.gamma))
         return D
 
     def trans_prob(self):
@@ -317,11 +295,4 @@ class TimeConstraintEDs:
 
     def time_print(self, time):
         """Convert seconds to readable format."""
-        if self.b_out_file:
-            with open(self.out_f, 'a') as f:
-                f.write(f'Time: {time / 60:.0f}'
-                        f':{time - 60 * int(time / 60):.0f} min.')
-                f.flush()
-                os.fsync()
-        else:
-            print(f'Time: {time/60:.0f}:{time - 60 * int(time / 60):.0f} min.\n')
+        print(f'Time: {time/60:.0f}:{time - 60 * int(time / 60):.0f} min.\n')

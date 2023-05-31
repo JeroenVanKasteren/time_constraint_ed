@@ -1,8 +1,0 @@
-Traceback (most recent call last):
-  File "/home/jvkasteren/time_constraint_ed/Train.py", line 83, in <module>
-    main()
-  File "/home/jvkasteren/time_constraint_ed/Train.py", line 56, in main
-    vi_learner.value_iteration(env)
-  File "/home/jvkasteren/time_constraint_ed/Env_and_Learners/Learner.py", line 343, in value_iteration
-    s.W = s.W.reshape(env.size_i)
-ValueError: cannot reshape array of size 10240432128 into shape (1650497536,)
