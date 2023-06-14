@@ -49,11 +49,12 @@ for rho_i in rho:
     plt.show()
 print('>=', -np.log(0.9), '?')
 
+
 J = 2
-gamma = arange(10, 30, 1)
+gamma = arange(10, 20, 1)
 rho = 0.9
-S = arange(2, 10, 4)
-mu = [0.2, 0.4, 0.6]
+S = [2, 5, 10]  # arange(2, 10, 4)
+mu = [0.25, 0.33, 0.5]
 rho = [0.8, 0.9]
 for rho_i in rho:
     legends = []
@@ -72,3 +73,30 @@ for rho_i in rho:
     plt.ylabel('size')
     plt.grid()
     plt.show()
+
+import numpy as np
+from sklearn.model_selection import ParameterGrid
+
+S_GRID = [2, 5, 10]
+MU_1_GRID = [1/4]
+MU_2_GRID = np.array([1, 1.5, 2])*MU_1_GRID
+RHO_GRID = [0.5, 0.6, 0.7, 0.8]  # 0.9?
+RHO_IMB = [1/3, 1, 3]
+param_grid = {'S': S_GRID,
+              'mu_1': MU_1_GRID,
+              'mu_2': MU_2_GRID,
+              'rho': RHO_GRID,
+              'imbalance': RHO_IMB}
+
+grid = ParameterGrid(param_grid)
+
+# # write
+# with open('dict.csv', 'w') as csv_file:
+#     writer = csv.writer(csv_file)
+#     for key, value in mydict.items():
+#        writer.writerow([key, value])
+#
+# # read back
+# with open('dict.csv') as csv_file:
+#     reader = csv.reader(csv_file)
+#     mydict = dict(reader)
