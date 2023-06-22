@@ -12,8 +12,14 @@ import pandas as pd
 from pathlib import Path
 from Env_and_Learners import TimeConstraintEDs as Env
 
+S_GRID = [2, 5, 10]
+MU_1_GRID = [1/4]
+MU_2_GRID = np.array([1, 1.5, 2])*MU_1_GRID
+RHO_GRID = [0.5, 0.6, 0.7, 0.8]  # 0.9?
+RHO_IMB = [1/3, 1, 3]
+
 FILEPATH = 'Results/instances.csv'
-COLUMNS = ['id', 'task_id', 'date',
+COLUMNS = ['instance', 'job_id', 'array_id', 'date',
            'J', 'S', 'D', 'size', 'size_i',
            'gamma', 'eps', 't', 'c', 'r',
            'lambda', 'mu', 'load', 'cap_prob',

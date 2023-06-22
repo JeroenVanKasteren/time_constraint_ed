@@ -78,11 +78,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import ParameterGrid
 
-S_GRID = [2, 5, 10]
-MU_1_GRID = [1/4]
-MU_2_GRID = np.array([1, 1.5, 2])*MU_1_GRID
-RHO_GRID = [0.5, 0.6, 0.7, 0.8]  # 0.9?
-RHO_IMB = [1/3, 1, 3]
+
 print(len(S_GRID)*len(MU_1_GRID)*len(MU_2_GRID)*len(RHO_GRID)*len(RHO_IMB))
 param_grid = {'S': S_GRID,
               'mu_1': MU_1_GRID,
