@@ -11,12 +11,43 @@ import os
 import pandas as pd
 from pathlib import Path
 from Env_and_Learners import TimeConstraintEDs as Env
+from sklearn.model_selection import ParameterGrid
 
 S_GRID = [2, 5, 10]
 MU_1_GRID = [1/4]
 MU_2_GRID = np.array([1, 1.5, 2])*MU_1_GRID
 RHO_GRID = [0.5, 0.6, 0.7, 0.8]  # 0.9?
 RHO_IMB = [1/3, 1, 3]
+
+print(len(S_GRID)*len(MU_1_GRID)*len(MU_2_GRID)*len(RHO_GRID)*len(RHO_IMB))
+param_grid = {'S': S_GRID,
+              'mu_1': MU_1_GRID,
+              'mu_2': MU_2_GRID,
+              'rho': RHO_GRID,
+              'imbalance': RHO_IMB}
+
+grid = ParameterGrid(param_grid)
+df = pd.DataFrame(grid)
+
+MAX_TARGET_PROB = 0.9
+while smu * (1 - rho) < -np.log(MAX_TARGET_PROB):
+    env = Env(J=args.J, gamma=args.gamma, P=1e3, e=5e-4, seed=seed,
+              max_time=args.time, convergence_check=20, print_modulo=100,
+              b_out_f=args.b_out_f, out_f=f_name)
+    smu = env.S * sum(env.lab) / sum(env.lab / env.mu)
+    rho = env.load
+    seed += 1
+
+# # write
+# with open('dict.csv', 'w') as csv_file:
+#     writer = csv.writer(csv_file)
+#     for key, value in mydict.items():
+#        writer.writerow([key, value])
+#
+# # read back
+# with open('dict.csv') as csv_file:
+#     reader = csv.reader(csv_file)
+#     mydict = dict(reader)
 
 FILEPATH = 'Results/instances.csv'
 COLUMNS = ['instance', 'job_id', 'array_id', 'date',
