@@ -24,8 +24,8 @@ MAX_TARGET_PROB = 0.9
 
 def load_args(raw_args=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--id', default='27_1')  # SULRM_JOBID
-    parser.add_argument('--index', default='27_1')  # SLURM_ARRAY_TASK_ID
+    parser.add_argument('--job_id', default='27_1')  # SULRM_JOBID
+    parser.add_argument('--array_id', default='27_1')  # SLURM_ARRAY_TASK_ID
     parser.add_argument('--J', default=1)  # User input
     parser.add_argument('--gamma', default=25)  # User input
     parser.add_argument('--policy', default=False)  # User input
@@ -63,7 +63,8 @@ def main(raw_args=None):
     ospi_learner = OneStepPolicyImprovement(env, pi_learner)
     ospi_learner.get_g(env, V=vi_learner.V)
 
-    result = [args.id, args.index, datetime.today().strftime('%Y-%m-%d'),
+    result = [instance_id, args.job_id, args.array_id,
+              datetime.today().strftime('%Y-%m-%d'),
               seed, env.J, env.S, env.D, env.size, env.size_i, env.gamma, env.e,
               env.t, env.c, env.r, env.lab, env.mu, env.load, env.cap_prob,
               env.weighted_cap_prob, vi_learner.converged,

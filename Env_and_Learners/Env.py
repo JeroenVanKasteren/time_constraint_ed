@@ -50,10 +50,10 @@ Created on 19-3-2020.
 
 import numpy as np
 from numpy import array, round, int32
-from numpy.random import randint, uniform
+from math import factorial as fac
+from numpy.random import randint
 from itertools import product
 from sys import getsizeof as size
-import os
 import numba as nb
 from numba import types as tp
 from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
@@ -74,6 +74,7 @@ class TimeConstraintEDs:
     imbalance_MAX = 5.
     TARGET = array([1], float)  # Target
 
+    MAX_TARGET_PROB = 0.9
     ZERO_ONE_PERC = 1e-3
     NONE_WAITING: int = 0
     KEEP_IDLE: int = -1
@@ -89,7 +90,10 @@ class TimeConstraintEDs:
         if 'lab' in kwargs:
             lab = kwargs.get('lab')
             s.load: float = sum(lab / mu) / s.S
-        else:  # Determine arrival rate based on desired load.
+        elif 'imbalance' in kwargs:
+            s.imbalance = kwargs.get('lab')
+            lab = mu * s.S * s.load * s.imbalance / sum(s.imbalance)
+        else:
             s.load = kwargs.get('load', s.rng.uniform(s.load_MIN, s.load_MAX))
             weight = s.rng.uniform(s.imbalance_MIN, s.imbalance_MAX, s.J)
             lab = mu * s.S * s.load * weight / sum(weight)
@@ -120,7 +124,14 @@ class TimeConstraintEDs:
             s.D: int = kwargs.get('D')
         else:
             s.D: int = s.get_D()
-        s.cap_prob = s.get_tail_prob(s.s_star, s.rho, s.lab, s.mu, s.pi_0, s.D)
+        s.cap_prob_i = s.get_tail_prob(s.s_star, s.rho,
+                                       s.lab, s.mu, s.pi_0, s.D)
+        mu = sum(s.lab) / sum(s.lab / s.mu)
+        pi_0 = s.get_pi_0(s.S, s.load, sum(s.lab))
+        s.cap_prob = s.get_tail_prob(s.S, s.load, sum(s.lab), mu, pi_0, s.D)
+        s.target_prob = s.get_tail_prob(s.S, s.load, sum(s.lab), mu, pi_0,
+                                        max(s.t))
+
         s.P_xy = s.trans_prob()
 
         s.dim = tuple(np.repeat([s.D + 1, s.S + 1], s.J))
@@ -193,7 +204,9 @@ class TimeConstraintEDs:
               f'c = {s.c}\n'
               f's_star = {round(s.s_star, 4)}\n'
               f'rho: {round(s.rho, 4)}\n'
-              f'P(W>D): {round(s.cap_prob, 4)}\n'
+              f'P(W>t): {s.target_prob}\n'
+              f'P(W>D): {s.cap_prob}\n'
+              f'P(W>D_i): {s.cap_prob_i}\n'
               f'size: {s.size_i}\n'
               f'W: {size(np.zeros(s.dim_i, dtype=np.float32)) /10**9:.4f} GB.\n'
               f'V: {size(np.zeros(s.dim, dtype=np.float32)) /10**9:.4f} GB.\n')
@@ -204,9 +217,8 @@ class TimeConstraintEDs:
         mu = lab / sum(self.lab / self.mu)
         pi_0 = self.get_pi_0(self.S, self.load, lab)
         prob_delay = self.get_tail_prob(self.S, self.load, lab, mu, pi_0, 0)
-        D = np.ceil(-np.log(self.ZERO_ONE_PERC / prob_delay) /
-                    (self.S * mu - lab) * self.gamma)
-        D = int(max(D, 2 * self.gamma))
+        D = int(np.ceil(-np.log(self.ZERO_ONE_PERC / prob_delay) /
+                        (self.S * mu - lab) * self.gamma))
         return D
 
     def trans_prob(self):
