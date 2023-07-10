@@ -7,12 +7,31 @@ Load and visualize results.
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
-FILEPATH = 'Results/instances.csv'
+FILEPATH = 'Insights/instances.csv'
 COLUMNS = ['id', 'index', 'Date', 'seed', 'J', 'S', 'D', 'size', 'size_i',
            'gamma', 'eps', 't', 'c', 'r', 'lambda', 'mu', 'load', 'cap_prob',
            'vi_converged', 'ospi_converged', 'time', 'VI',
            'OSPI', 'gap']
+
+# Loop over all results in Results folder
+# put in file
+results = pd.DataFrame()
+for file in os.listdir('Results/'):
+    filename = os.fsdecode(file)
+    if filename.endswith(".csv"):
+        # Indicate that instance was solved!
+         print(os.path.join(directory, filename))
+         continue
+     else:
+         continue
+
+with open('dict.csv', 'w') as csv_file:
+    writer = csv.writer(csv_file)
+    for key, value in mydict.items():
+       writer.writerow([key, value])
+
 
 results = pd.read_csv('Results/results.csv', names=COLUMNS)
 

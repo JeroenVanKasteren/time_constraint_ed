@@ -74,7 +74,6 @@ class TimeConstraintEDs:
     imbalance_MAX = 5.
     TARGET = array([1], float)  # Target
 
-    MAX_TARGET_PROB = 0.9
     ZERO_ONE_PERC = 1e-3
     NONE_WAITING: int = 0
     KEEP_IDLE: int = -1
@@ -91,7 +90,8 @@ class TimeConstraintEDs:
             lab = kwargs.get('lab')
             s.load: float = sum(lab / mu) / s.S
         elif 'imbalance' in kwargs:
-            s.imbalance = kwargs.get('lab')
+            s.imbalance = kwargs.get('imbalance')
+            s.load = kwargs.get('load', s.rng.uniform(s.load_MIN, s.load_MAX))
             lab = mu * s.S * s.load * s.imbalance / sum(s.imbalance)
         else:
             s.load = kwargs.get('load', s.rng.uniform(s.load_MIN, s.load_MAX))
@@ -165,7 +165,7 @@ class TimeConstraintEDs:
                                      value_type=tp.i8)
         s.d_i0['J'] = s.J
         s.d_i0['D'] = s.D
-        s.d_i0['S'] = s.S
+        s.d_i0['S'] = np.int64(s.S)
         s.d_i0['P'] = s.P
         s.d_i0['convergence_check'] = s.convergence_check
         s.d_i0['print_modulo'] = s.print_modulo
@@ -210,6 +210,7 @@ class TimeConstraintEDs:
               f'size: {s.size_i}\n'
               f'W: {size(np.zeros(s.dim_i, dtype=np.float32)) /10**9:.4f} GB.\n'
               f'V: {size(np.zeros(s.dim, dtype=np.float32)) /10**9:.4f} GB.\n')
+        assert s.load < 1, 'rho < 1 does not hold'
         assert s.load < 1, 'rho < 1 does not hold'
 
     def get_D(self):

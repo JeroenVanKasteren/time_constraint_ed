@@ -78,11 +78,24 @@ def main(raw_args=None):
              vi_learner.V, ospi_learner.V_app)
     # np.load('Results/policy_SLURM_ARRAY_TASK_ID.npz')
 
-    Path(FILEPATH).touch()
-    with open(FILEPATH, 'a') as f:  # a = append
-        f.write(','.join(map(str, result)) + '\n')
-        f.flush()
-        os.fsync()
+    # Was it solved?
+    # TODO: save results to csv
+    # import csv
+    #
+    # myDic = {"a": 1, "b": 2, "c": 15}
+    # with open('myFile.csv', 'w', newline='') as csvfile:
+    #     fieldnames = ['word', 'count']
+    #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    #
+    #     writer.writeheader()
+    #     for key in myDic:
+    #         writer.writerow({'word': key, 'count': myDic[key]})
+    #
+    # Path(FILEPATH).touch()
+    # with open(FILEPATH, 'a') as f:  # a = append
+    #     f.write(','.join(map(str, result)) + '\n')
+    #     f.flush()
+    #     os.fsync()
 
 if __name__ == '__main__':
     main()

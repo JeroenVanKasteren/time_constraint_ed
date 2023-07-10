@@ -27,36 +27,30 @@ MU_2_GRID = np.array([1, 1.5, 2])*MU_1_GRID
 LOAD_GRID = [0.5, 0.6, 0.7, 0.8]  # 0.9?
 LOAD_IMB = [1/3, 1, 3]
 
+instances_path = 'Insights/instances.csv'
+MAX_TARGET_PROB = 0.9
+
 param_grid = {'S': S_GRID,
               'mu_1': MU_1_GRID,
               'mu_2': MU_2_GRID,
               'load': LOAD_GRID,
-              'imbalance': RHO_IMB}
+              'imbalance': LOAD_IMB}
 grid = pd.DataFrame(ParameterGrid(param_grid))
 print("Length of grid:", len(grid))
 
-for inst in grid:
+inst = grid.iloc[0]
+for i, inst in grid.iterrows():
     env = Env(J=J, S=inst.S, gamma=gamma, P=P, e=e, t=t, c=c, r=r,
               mu=np.array([inst.mu_1, inst.mu_2]),
               load=inst.load,
               imbalance=np.array([inst.imbalance, 1]))
-grid['mu'] = [[a, b] for a, b in zip(grid.mu_1, grid.mu_2)]
-grid['lab'] = [[a, b] for a, b in zip(lab_1, lab_2)]
-MAX_TARGET_PROB = 0.9
-smu = np.array([S * (lab[0] + lab[1]) / lab[0]/mu[0] + lab[1]/mu[1]
-                for S, lab, mu in zip(grid.S, grid.lab, grid.mu)])
-print("# instance with too heavy load?",
-      sum(smu * (1 - grid.rho) < -np.log(MAX_TARGET_PROB)))
+    if env.target_prob > MAX_TARGET_PROB:
+        print("Instance", i, "has target probability", env.target_prob)
+        print('instance:', inst)
 
-while :
-    env = Env(J=args.J, gamma=args.gamma, P=1e3, e=5e-4, seed=seed,
-              max_time=args.time, convergence_check=20, print_modulo=100,
-              b_out_f=args.b_out_f, out_f=f_name)
-
-    rho = env.load
-    seed += 1
-
-# # write
+# If results file already exists
+#
+# write
 # with open('dict.csv', 'w') as csv_file:
 #     writer = csv.writer(csv_file)
 #     for key, value in mydict.items():
