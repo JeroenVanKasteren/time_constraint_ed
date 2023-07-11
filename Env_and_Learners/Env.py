@@ -82,9 +82,9 @@ class TimeConstraintEDs:
 
     def __init__(s, **kwargs):  # **kwargs: Keyword arguments
         s.rng = np.random.default_rng(kwargs.get('seed', 42))
-        s.J: int = kwargs.get('J')
-        s.S: int = kwargs.get('S',
-                              s.rng.integers(s.S_MIN, s.S_MAX + 1))  # [a, b)
+        s.J: int = np.int64(kwargs.get('J'))
+        s.S: int = np.int64(kwargs.get('S',
+                                       s.rng.integers(s.S_MIN, s.S_MAX + 1)))
         mu = kwargs.get('mu', s.rng.uniform(s.mu_MIN, s.mu_MAX, s.J))
         if 'lab' in kwargs:
             lab = kwargs.get('lab')
@@ -100,9 +100,11 @@ class TimeConstraintEDs:
         t = array(kwargs.get('t', s.rng.choice(s.TARGET, s.J)), float)
         s.gamma = float(kwargs.get('gamma'))
 
+        s.trace = kwargs.get('trace', False)
         if any((t % (1 / s.gamma) != 0) | (t < 1 / s.gamma)):
             t = np.floor(t * s.gamma) / s.gamma
-            print('Rounded t down to nearest multiple of 1/gamma.\n')
+            if s.trace:
+                print('Rounded t down to nearest multiple of 1/gamma.\n')
         s.lab = array(lab, float)
         s.mu = array(mu, float)
         s.t = array(t, float)
@@ -150,7 +152,7 @@ class TimeConstraintEDs:
                           + x.tm_sec - 60)
         else:
             s.max_time = np.Inf
-        s.print_modulo = kwargs.get('print_modulo', np.inf)  # 1 for always
+        s.print_modulo = kwargs.get('print_modulo', 1e10)  # 1 for always
         s.convergence_check = kwargs.get('convergence_check', 1)
 
         s_states = array(list(product(np.arange(s.S + 1), repeat=s.J)), int32)
@@ -168,7 +170,7 @@ class TimeConstraintEDs:
         s.d_i0['S'] = np.int64(s.S)
         s.d_i0['P'] = s.P
         s.d_i0['convergence_check'] = s.convergence_check
-        s.d_i0['print_modulo'] = s.print_modulo
+        s.d_i0['print_modulo'] = np.int64(s.print_modulo)
         s.d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type,
                                      value_type=tp.i4[:])
         s.d_i1['sizes'] = s.sizes
@@ -194,23 +196,25 @@ class TimeConstraintEDs:
         s.d_f1['lab'] = s.lab
         s.d_f1['mu'] = s.mu
 
-        print(f'J = {s.J} D = {s.D}, s = {s.S}, gamma = {s.gamma},'
-              f'P = {s.P} \n'
-              f'load = {s.load:.4f}\n'
-              f'lambda = {round(s.lab, 4)}\n'
-              f'mu = {round(s.mu, 4)}\n'
-              f'target = {round(s.t, 4)}\n'
-              f'r = {s.r}\n'
-              f'c = {s.c}\n'
-              f's_star = {round(s.s_star, 4)}\n'
-              f'rho: {round(s.rho, 4)}\n'
-              f'P(W>t): {s.target_prob}\n'
-              f'P(W>D): {s.cap_prob}\n'
-              f'P(W>D_i): {s.cap_prob_i}\n'
-              f'size: {s.size_i}\n'
-              f'W: {size(np.zeros(s.dim_i, dtype=np.float32)) /10**9:.4f} GB.\n'
-              f'V: {size(np.zeros(s.dim, dtype=np.float32)) /10**9:.4f} GB.\n')
-        assert s.load < 1, 'rho < 1 does not hold'
+        if s.trace:
+            print(f'J = {s.J} D = {s.D}, s = {s.S}, gamma = {s.gamma},'
+                  f'P = {s.P} \n'
+                  f'load = {s.load:.4f}\n'
+                  f'lambda = {round(s.lab, 4)}\n'
+                  f'mu = {round(s.mu, 4)}\n'
+                  f'target = {round(s.t, 4)}\n'
+                  f'r = {s.r}\n'
+                  f'c = {s.c}\n'
+                  f's_star = {round(s.s_star, 4)}\n'
+                  f'rho: {round(s.rho, 4)}\n'
+                  f'P(W>t): {s.target_prob}\n'
+                  f'P(W>D): {s.cap_prob}\n'
+                  f'P(W>D_i): {s.cap_prob_i}\n'
+                  f'size: {s.size_i}\n'
+                  f'W: {size(np.zeros(s.dim_i, dtype=np.float32)) /10**9:.4f}'
+                  f' GB.\n'
+                  f'V: {size(np.zeros(s.dim, dtype=np.float32)) /10**9:.4f}'
+                  f' GB.\n')
         assert s.load < 1, 'rho < 1 does not hold'
 
     def get_D(self):

@@ -28,6 +28,24 @@ LOAD_GRID = [0.5, 0.6, 0.7, 0.8]  # 0.9?
 LOAD_IMB = [1/3, 1, 3]
 
 instances_path = 'Insights/instances.csv'
+instance_columns = ['J', 'S', 'D', 'size', 'size_i',
+                    'gamma', 'eps', 't', 'c', 'r',
+                    'lambda', 'mu', 'load',
+                    'attempts_VI', 'attempts_OSPI',
+                    'vi_g', 'vi_time', 'vi_iter',
+                    'ospi_g', 'ospi_time', 'ospi_iter',
+                    'rel_gap', 'abs_gap']
+
+results_path = 'Results/instances.csv'
+results_columns = ['instance',
+                   'job_id_vi', 'array_id_vi', 'solve_date_vi',
+                   'job_id_ospi', 'array_id_ospi', 'solve_date_ospi',
+                   'J', 'S', 'D', 'size', 'size_i',
+                   'gamma', 'eps', 't', 'c', 'r',
+                   'lambda', 'mu', 'load', 'target_prob',
+                   'vi_g', 'vi_time', 'vi_iter',
+                   'ospi_g', 'ospi_time', 'ospi_iter',
+                   'rel_gap', 'abs_gap']
 MAX_TARGET_PROB = 0.9
 
 param_grid = {'S': S_GRID,
@@ -38,15 +56,49 @@ param_grid = {'S': S_GRID,
 grid = pd.DataFrame(ParameterGrid(param_grid))
 print("Length of grid:", len(grid))
 
-inst = grid.iloc[0]
+grid['J'] = J
+grid['gamma'] = gamma
+grid['e'] = e
+grid['P'] = P
+
+grid['target_prob'] = 0
+grid['D'] = [[0]*J]*len(grid)
+grid['size'] = 0
+grid['size_i'] = 0
+grid['mu'] = [[0]*J]*len(grid)
+grid['lambda'] = [[0]*J]*len(grid)
+grid['t'] = [[0]*J]*len(grid)
+grid['c'] = [[0]*J]*len(grid)
+grid['r'] = [[0]*J]*len(grid)
 for i, inst in grid.iterrows():
     env = Env(J=J, S=inst.S, gamma=gamma, P=P, e=e, t=t, c=c, r=r,
               mu=np.array([inst.mu_1, inst.mu_2]),
               load=inst.load,
               imbalance=np.array([inst.imbalance, 1]))
-    if env.target_prob > MAX_TARGET_PROB:
-        print("Instance", i, "has target probability", env.target_prob)
-        print('instance:', inst)
+    grid.loc[i, 'target_prob'] = env.target_prob
+    grid.loc[i, 'D'] = env.D
+    grid.loc[i, 'size'] = env.size
+    grid.loc[i, 'size_i'] = env.size_i
+    for j in range(J):
+        grid['mu'].iloc[i][j] = env.mu[j]
+        grid['lambda'].iloc[i][j] = env.lab[j]
+        grid['t'].iloc[i][j] = env.t[j]
+        grid['c'].iloc[i][j] = env.c[j]
+        grid['r'].iloc[i][j] = env.r[j]
+print(grid[grid['target_prob'] > MAX_TARGET_PROB])
+grid = grid[grid['target_prob'] > MAX_TARGET_PROB]
+
+# Derive solved from value for g.
+grid['attempts_VI'] = 0
+grid['attempts_OSPI'] = 0
+grid['vi_g'] = np.nan
+grid['vi_time'] = np.nan
+grid['vi_iter'] = np.nan
+grid['ospi_g'] = np.nan
+grid['ospi_time'] = np.nan
+grid['ospi_iter'] = np.nan
+
+grid = grid[instance_columns]
 
 # If results file already exists
 #
@@ -61,16 +113,7 @@ for i, inst in grid.iterrows():
 #     reader = csv.reader(csv_file)
 #     mydict = dict(reader)
 
-FILEPATH = 'Results/instances.csv'
-COLUMNS = ['instance',
-           'job_id_vi', 'array_id_vi', 'solve_date_vi',
-           'job_id_ospi', 'array_id_ospi', 'solve_date_ospi',
-           'J', 'S', 'D', 'size', 'size_i',
-           'gamma', 'eps', 't', 'c', 'r',
-           'lambda', 'mu', 'load',
-           'vi_g', 'vi_time', 'vi_iter',
-           'ospi_g', 'ospi_time', 'ospi_iter',
-           'rel_gap', 'abs_gap']
+
 
 MAX_TARGET_PROB = 0.9
 
