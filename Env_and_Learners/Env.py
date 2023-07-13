@@ -145,13 +145,8 @@ class TimeConstraintEDs:
 
         s.max_iter = kwargs.get('max_iter', np.Inf)  # max(size_i^2, 1e3)
         s.start_time = clock()
-        if 'max_time' in kwargs:  # max time in seconds, 60 seconds slack
-            days, time = kwargs.get('max_time').split('-')
-            x = strptime(time, '%H:%M:%S')
-            s.max_time = (((int(days) * 24 + x.tm_hour) * 60 + x.tm_min) * 60
-                          + x.tm_sec - 60)
-        else:
-            s.max_time = np.Inf
+        s.max_time = s.get_time(kwargs.get('max_time', None))
+
         s.print_modulo = kwargs.get('print_modulo', 1e10)  # 1 for always
         s.convergence_check = kwargs.get('convergence_check', 1)
 
@@ -309,6 +304,18 @@ class TimeConstraintEDs:
             states[self.J:] = s
             P_m[tuple(states)] = self.P
         return P_m.reshape(self.size)
+
+    def get_time(self, time_string):
+        if time_string is not None:
+            if '-' in time_string:
+                days, time = time_string.time.split('-')
+            else:
+                days, time = 0, time_string
+            x = strptime(time_string, '%H:%M:%S')
+            return (((int(days) * 24 + x.tm_hour) * 60 + x.tm_min) * 60
+                    + x.tm_sec - 60)
+        else:
+            return np.Inf
 
     def time_print(self, time):
         """Convert seconds to readable format."""

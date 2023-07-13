@@ -9,11 +9,27 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
+
+
 FILEPATH = 'Insights/instances.csv'
 COLUMNS = ['id', 'index', 'Date', 'seed', 'J', 'S', 'D', 'size', 'size_i',
-           'gamma', 'eps', 't', 'c', 'r', 'lambda', 'mu', 'load', 'cap_prob',
+           'gamma', 'e', 't', 'c', 'r', 'lambda', 'mu', 'load', 'cap_prob',
            'vi_converged', 'ospi_converged', 'time', 'VI',
            'OSPI', 'gap']
+
+results_path = 'results/results_01.csv'
+results_columns = ['ID_instances', 'instance_ID',
+                   'job_id_vi', 'array_id_vi', 'solve_date_vi',
+                   'job_id_ospi', 'array_id_ospi', 'solve_date_ospi',
+                   'J', 'S', 'D', 'size', 'size_i',
+                   'gamma', 'e', 't', 'c', 'r',
+                   'lambda', 'mu', 'load', 'target_prob',
+                   'vi_g', 'vi_time', 'vi_iter',
+                   'ospi_g', 'ospi_time', 'ospi_iter',
+                   'rel_gap', 'abs_gap']
+
+dataframe = pd.read_csv(FILEPATH, names=COLUMNS)
+dataframe.to_csv('Insights/instances.csv', mode='a')
 
 # Loop over all results in Results folder
 # put in file

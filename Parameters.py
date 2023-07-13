@@ -7,11 +7,9 @@ instance in the file.
 Created on 31-5-2023.
 """
 
-import argparse
 import numpy as np
 import os
 import pandas as pd
-from pathlib import Path
 from Env_and_Learners import TimeConstraintEDs as Env
 from sklearn.model_selection import ParameterGrid
 
@@ -28,8 +26,8 @@ MU_1_GRID = [1/3]
 MU_2_GRID = np.array([1, 1.5, 2])*MU_1_GRID
 LOAD_GRID = [0.5, 0.6, 0.7, 0.8]  # 0.9?
 LOAD_IMB = [1/3, 1, 3]
-# TODO how to reach other folder with path!?
-instances_path = 'results/instances_01.csv'
+
+instances_path = '../results/instances_01.csv'
 instance_columns = ['J', 'S', 'D', 'size', 'size_i',
                     'gamma', 'e', 't', 'c', 'r',
                     'lambda', 'mu', 'load', 'target_prob',
@@ -90,55 +88,8 @@ grid['ospi_solved'] = False
 
 grid = grid[instance_columns]
 
-# TODO how to reach other folder with path!?
 os.listdir()
 if os.path.isfile(instances_path):
     print('file already exists, name: ', instances_path)
 else:
     grid.to_csv(instances_path)
-
-# If results file already exists
-#
-# write
-# with open('dict.csv', 'w') as csv_file:
-#     writer = csv.writer(csv_file)
-#     for key, value in mydict.items():
-#        writer.writerow([key, value])
-#
-# # read back
-# with open('dict.csv') as csv_file:
-#     reader = csv.reader(csv_file)
-#     mydict = dict(reader)
-
-# def load_args(raw_args=None):
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument('--J', default=2)  # User input
-#     parser.add_argument('--gamma', default=10)  # User input
-#     args = parser.parse_args(raw_args)
-#     args.id = int(args.id)
-#     args.index = int(args.index)
-#     args.J = int(args.J)
-#     args.gamma = float(args.gamma)
-#     args.policy = args.policy == 'True'
-#     return args
-#
-# def main(raw_args=None):
-#     Path(FILEPATH).touch()
-#     parameters = pd.read_csv(FILEPATH, names=COLUMNS)
-#     if os.stat(FILEPATH).st_size == 0:
-#         with open(FILEPATH, 'r') as f:
-#
-#     args = load_args(raw_args)
-#     # ---- Problem ---- #
-#     seed = args.id * args.index
-#     f_name = 'Results/' + str(args.id) + '_' + str(args.index) + 'Py.txt'
-#     rho = 1
-#     smu = 0
-#     while smu * (1 - rho) < -np.log(MAX_TARGET_PROB):
-#         env = Env(J=args.J, gamma=args.gamma, P=1e3, e=5e-4, seed=seed,
-#                   max_time=args.time, convergence_check=20, print_modulo=100,
-#                   b_out_f=args.b_out_f, out_f=f_name)
-#         smu = env.S * sum(env.lab) / sum(env.lab / env.mu)
-#         rho = env.load
-#         seed += 1
-#     pi_learner = PolicyIteration()
