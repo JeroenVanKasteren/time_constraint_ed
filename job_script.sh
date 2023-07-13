@@ -7,9 +7,8 @@
 #time >1 minute
 #SBATCH --time 2-00:00:00
 #SBATCH --array 1-10
-#SBATCH --error results/read/prints_%A_%a.err
+#SBATCH --output Results/prints_%A_%a.out
+#SBATCH --error Results/prints_%A_%a.err
 
-TIME=$(squeue -j $SLURM_JOB_ID -h --Format TimeLimit)
-
-python -u Train.py --id $SLURM_JOBID --index $SLURM_ARRAY_TASK_ID --time $TIME --method 'VI' > out_$SLURM_JOB_ID_$SLURM_ARRAY_TASK_ID.txt
-
+python Train.py --id $SLURM_JOBID --index $SLURM_ARRAY_TASK_ID --J 2 --gamma 25 --policy False --time 1-23:30:00
+> results/out_$SLURM_JOBID$SLURM_ARRAY_TASK_ID.out

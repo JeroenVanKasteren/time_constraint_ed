@@ -23,13 +23,13 @@ MAX_TARGET_PROB = 0.9
 
 def load_args(raw_args=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--job_id', default='27_1')  # SULRM_JOBID
-    parser.add_argument('--array_id', default='27_1')  # SLURM_ARRAY_TASK_ID
-    parser.add_argument('--J', default=1)  # User input
-    parser.add_argument('--gamma', default=25)  # User input
-    parser.add_argument('--policy', default=False)  # User input
-    parser.add_argument('--time', default='0-00:02:00')  # User input
-    parser.add_argument('--b_out_f', default=True)  # User input
+    parser.add_argument('--job_id', default='0')  # SULRM_JOBID
+    parser.add_argument('--array_id', default='0')  # SLURM_ARRAY_TASK_ID
+    parser.add_argument('--J', default=2)  # User input
+    parser.add_argument('--gamma', default=10)  # User input
+    parser.add_argument('--policy')  # User input
+    parser.add_argument('--time')  # User input
+    parser.add_argument('--b_out_f')  # User input
     args = parser.parse_args(raw_args)
     args.id = int(args.id)
     args.index = int(args.index)
