@@ -14,7 +14,7 @@ def load_args(raw_args=None):
     parser.add_argument('--array_id')  # SLURM_ARRAY_TASK_ID
     parser.add_argument('--time')  # User input
     parser.add_argument('--method', type=str, default='VI')  # VI or OSPI
-    args, unknown = parser.parse_args(raw_args)
+    args = parser.parse_args(raw_args)
     return args
 
 def main(raw_args=None):

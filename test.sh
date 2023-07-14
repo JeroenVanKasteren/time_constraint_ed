@@ -12,3 +12,4 @@
 TIME=$(squeue -j $SLURM_JOB_ID -h --Format TimeLimit)
 
 python test.py --job_id $SLURM_JOBID --array_id $SLURM_ARRAY_TASK_ID --time $TIME --method OSPI > results/out_$SLURM_JOBID$SLURM_ARRAY_TASK_ID.out
+# python test.py --job_id 0 --array_id 0 --time "00:01:00" --method OSPI > results/out_$SLURM_JOBID$SLURM_ARRAY_TASK_ID.out
