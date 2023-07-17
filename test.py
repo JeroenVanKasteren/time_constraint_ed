@@ -27,7 +27,7 @@ def main(raw_args=None):
     sleep(5)
     print('Woke up')
     df = pd.DataFrame({'C1': [2], 'C2': args.time})
-    df.to_csv('results/results.csv', mode='a', headers=False)
+    df.to_csv('results/results.csv', mode='a', header=False)
 
 if __name__ == '__main__':
     main()
