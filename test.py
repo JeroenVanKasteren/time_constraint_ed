@@ -22,12 +22,15 @@ def main(raw_args=None):
     print('Something')
     print(args.time)
     df = pd.DataFrame({'C1': [1], 'C2': args.time})
+    print(df)
     df.to_csv('results/results.csv', mode='w')
-
+    print(pd.read_csv('results/results.csv'))
     sleep(5)
     print('Woke up')
     df = pd.DataFrame({'C1': [2], 'C2': args.time})
+    print(df)
     df.to_csv('results/results.csv', mode='a', header=False)
+    print(pd.read_csv('results/results.csv'))
 
 if __name__ == '__main__':
     main()
