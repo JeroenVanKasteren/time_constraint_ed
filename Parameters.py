@@ -27,12 +27,12 @@ MU_2_GRID = np.array([1, 1.5, 2])*MU_1_GRID
 LOAD_GRID = [0.5, 0.6, 0.7, 0.8]  # 0.9?
 LOAD_IMB = [1/3, 1, 3]
 
-instances_path = '../results/instances_01.csv'
+instances_path = 'results/instances_01.csv'
 instance_columns = ['J', 'S', 'D', 'size', 'size_i',
-                    'gamma', 'e', 't', 'c', 'r',
-                    'lambda', 'mu', 'load', 'target_prob',
-                    'vi_attempts', 'vi_time', 'vi_iter', 'vi_solved',
-                    'ospi_attempts', 'ospi_time', 'ospi_iter', 'ospi_solved']
+                    'gamma', 'e', 't', 'c', 'r', 'P',
+                    'lab', 'mu', 'load', 'target_prob',
+                    'vi_attempts', 'vi_time', 'vi_iter', 'vi_g',
+                    'ospi_attempts', 'ospi_time', 'ospi_iter', 'ospi_g']
 
 MAX_TARGET_PROB = 0.9
 
@@ -54,10 +54,11 @@ grid['D'] = [[0]*J]*len(grid)
 grid['size'] = 0
 grid['size_i'] = 0
 grid['mu'] = [[0]*J]*len(grid)
-grid['lambda'] = [[0]*J]*len(grid)
+grid['lab'] = [[0]*J]*len(grid)
 grid['t'] = [[0]*J]*len(grid)
 grid['c'] = [[0]*J]*len(grid)
 grid['r'] = [[0]*J]*len(grid)
+
 for i, inst in grid.iterrows():
     env = Env(J=J, S=inst.S, gamma=gamma, P=P, e=e, t=t, c=c, r=r,
               mu=np.array([inst.mu_1, inst.mu_2]),
@@ -69,26 +70,24 @@ for i, inst in grid.iterrows():
     grid.loc[i, 'size_i'] = env.size_i
     for j in range(J):
         grid['mu'].iloc[i][j] = env.mu[j]
-        grid['lambda'].iloc[i][j] = env.lab[j]
+        grid['lab'].iloc[i][j] = env.lab[j]
         grid['t'].iloc[i][j] = env.t[j]
         grid['c'].iloc[i][j] = env.c[j]
         grid['r'].iloc[i][j] = env.r[j]
 print(grid[grid['target_prob'] > MAX_TARGET_PROB])
-grid = grid[grid['target_prob'] > MAX_TARGET_PROB]
+grid = grid[grid['target_prob'] < MAX_TARGET_PROB]
 
 # Derive solved from value for g.
 grid['vi_attempts'] = 0
 grid['vi_time'] = np.nan
 grid['vi_iter'] = np.nan
-grid['vi_solved'] = False
+grid['vi_g'] = np.nan
 grid['ospi_attempts'] = 0
 grid['ospi_time'] = np.nan
 grid['ospi_iter'] = np.nan
-grid['ospi_solved'] = False
-
+grid['ospi_g'] = np.nan
 grid = grid[instance_columns]
 
-os.listdir()
 if os.path.isfile(instances_path):
     print('file already exists, name: ', instances_path)
 else:

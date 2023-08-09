@@ -305,13 +305,17 @@ class TimeConstraintEDs:
             P_m[tuple(states)] = self.P
         return P_m.reshape(self.size)
 
-    def get_time(self, time_string):
+    @staticmethod
+    def get_time(time_string):
+        """Read in time in formats (D)D-HH:MM:SS, (H)H:MM:SS, or (M)M:SS."""
         if time_string is not None:
             if '-' in time_string:
                 days, time = time_string.time.split('-')
+            elif time_string.count(':') == 1:
+                days, time = 0, '0:'+time_string
             else:
                 days, time = 0, time_string
-            x = strptime(time_string, '%H:%M:%S')
+            x = strptime(time, '%H:%M:%S')
             return (((int(days) * 24 + x.tm_hour) * 60 + x.tm_min) * 60
                     + x.tm_sec - 60)
         else:
