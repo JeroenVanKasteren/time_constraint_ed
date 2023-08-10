@@ -41,8 +41,15 @@ def main(raw_args=None):
     # ---- Problem ---- #
     seed = args.job_id * args.array_id
     # f_name = 'Results/' + str(args.id) + '_' + str(args.index) + 'Py.txt'
-    # inst = pd.read_csv(FILEPATH_instances + '01' + '.csv')
-    inst = pd.read_csv(FILEPATH_instances + args.instance + '.csv')
+    args = {'instance': '01', 'method': 'ospi', 'time': '0-00:03:00',
+            'job_id': '1', 'array_id': '1', 'x': '0'}  # TODO
+
+    inst = pd.read_csv(FILEPATH_instances + args.instance + '.csv',
+                       na_values=np.nan)
+    inst = inst[np.isnan(inst[args.method + '_g'])]
+    inst[args.method + '_time'].map(Env.get_time)
+
+    inst = inst[inst[args.method + '_time'] < Env.get_time(max_time)]
 
     if args.array_id - 1 + args.x >= len(inst):
         print('No more instances to solve, index:', args.array_id - 1 + args.x )

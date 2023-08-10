@@ -49,8 +49,8 @@ Created on 19-3-2020.
 """
 
 import numpy as np
+import pandas as pd
 from numpy import array, round, int32
-from math import factorial as fac
 from numpy.random import randint
 from itertools import product
 from sys import getsizeof as size
@@ -308,7 +308,8 @@ class TimeConstraintEDs:
     @staticmethod
     def get_time(time_string):
         """Read in time in formats (D)D-HH:MM:SS, (H)H:MM:SS, or (M)M:SS."""
-        if time_string is not None:
+        if (time_string is not None) & (time_string is not np.nan) & \
+                (time_string):
             if '-' in time_string:
                 days, time = time_string.time.split('-')
             elif time_string.count(':') == 1:
