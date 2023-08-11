@@ -31,8 +31,10 @@ instances_path = 'results/instances_01.csv'
 instance_columns = ['J', 'S', 'D', 'size', 'size_i',
                     'gamma', 'e', 't', 'c', 'r', 'P',
                     'lab', 'mu', 'load', 'target_prob',
-                    'vi_attempts', 'vi_time', 'vi_iter', 'vi_g',
-                    'ospi_attempts', 'ospi_time', 'ospi_iter', 'ospi_g']
+                    'vi_job_id', 'vi_attempts', 'vi_time', 'vi_iter', 'vi_g',
+                    'ospi_job_id',
+                    'ospi_attempts', 'ospi_time', 'ospi_iter', 'ospi_g',
+                    'opt_gap']
 
 MAX_TARGET_PROB = 0.9
 

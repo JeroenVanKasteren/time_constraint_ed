@@ -19,7 +19,7 @@ from Env_and_Learners import TimeConstraintEDs as Env, PolicyIteration, \
     ValueIteration, OneStepPolicyImprovement
 
 FILEPATH_instances = 'results/instances_'
-FILEPATH_RESULTS = 'results/results.csv'
+FILEPATH_RESULTS = 'results/result_'
 MAX_TARGET_PROB = 0.9
 
 def load_args(raw_args=None):
@@ -36,65 +36,59 @@ def load_args(raw_args=None):
     args.x = float(args.x)
     return args
 
+class dotdict(dict):
+    """dot.notation access to dictionary attributes"""
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
 def main(raw_args=None):
     args = load_args(raw_args)
+
+    args = {'instance': '01', 'method': 'ospi', 'time': '0-00:03:00',
+            'job_id': 1, 'array_id': 1, 'x': 0}  # TODO
+    args = dotdict(args)
     # ---- Problem ---- #
     seed = args.job_id * args.array_id
     # f_name = 'Results/' + str(args.id) + '_' + str(args.index) + 'Py.txt'
-    args = {'instance': '01', 'method': 'ospi', 'time': '0-00:03:00',
-            'job_id': '1', 'array_id': '1', 'x': '0'}  # TODO
 
-    inst = pd.read_csv(FILEPATH_instances + args.instance + '.csv',
-                       na_values=np.nan)
+    inst = pd.read_csv(FILEPATH_instances + args.instance + '.csv')
     inst = inst[np.isnan(inst[args.method + '_g'])]
-    inst[args.method + '_time'].map(Env.get_time)
-
-    inst = inst[inst[args.method + '_time'] < Env.get_time(max_time)]
+    inst[args.method + '_time'] = inst[args.method + '_time'].map(Env.get_time)
+    inst = inst[inst[args.method + '_time'] < Env.get_time(args.time)]
 
     if args.array_id - 1 + args.x >= len(inst):
-        print('No more instances to solve, index:', args.array_id - 1 + args.x )
+        print('No more instances to solve within', args.time,
+              'index:', args.array_id - 1 + args.x )
         exit(0)
     inst = inst.iloc[args.array_id - 1 + args.x]
-
-    if not np.isnan(inst[args.method + '_g']):
-        print('Already solved')
-        exit(0)
 
     env = Env(J=inst.J, S=inst.S, D=inst.D, gamma=inst.gamma,
               e=inst.e, t=inst.t, c=inst.c, r=inst.r, P=inst.P,
               lab=inst.lab, mu=inst.mu, max_time=args.time)
 
-    if np.isnan(inst[args.method+'_time']) | (inst[args.method+'_time'] > args.time):
-        print('Time not sufficient, time:', inst[args.method+'_time'], 'max time:', args.time)
-        exit(0)
-
-    if inst
     pi_learner = PolicyIteration()
-    # ---- Value Iteration ---- #
-    vi_learner = ValueIteration(env, pi_learner)
-    vi_learner.value_iteration(env)
+    if args.method == 'vi':
+        learner = ValueIteration(env, pi_learner)
+        learner.value_iteration(env)
+    else:
+        learner = OneStepPolicyImprovement(env, pi_learner)
+        learner.one_step_policy_improvement(env)
+        learner.get_g(env)
 
-    # ---- One Step Policy Improvement ---- #
-    ospi_learner = OneStepPolicyImprovement(env, pi_learner)
-    ospi_learner.get_g(env, V=vi_learner.V)
-
-    result = [instance_id, args.job_id, args.array_id,
-              datetime.today().strftime('%Y-%m-%d'),
-              seed, env.J, env.S, env.D, env.size, env.size_i, env.gamma, env.e,
-              env.t, env.c, env.r, env.lab, env.mu, env.load, env.cap_prob,
-              env.weighted_cap_prob, vi_learner.converged,
-              ospi_learner.converged, (clock() - env.start_time),
-              vi_learner.g, ospi_learner.g,
-              abs(vi_learner.g - ospi_learner.g) / vi_learner.g]
-
-    vi_learner.get_policy(env)
-    np.savez('Results/policy_' + args.id + '.npz',
-             vi_learner.Pi, ospi_learner.Pi,
-             vi_learner.V, ospi_learner.V_app)
+    # vi_learner.get_policy(env)
+    # np.savez('Results/policy_' + args.id + '.npz',
+    #          vi_learner.Pi, ospi_learner.Pi,
+    #          vi_learner.V, ospi_learner.V_app)
     # np.load('Results/policy_SLURM_ARRAY_TASK_ID.npz')
 
     # Was it solved?
     # TODO: save results to csv
+    inst.at[args.method + '_g'] = learner.g
+    inst.at[args.method + '_iter'] = learner.iter
+    inst.at[args.method + '_time'] = learner.time
+    inst.to_csv(FILEPATH_RESULTS + args.instance + '_' + inst[0] +
+                '_' + args.method + '.csv')
     # import csv
     #
     # myDic = {"a": 1, "b": 2, "c": 15}

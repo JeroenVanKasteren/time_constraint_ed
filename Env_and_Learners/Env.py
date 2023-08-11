@@ -308,8 +308,8 @@ class TimeConstraintEDs:
     @staticmethod
     def get_time(time_string):
         """Read in time in formats (D)D-HH:MM:SS, (H)H:MM:SS, or (M)M:SS."""
-        if (time_string is not None) & (time_string is not np.nan) & \
-                (time_string):
+        print(time_string)
+        if (time_string != None) & (not np.isnan(time_string)):
             if '-' in time_string:
                 days, time = time_string.time.split('-')
             elif time_string.count(':') == 1:
