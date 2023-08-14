@@ -36,11 +36,15 @@ def load_args(raw_args=None):
     args.x = float(args.x)
     return args
 
+# TODO
 class dotdict(dict):
     """dot.notation access to dictionary attributes"""
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
+
+def strip_split(x):
+    return np.array([float(i) for i in x.strip('[]').split(', ')])
 
 def main(raw_args=None):
     args = load_args(raw_args)
@@ -53,9 +57,13 @@ def main(raw_args=None):
     # f_name = 'Results/' + str(args.id) + '_' + str(args.index) + 'Py.txt'
 
     inst = pd.read_csv(FILEPATH_instances + args.instance + '.csv')
-    inst = inst[np.isnan(inst[args.method + '_g'])]
-    inst[args.method + '_time'] = inst[args.method + '_time'].map(Env.get_time)
-    inst = inst[inst[args.method + '_time'] < Env.get_time(args.time)]
+    cols = ['t', 'c', 'r', 'lab', 'mu']
+    inst.loc[:, cols] = inst.loc[:, cols].applymap(strip_split)
+    inst = inst[pd.isnull(inst[args.method + '_g'])]
+    inst[args.method + '_time'] = inst[args.method + '_time'].map(
+        lambda x: x if pd.isnull(x) else Env.get_time(x))
+    inst = inst[(inst[args.method + '_time'] < Env.get_time(args.time)) |
+                pd.isnull(inst[args.method + '_time'])]
 
     if args.array_id - 1 + args.x >= len(inst):
         print('No more instances to solve within', args.time,

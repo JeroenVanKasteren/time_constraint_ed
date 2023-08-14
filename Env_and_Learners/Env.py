@@ -89,14 +89,12 @@ class TimeConstraintEDs:
         if 'lab' in kwargs:
             lab = kwargs.get('lab')
             s.load: float = sum(lab / mu) / s.S
-        elif 'imbalance' in kwargs:
-            s.imbalance = kwargs.get('imbalance')
+        else:
+            s.imbalance = kwargs.get('imbalance',
+                                     s.rng.uniform(s.imbalance_MIN,
+                                                   s.imbalance_MAX, s.J))
             s.load = kwargs.get('load', s.rng.uniform(s.load_MIN, s.load_MAX))
             lab = mu * s.S * s.load * s.imbalance / sum(s.imbalance)
-        else:
-            s.load = kwargs.get('load', s.rng.uniform(s.load_MIN, s.load_MAX))
-            weight = s.rng.uniform(s.imbalance_MIN, s.imbalance_MAX, s.J)
-            lab = mu * s.S * s.load * weight / sum(weight)
         t = array(kwargs.get('t', s.rng.choice(s.TARGET, s.J)), float)
         s.gamma = float(kwargs.get('gamma'))
 
@@ -308,10 +306,10 @@ class TimeConstraintEDs:
     @staticmethod
     def get_time(time_string):
         """Read in time in formats (D)D-HH:MM:SS, (H)H:MM:SS, or (M)M:SS."""
-        print(time_string)
-        if (time_string != None) & (not np.isnan(time_string)):
+        if ((time_string is not None) & (not pd.isnull(time_string)) &
+                (time_string != np.inf)):
             if '-' in time_string:
-                days, time = time_string.time.split('-')
+                days, time = time_string.split('-')
             elif time_string.count(':') == 1:
                 days, time = 0, '0:'+time_string
             else:
