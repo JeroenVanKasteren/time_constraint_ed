@@ -48,17 +48,18 @@ Dependent variables
 Created on 19-3-2020.
 """
 
+import numba as nb
 import numpy as np
-import pandas as pd
+
+from numba import types as tp
 from numpy import array, round, int32
 from numpy.random import randint
 from itertools import product
-from sys import getsizeof as size
-import numba as nb
-from numba import types as tp
 from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy import optimize
-from time import perf_counter as clock, strptime
+from sys import getsizeof as size
+from time import perf_counter as clock
+from utils import tools
 
 
 class TimeConstraintEDs:
@@ -135,15 +136,15 @@ class TimeConstraintEDs:
         s.P_xy = s.trans_prob()
 
         s.dim = tuple(np.repeat([s.D + 1, s.S + 1], s.J))
-        s.sizes = s.def_sizes(s.dim)
+        s.sizes = tools.def_sizes(s.dim)
         s.size = np.prod(s.dim)
         s.dim_i = tuple(np.append(s.J + 1, np.repeat([s.D + 1, s.S + 1], s.J)))
-        s.sizes_i = s.def_sizes(s.dim_i)
+        s.sizes_i = tools.def_sizes(s.dim_i)
         s.size_i = np.prod(s.dim_i).astype(int32)
 
         s.max_iter = kwargs.get('max_iter', np.Inf)  # max(size_i^2, 1e3)
         s.start_time = clock()
-        s.max_time = s.get_time(kwargs.get('max_time', None))
+        s.max_time = tools.get_time(kwargs.get('max_time', None))
 
         s.print_modulo = kwargs.get('print_modulo', 1e10)  # 1 for always
         s.convergence_check = kwargs.get('convergence_check', 1)
@@ -282,14 +283,6 @@ class TimeConstraintEDs:
                                    bounds=bounds, constraints=lin_cons).x
         return s_star
 
-    def def_sizes(self, dim):
-        """Docstring."""
-        sizes = np.zeros(len(dim), int32)
-        sizes[-1] = 1
-        for i in range(len(dim) - 2, -1, -1):
-            sizes[i] = sizes[i + 1] * dim[i + 1]
-        return sizes
-
     def get_P_m(self):
         """
         Make a matrix with Penalty P.
@@ -302,24 +295,3 @@ class TimeConstraintEDs:
             states[self.J:] = s
             P_m[tuple(states)] = self.P
         return P_m.reshape(self.size)
-
-    @staticmethod
-    def get_time(time_string):
-        """Read in time in formats (D)D-HH:MM:SS, (H)H:MM:SS, or (M)M:SS."""
-        if ((time_string is not None) & (not pd.isnull(time_string)) &
-                (time_string != np.inf)):
-            if '-' in time_string:
-                days, time = time_string.split('-')
-            elif time_string.count(':') == 1:
-                days, time = 0, '0:'+time_string
-            else:
-                days, time = 0, time_string
-            x = strptime(time, '%H:%M:%S')
-            return (((int(days) * 24 + x.tm_hour) * 60 + x.tm_min) * 60
-                    + x.tm_sec - 60)
-        else:
-            return np.Inf
-
-    def time_print(self, time):
-        """Convert seconds to readable format."""
-        print(f'Time: {time/60:.0f}:{time - 60 * int(time / 60):.0f} min.\n')

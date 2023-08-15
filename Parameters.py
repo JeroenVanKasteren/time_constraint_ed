@@ -10,8 +10,9 @@ Created on 31-5-2023.
 import numpy as np
 import os
 import pandas as pd
-from Env_and_Learners import TimeConstraintEDs as Env
+
 from sklearn.model_selection import ParameterGrid
+from utils import TimeConstraintEDs as Env
 
 J = 2
 gamma = 15
@@ -27,7 +28,7 @@ MU_2_GRID = np.array([1, 1.5, 2])*MU_1_GRID
 LOAD_GRID = [0.5, 0.6, 0.7, 0.8]  # 0.9?
 LOAD_IMB = [1/3, 1, 3]
 
-instances_path = 'results/instances_01.csv'
+FILEPATH_INSTANCE = 'results/instances_01.csv'
 instance_columns = ['J', 'S', 'D', 'size', 'size_i',
                     'gamma', 'e', 't', 'c', 'r', 'P',
                     'lab', 'mu', 'load', 'target_prob',
@@ -55,11 +56,11 @@ grid['target_prob'] = 0
 grid['D'] = [[0]*J]*len(grid)
 grid['size'] = 0
 grid['size_i'] = 0
-grid['mu'] = [[0]*J]*len(grid)  # TODO
-grid['lab'] = [[0]*J]*len(grid)
-grid['t'] = [[0]*J]*len(grid)
-grid['c'] = [[0]*J]*len(grid)
-grid['r'] = [[0]*J]*len(grid)
+grid['mu'] = [[] for r in range(len(grid))]
+grid['lab'] = [[] for r in range(len(grid))]
+grid['t'] = [[] for r in range(len(grid))]
+grid['c'] = [[] for r in range(len(grid))]
+grid['r'] = [[] for r in range(len(grid))]
 
 for i, inst in grid.iterrows():
     env = Env(J=J, S=inst.S, gamma=gamma, P=P, e=e, t=t, c=c, r=r,
@@ -71,26 +72,30 @@ for i, inst in grid.iterrows():
     grid.loc[i, 'size'] = env.size
     grid.loc[i, 'size_i'] = env.size_i
     for j in range(J):
-        grid['mu'].iloc[i][j] = env.mu[j]
-        grid['lab'].iloc[i][j] = env.lab[j]
-        grid['t'].iloc[i][j] = env.t[j]
-        grid['c'].iloc[i][j] = env.c[j]
-        grid['r'].iloc[i][j] = env.r[j]
-print(grid[grid['target_prob'] > MAX_TARGET_PROB])
+        grid.loc[i, 'mu'].append(env.mu[j])
+        grid.loc[i, 'lab'].append(env.lab[j])
+        grid.loc[i, 't'].append(env.t[j])
+        grid.loc[i, 'c'].append(env.c[j])
+        grid.loc[i, 'r'].append(env.r[j])
+print('Removed instances due to target_prob > ', MAX_TARGET_PROB, ':',
+      grid[grid['target_prob'] > MAX_TARGET_PROB])
 grid = grid[grid['target_prob'] < MAX_TARGET_PROB]
 
 # Derive solved from value for g.
+grid['vi_job_id'] = ''
 grid['vi_attempts'] = 0
 grid['vi_time'] = np.nan
 grid['vi_iter'] = np.nan
 grid['vi_g'] = np.nan
+grid['ospi_job_id'] = ''
 grid['ospi_attempts'] = 0
 grid['ospi_time'] = np.nan
 grid['ospi_iter'] = np.nan
 grid['ospi_g'] = np.nan
+grid['opt_gap'] = np.nan
 grid = grid[instance_columns]
 
-if os.path.isfile(instances_path):
-    print('file already exists, name: ', instances_path)
+if os.path.isfile(FILEPATH_INSTANCE):
+    print('file already exists, name: ', FILEPATH_INSTANCE)
 else:
-    grid.to_csv(instances_path)
+    grid.to_csv(FILEPATH_INSTANCE)

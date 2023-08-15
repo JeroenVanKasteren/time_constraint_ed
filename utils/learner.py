@@ -12,11 +12,11 @@ The implemented learners are:
 
 import numpy as np
 import numba as nb
-import os
 from numba import types as tp
 from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy.integrate import quad_vec
 from time import perf_counter as clock
+
 
 class PolicyIteration:
     """Policy Iteration."""

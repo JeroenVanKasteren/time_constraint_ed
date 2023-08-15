@@ -1,0 +1,29 @@
+,0
+Unnamed: 0,0
+J,2
+S,2
+D,263
+size,627264
+size_i,1881792
+gamma,15
+e,1e-05
+t,[1. 1.]
+c,[1. 1.]
+r,[1. 1.]
+P,1000.0
+lab,[0.08333333 0.25      ]
+mu,[0.33333333 0.33333333]
+load,0.5
+target_prob,0.3310387984981227
+vi_job_id,
+vi_attempts,0
+vi_time,
+vi_iter,
+vi_g,
+ospi_job_id,
+ospi_attempts,1
+ospi_time,0-00:03:00
+ospi_iter,
+ospi_g,
+opt_gap,
+ospi_id,1_1

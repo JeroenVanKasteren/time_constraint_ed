@@ -3,7 +3,7 @@ Sandbox Policy Iteration
 """
 
 import numpy as np
-from Env_and_Learners import TimeConstraintEDs as Env, PolicyIteration
+from env_and_learners import TimeConstraintEDs as Env, PolicyIteration
 from Insights import plot_pi, plot_v
 from time import perf_counter as clock
 

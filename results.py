@@ -1,4 +1,5 @@
 """
+Process all unread result files
 Load and visualize results.
 
 @author: Jeroen van Kasteren (jeroen.van.kasteren@vu.nl)
@@ -9,39 +10,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
+INSTANCE_ID = '01'
+FILEPATH_INSTANCE = 'results/instances_' + INSTANCE_ID + '.csv'
+FILEPATH_RESULT = 'results/'
 
+inst = pd.read_csv(FILEPATH_INSTANCE)
 
-FILEPATH = 'Insights/instances.csv'
-COLUMNS = ['id', 'index', 'Date', 'seed', 'J', 'S', 'D', 'size', 'size_i',
-           'gamma', 'e', 't', 'c', 'r', 'lambda', 'mu', 'load', 'cap_prob',
-           'vi_converged', 'ospi_converged', 'time', 'VI',
-           'OSPI', 'gap']
+for file in os.listdir(FILEPATH_RESULT):
+	if not file.startswith('result_' + INSTANCE_ID):
+		continue
+    result = pd.read_csv(FILEPATH_RESULT + file, index_col=0).squeeze()
 
-results_path = 'results/results_01.csv'
-results_columns = ['ID_instances', 'instance_ID',
-                   'job_id_vi', 'array_id_vi', 'solve_date_vi',
-                   'job_id_ospi', 'array_id_ospi', 'solve_date_ospi',
-                   'J', 'S', 'D', 'size', 'size_i',
-                   'gamma', 'e', 't', 'c', 'r',
-                   'lambda', 'mu', 'load', 'target_prob',
-                   'vi_g', 'vi_time', 'vi_iter',
-                   'ospi_g', 'ospi_time', 'ospi_iter',
-                   'rel_gap', 'abs_gap']
+    # Indicate that instance was solved!
 
-dataframe = pd.read_csv(FILEPATH, names=COLUMNS)
-dataframe.to_csv('Insights/instances.csv', mode='a')
-
-# Loop over all results in Results folder
-# put in file
-results = pd.DataFrame()
-for file in os.listdir('Results/'):
-    filename = os.fsdecode(file)
-    if filename.endswith(".csv"):
-        # Indicate that instance was solved!
-         print(os.path.join(directory, filename))
-         continue
-     else:
-         continue
 
 with open('dict.csv', 'w') as csv_file:
     writer = csv.writer(csv_file)

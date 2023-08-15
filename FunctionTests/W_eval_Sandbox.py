@@ -1,7 +1,7 @@
 import numpy as np
 import numba as nb
 from numba import types as tp
-from Env_and_Learners.test_env import Env
+from env_and_learners.test_env import Env
 import timeit
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)

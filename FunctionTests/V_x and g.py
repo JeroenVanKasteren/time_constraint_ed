@@ -11,7 +11,7 @@ Moreover, when x=-s then (x+S)*mu=0
 import numpy as np
 from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy.integrate import quad_vec
-from Env_and_Learners.test_env import Env
+from env_and_learners.test_env import Env
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 

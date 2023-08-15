@@ -8,7 +8,7 @@ Very slow, probably due to compiling time.
 import numpy as np
 import numba as nb
 from numba import types as tp
-from Env_and_Learners import TimeConstraintEDs as Env, PolicyIteration
+from env_and_learners import TimeConstraintEDs as Env, PolicyIteration
 from time import perf_counter as clock
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
