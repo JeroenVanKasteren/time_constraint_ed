@@ -36,9 +36,9 @@ def load_args(raw_args=None):
     return args
 
 # Debug
-args = {'instance': '01', 'method': 'ospi', 'time': '0-00:03:00',
-        'job_id': 1, 'array_id': 1, 'x': 0}
-args = tools.DotDict(args)
+# args = {'instance': '01', 'method': 'ospi', 'time': '0-00:03:00',
+#         'job_id': 1, 'array_id': 1, 'x': 0}
+# args = tools.DotDict(args)
 
 
 def main(raw_args=None):
