@@ -96,6 +96,6 @@ grid['opt_gap'] = np.nan
 grid = grid[instance_columns]
 
 if os.path.isfile(FILEPATH_INSTANCE):
-    print('file already exists, name: ', FILEPATH_INSTANCE)
+    print('Error: file already exists, name: ', FILEPATH_INSTANCE)
 else:
     grid.to_csv(FILEPATH_INSTANCE)

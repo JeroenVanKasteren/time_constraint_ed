@@ -4,7 +4,7 @@ Iteratively solves different environments.
 Setup:
 N classes, N=2,3,4 (SIMS := # experiments each)
 
-python Train.py --id=1 --index=1 --J=2 --gamma=25 --policy=False --time=0-00:03:00
+python train.py --id=1 --index=1 --J=2 --gamma=25 --policy=False --time=0-00:03:00
 
 @author: Jeroen van Kasteren (jeroen.van.kasteren@vu.nl)
 Created on 19-3-2020.
@@ -65,9 +65,8 @@ def main(raw_args=None):
     env = Env(J=inst.J, S=inst.S, D=inst.D, gamma=inst.gamma,
               e=inst.e, t=inst.t, c=inst.c, r=inst.r, P=inst.P,
               lab=inst.lab, mu=inst.mu, max_time=args.time)
-    inst[args.method + '_id'] = str(args.job_id) + '_' + str(args.array_id)
+    inst[args.method + '_job_id'] = str(args.job_id) + '_' + str(args.array_id)
     inst[args.method + '_time'] = args.time
-    inst[args.method + '_attempts'] += 1
     inst.to_csv(FILEPATH_RESULT + args.instance + '_' + str(inst[0]) +
                 '_' + args.method +
                 '_job_' + str(args.job_id) + '_' + str(args.array_id) + '.csv')

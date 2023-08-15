@@ -7,9 +7,8 @@ Created on 19-3-2020.
 
 import numpy as np
 import pandas as pd
-from Insights import plot_pi, plot_v
-from env_and_learners import TimeConstraintEDs as Env, PolicyIteration, \
-    ValueIteration, OneStepPolicyImprovement
+from utils import TimeConstraintEDs as Env, PolicyIteration, \
+    ValueIteration, OneStepPolicyImprovement, plot_pi, plot_v
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
