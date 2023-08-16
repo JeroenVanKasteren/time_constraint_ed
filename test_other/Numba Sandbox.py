@@ -780,7 +780,7 @@ import heapq as hq
 
 entry_type = nb.typeof((0.0, 0, 'event'))
 
-@njit
+@nb.njit
 def heapsort(iterable):
     time = 0
     heap = nb.typed.List.empty_list(entry_type)
@@ -792,3 +792,11 @@ def heapsort(iterable):
 x = nb.typed.List([1.232, 3.21, 5.21, 7.54, 9.765, 2.35, 4.85, 6.00, 8.1, 0.23])
 print(heapsort(x))
 
+def init_random(N):
+    rng = np.random.default_rng()  # add seed?
+    arrival_times = np.empty((2, 10), dtype=np.float32)
+    service_times = np.empty((2, N), dtype=np.float32)
+    for i in range(env.J):  # Does this vec. work in numba? Maybe put outside of function?
+        arrival_times[i, :] = env.rng.exponential(1 / env.lab[i], N)
+        service_times[i, :] = env.rng.exponential(1 / env.mu[i], N)
+init_random(1000)
