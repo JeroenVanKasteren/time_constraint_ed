@@ -4,7 +4,7 @@ Iteratively solves different environments.
 Setup:
 N classes, N=2,3,4 (SIMS := # experiments each)
 
-python train.py --id=1 --index=1 --J=2 --gamma=25 --policy=False --time=0-00:03:00
+python train.py --job_id 1 --array_id 1 --time 0-00:03:00 --instance 01 --method vi
 
 @author: Jeroen van Kasteren (jeroen.van.kasteren@vu.nl)
 Created on 19-3-2020.

@@ -16,6 +16,7 @@ from numba import types as tp
 from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy.integrate import quad_vec
 from time import perf_counter as clock
+from utils import tools
 
 
 class PolicyIteration:
@@ -27,7 +28,7 @@ class PolicyIteration:
     def __init__(self):
         self.name = 'Policy Iteration'
         self.g = 0
-        self.count = 0
+        self.iter = 0
         self.stable = False
 
     @staticmethod
@@ -105,20 +106,20 @@ class PolicyIteration:
                   f'delta: {delta_max - delta_min:.3f}, '
                   f'd_min: {delta_min:.3f}, d_max: {delta_max:.3f}, '
                   f'g: {g:.4f}')
-            env.time_print(clock() - env.start_time)
+            print(tools.sec_to_time(clock() - env.start_time))
         if converged:
             iter = i if j == -1 else j
             print(f'{name} converged in {iter} iterations. '
                   f'g = {g:.4f}')
-            env.time_print(clock() - env.start_time)
+            print(tools.sec_to_time(clock() - env.start_time))
         elif max_iter:
             print(f'{name} iter {i}, ({j}) reached max_iter '
                   f'({max_iter}), g ~ {g:.4f}')
-            env.time_print(clock() - env.start_time)
+            print(tools.sec_to_time(clock() - env.start_time))
         elif max_time:
             print(f'{name} iter {i}, ({j}) reached max_time ({max_time}) '
                   f'g ~ %0.4f' % g)
-            env.time_print(clock() - env.start_time)
+            print(tools.sec_to_time(clock() - env.start_time))
         return converged, max_iter | max_time, g
 
     @staticmethod
@@ -233,9 +234,9 @@ class PolicyIteration:
                         stable = stable + 1  # binary operation allows reduction
         return Pi, stable == 0
 
-    def policy_evaluation(self, env, V, W, Pi, g, name, count=0):
+    def policy_evaluation(self, env, V, W, Pi, g, name, iter=0):
         """Policy Evaluation."""
-        inner_count = 0
+        inner_iter = 0
         stopped = False
         converged = False
         while not (stopped | converged):
@@ -247,14 +248,14 @@ class PolicyIteration:
             V = V.reshape(env.dim)
             W = W.reshape(env.dim_i)
             V_t = self.get_v(env, V, W)
-            if inner_count % env.convergence_check == 0:
-                converged, stopped, g = self.convergence(env, V_t, V, count,
-                                                         name, j=inner_count)
+            if inner_iter % env.convergence_check == 0:
+                converged, stopped, g = self.convergence(env, V_t, V, iter,
+                                                         name, j=inner_iter)
             V = V_t - V_t[tuple([0] * (env.J * 2))]  # Rescale and Save V_t
-            if inner_count > env.max_iter:
+            if inner_iter > env.max_iter:
                 return V, g
-            inner_count += 1
-        return V, g, converged
+            inner_iter += 1
+        return V, g, converged, inner_iter
 
     def policy_iteration(s, env):
         """Docstring."""
@@ -263,9 +264,9 @@ class PolicyIteration:
         s.Pi = s.init_pi(env)
         s.Pi = s.Pi.reshape(env.size_i)
         while not s.stable:
-            s.V, s.g, _ = s.policy_evaluation(env, s.V, s.W, s.Pi, s.g,
-                                              'Policy Evaluation of PI',
-                                              s.count)
+            s.V, s.g, _, _ = s.policy_evaluation(env, s.V, s.W, s.Pi, s.g,
+                                                 'Policy Evaluation of PI',
+                                                 s.iter)
             s.W = s.init_w(env, s.V, s.W)
             s.V = s.V.reshape(env.size)
             s.W = s.W.reshape(env.size_i)
@@ -275,9 +276,9 @@ class PolicyIteration:
                                                   env.P_xy)
             s.V = s.V.reshape(env.dim)
             s.W = s.W.reshape(env.dim_i)
-            if s.count > env.max_iter:
+            if s.iter > env.max_iter:
                 break
-            s.count += 1
+            s.iter += 1
         s.Pi = s.Pi.reshape(env.dim_i)
 
 
@@ -295,7 +296,7 @@ class ValueIteration:
         self.W = np.zeros(env.dim_i, dtype=np.float32)
         self.Pi = pi_learner.init_pi(env)
         self.g = 0
-        self.count = 0
+        self.iter = 0
         self.converged = False
 
     @staticmethod
@@ -345,11 +346,11 @@ class ValueIteration:
             s.V = s.V.reshape(env.dim)
             s.W = s.W.reshape(env.dim_i)
             s.V_t = s.pi_learner.get_v(env, s.V, s.W)
-            if s.count % env.convergence_check == 0:
+            if s.iter % env.convergence_check == 0:
                 s.converged, stopped, s.g = \
-                    s.pi_learner.convergence(env, s.V_t, s.V, s.count, s.name)
+                    s.pi_learner.convergence(env, s.V_t, s.V, s.iter, s.name)
             s.V = s.V_t - s.V_t[tuple([0] * (env.J * 2))]  # Rescale V_t
-            s.count += 1
+            s.iter += 1
 
     def get_policy(s, env):
         """Determine policy via Policy Improvement."""
@@ -374,6 +375,7 @@ class OneStepPolicyImprovement:
         self.V_app = self.get_v_app(env)
         self.Pi = pi_learner.init_pi(env)
         self.g = 0
+        self.iter = 0
         self.converged = False
 
     @staticmethod
@@ -440,9 +442,9 @@ class OneStepPolicyImprovement:
         W = np.zeros(env.dim_i, dtype=np.float32)
         s.Pi = s.Pi.reshape(env.size_i)
         if 'V' in kwargs:
-            _, s.g, s.converged = s.pi_learner.policy_evaluation(
+            _, s.g, s.converged, s.iter = s.pi_learner.policy_evaluation(
                 env, kwargs.get('V'), W, s.Pi, s.g, s.name)
         else:
-            _, s.g, s.converged = s.pi_learner.policy_evaluation(
+            _, s.g, s.converged, s.iter = s.pi_learner.policy_evaluation(
                 env, s.V_app, W, s.Pi, s.g, s.name)
         s.Pi = s.Pi.reshape(env.dim_i)

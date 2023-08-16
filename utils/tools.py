@@ -37,9 +37,13 @@ def get_time(time_string):
         return np.Inf
 
 
-def time_print(time):
-    """Convert seconds to readable format."""
-    print(f'Time: {time/60:.0f}:{time - 60 * int(time / 60):.0f} min.\n')
+def sec_to_time(time):
+    """Convert seconds to minutes and return readable format."""
+    time = int(time)
+    if time >= 60*60:
+        return f"Time (HH:MM:SS): {time // (60*60):02d}:{(time // 60) % 60:02d}:{time % 60:02d}"
+    else:
+        return f"Time (MM:SS): {time // 60:02d}:{time % 60:02d}"
 
 
 class DotDict(dict):
