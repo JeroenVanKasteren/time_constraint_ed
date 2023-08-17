@@ -90,7 +90,8 @@ def main(raw_args=None):
     if learner.converged:
         inst.at[args.method + '_g'] = learner.g
         inst.at[args.method + '_iter'] = learner.iter
-        inst.at[args.method + '_time'] = clock() - env.start_time
+        inst.at[args.method + '_time'] = tools.sec_to_time(clock()
+                                                           - env.start_time)
         inst.to_csv(FILEPATH_RESULT + args.instance + '_' + str(inst[0]) +
                     '_' + args.method + '_job_' + str(args.job_id) + '_' +
                     str(args.array_id) + '.csv')
