@@ -369,14 +369,15 @@ class ValueIteration:
 class OneStepPolicyImprovement:
     """One-step policy improvement."""
 
-    def __init__(self, env, pi_learner):
+    def __init__(self, env, pi_learner=None):
         self.name = 'One-step Policy Improvement'
-        self.pi_learner = pi_learner
         self.V_app = self.get_v_app(env)
-        self.Pi = pi_learner.init_pi(env)
-        self.g = 0
-        self.iter = 0
-        self.converged = False
+        if pi_learner is not None:
+            self.pi_learner = pi_learner
+            self.Pi = pi_learner.init_pi(env)
+            self.g = 0
+            self.iter = 0
+            self.converged = False
 
     @staticmethod
     def get_v_app_i(env, i):

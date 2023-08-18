@@ -59,7 +59,7 @@ from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy import optimize
 from sys import getsizeof as size
 from time import perf_counter as clock
-from utils import tools
+import utils
 
 
 class TimeConstraintEDs:
@@ -136,15 +136,15 @@ class TimeConstraintEDs:
         s.P_xy = s.trans_prob()
 
         s.dim = tuple(np.repeat([s.D + 1, s.S + 1], s.J))
-        s.sizes = tools.def_sizes(s.dim)
+        s.sizes = utils.tools.def_sizes(s.dim)
         s.size = np.prod(s.dim)
         s.dim_i = tuple(np.append(s.J + 1, np.repeat([s.D + 1, s.S + 1], s.J)))
-        s.sizes_i = tools.def_sizes(s.dim_i)
+        s.sizes_i = utils.tools.def_sizes(s.dim_i)
         s.size_i = np.prod(s.dim_i).astype(int32)
 
         s.max_iter = kwargs.get('max_iter', np.Inf)  # max(size_i^2, 1e3)
         s.start_time = clock()
-        s.max_time = tools.get_time(kwargs.get('max_time', None))
+        s.max_time = utils.tools.get_time(kwargs.get('max_time', None))
 
         s.print_modulo = kwargs.get('print_modulo', 1e10)  # 1 for always
         s.convergence_check = kwargs.get('convergence_check', 1)
