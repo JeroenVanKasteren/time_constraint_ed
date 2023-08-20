@@ -33,13 +33,15 @@ for file in os.listdir(FILEPATH_RESULT):
         inst.loc[index, method + '_time'] = result.loc[method + '_time'][0]
         inst.loc[index, method + '_iter'] = result.loc[method + '_iter'][0]
         inst.loc[index, method + '_g'] = result.loc[method + '_g'][0]
-        os.rename(FILEPATH_RESULT + file, FILEPATH_READ + file)
     else:
         print('Instance', INSTANCE_ID + '_' + str(index),
               'already solved. Redundant job with id:',
               result.loc[method + '_job_id'][0])
-
     if(pd.notnull(inst.loc[index, 'ospi_g']) &
             pd.notnull(inst.loc[index, 'vi_g'])):
-        inst.loc[index, 'opt_cap'] = (inst.loc[index, 'ospi_g'] /
-                                      inst.loc[index, 'vi_g'])
+        inst.loc[index, 'opt_gap'] = (abs(float(inst.loc[index, 'ospi_g'])
+                                          - float(inst.loc[index, 'vi_g']))
+                                      / float(inst.loc[index, 'vi_g']))
+    os.rename(FILEPATH_RESULT + file, FILEPATH_READ + file)
+
+inst.to_csv(FILEPATH_INSTANCE)
