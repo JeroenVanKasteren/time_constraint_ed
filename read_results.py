@@ -44,4 +44,4 @@ for file in os.listdir(FILEPATH_RESULT):
                                       / float(inst.loc[index, 'vi_g']))
     os.rename(FILEPATH_RESULT + file, FILEPATH_READ + file)
 
-inst.to_csv(FILEPATH_INSTANCE)
+inst.to_csv(FILEPATH_INSTANCE, index=False)

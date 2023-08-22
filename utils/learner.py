@@ -375,6 +375,7 @@ class OneStepPolicyImprovement:
         if pi_learner is not None:
             self.pi_learner = pi_learner
             self.Pi = pi_learner.init_pi(env)
+            self.V = np.zeros(env.dim, dtype=np.float32)
             self.g = 0
             self.iter = 0
             self.converged = False
@@ -443,9 +444,9 @@ class OneStepPolicyImprovement:
         W = np.zeros(env.dim_i, dtype=np.float32)
         s.Pi = s.Pi.reshape(env.size_i)
         if 'V' in kwargs:
-            _, s.g, s.converged, s.iter = s.pi_learner.policy_evaluation(
+            s.V, s.g, s.converged, s.iter = s.pi_learner.policy_evaluation(
                 env, kwargs.get('V'), W, s.Pi, s.g, s.name)
         else:
-            _, s.g, s.converged, s.iter = s.pi_learner.policy_evaluation(
+            s.V, s.g, s.converged, s.iter = s.pi_learner.policy_evaluation(
                 env, s.V_app, W, s.Pi, s.g, s.name)
         s.Pi = s.Pi.reshape(env.dim_i)

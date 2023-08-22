@@ -11,6 +11,8 @@ Created on 19-3-2020.
 """
 
 import argparse
+import numpy as np
+import os
 import pandas as pd
 from time import perf_counter as clock
 from utils import tools, TimeConstraintEDs as Env, PolicyIteration, \
@@ -18,6 +20,7 @@ from utils import tools, TimeConstraintEDs as Env, PolicyIteration, \
 
 FILEPATH_INSTANCE = 'results/instances_'
 FILEPATH_RESULT = 'results/result_'
+FILEPATH_V = 'results/value_functions/'
 MAX_TARGET_PROB = 0.9
 
 
@@ -72,20 +75,21 @@ def main(raw_args=None):
                 '_job_' + str(args.job_id) + '_' + str(args.array_id) + '.csv')
 
     pi_learner = PolicyIteration()
+    v_name = FILEPATH_V + 'v_' + args.instance + '_' + str(inst[0]) + '.npz'
+    if v_name in os.listdir(FILEPATH_V)
+        V = np.load(FILEPATH_V + 'v_' + args.instance + '_' +
+                    str(inst[0]) + '.npz')
     if args.method == 'vi':
         learner = ValueIteration(env, pi_learner)
+        if v_name in os.listdir(FILEPATH_V):
+            learner.V = V
         learner.value_iteration(env)
     else:
         learner = OneStepPolicyImprovement(env, pi_learner)
+        if v_name in os.listdir(FILEPATH_V):
+            learner.V = V
         learner.one_step_policy_improvement(env)
         learner.get_g(env)
-
-    # save matrices
-    # vi_learner.get_policy(env)
-    # np.savez('Results/policy_' + args.id + '.npz',
-    #          vi_learner.Pi, ospi_learner.Pi,
-    #          vi_learner.V, ospi_learner.V_app)
-    # np.load('Results/policy_SLURM_ARRAY_TASK_ID.npz')
 
     if learner.converged:
         inst.at[args.method + '_g'] = learner.g
@@ -95,7 +99,12 @@ def main(raw_args=None):
         inst.to_csv(FILEPATH_RESULT + args.instance + '_' + str(inst[0]) +
                     '_' + args.method + '_job_' + str(args.job_id) + '_' +
                     str(args.array_id) + '.csv')
-
+    else:
+        learner.V
+        np.savez(FILEPATH_V + 'v_' + args.instance + '_' +
+                 str(inst[0]) + '.npz', learner.V)
+        # np.savez(FILEPATH_V + 'v_' + args.instance + '_' + str('42') + '.npz', V)
 
 if __name__ == '__main__':
     main()
+# V = np.zeros(4561650, dtype=np.float32)
