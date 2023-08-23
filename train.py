@@ -6,6 +6,16 @@ N classes, N=2,3,4 (SIMS := # experiments each)
 
 python train.py --job_id 1 --array_id 1 --time 0-00:03:00 --instance 01 --method vi
 
+Check how many jobs needed:
+import pandas as pd
+
+inst = pd.read_csv('results/instances_01.csv')
+print('Solved vi: ' + str(inst['vi_g'].count()) + '\n' +
+      'left vi: ' + str(len(inst) - inst['vi_g'].count()) + '\n' +
+      'Solved ospi: ' + str(inst['ospi_g'].count()) + '\n' +
+      'left ospi: ' + str(len(inst) - inst['ospi_g'].count()) + '\n' +
+      'Solved both: ' + str(inst['opt_gap'].count()))
+
 @author: Jeroen van Kasteren (jeroen.van.kasteren@vu.nl)
 Created on 19-3-2020.
 """
@@ -35,7 +45,7 @@ def load_args(raw_args=None):
     args = parser.parse_args(raw_args)
     args.job_id = int(args.job_id)
     args.array_id = int(args.array_id)
-    args.x = float(args.x)
+    args.x = int(args.x)
     return args
 
 # Debug
@@ -56,8 +66,8 @@ def main(raw_args=None):
     inst = inst[pd.isnull(inst[args.method + '_g'])]
     inst[args.method + '_time'] = inst[args.method + '_time'].map(
         lambda x: x if pd.isnull(x) else tools.get_time(x))
-    inst = inst[(inst[args.method + '_time'] < tools.get_time(args.time)) |
-                pd.isnull(inst[args.method + '_time'])]
+    # inst = inst[(inst[args.method + '_time'] < tools.get_time(args.time)) |
+    #             pd.isnull(inst[args.method + '_time'])]
 
     if args.array_id - 1 + args.x >= len(inst):
         print('No more instances to solve within', args.time,
