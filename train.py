@@ -61,13 +61,14 @@ def main(raw_args=None):
 
     if args.array_id - 1 + args.x >= len(inst):
         print('No more instances to solve within', args.time,
-              'index:', args.array_id - 1 + args.x )
+              'index:', args.array_id - 1 + args.x)
         exit(0)
     inst = inst.loc[args.array_id - 1 + args.x]
 
     env = Env(J=inst.J, S=inst.S, D=inst.D, gamma=inst.gamma,
               e=inst.e, t=inst.t, c=inst.c, r=inst.r, P=inst.P,
-              lab=inst.lab, mu=inst.mu, max_time=args.time)
+              lab=inst.lab, mu=inst.mu, max_time=args.time,
+              convergence_check=10)
     inst[args.method + '_job_id'] = str(args.job_id) + '_' + str(args.array_id)
     inst[args.method + '_time'] = args.time
     inst.to_csv(FILEPATH_RESULT + args.instance + '_' + str(inst[0]) +
@@ -75,19 +76,18 @@ def main(raw_args=None):
                 '_job_' + str(args.job_id) + '_' + str(args.array_id) + '.csv')
 
     pi_learner = PolicyIteration()
-    v_name = FILEPATH_V + 'v_' + args.instance + '_' + str(inst[0]) + '.npz'
-    if v_name in os.listdir(FILEPATH_V)
-        V = np.load(FILEPATH_V + 'v_' + args.instance + '_' +
-                    str(inst[0]) + '.npz')
+    v_file = FILEPATH_V + 'v_' + args.instance + '_' + str(inst[0]) + '.npz'
     if args.method == 'vi':
         learner = ValueIteration(env, pi_learner)
-        if v_name in os.listdir(FILEPATH_V):
-            learner.V = V
+        if v_file in os.listdir(FILEPATH_V):
+            learner.V = np.load(FILEPATH_V + 'v_' + args.instance + '_' +
+                                str(inst[0]) + '.npz')
         learner.value_iteration(env)
     else:
         learner = OneStepPolicyImprovement(env, pi_learner)
-        if v_name in os.listdir(FILEPATH_V):
-            learner.V = V
+        if v_file in os.listdir(FILEPATH_V):
+            learner.V = np.load(FILEPATH_V + 'v_' + args.instance + '_' +
+                                str(inst[0]) + '.npz')
         learner.one_step_policy_improvement(env)
         learner.get_g(env)
 
@@ -103,8 +103,7 @@ def main(raw_args=None):
         learner.V
         np.savez(FILEPATH_V + 'v_' + args.instance + '_' +
                  str(inst[0]) + '.npz', learner.V)
-        # np.savez(FILEPATH_V + 'v_' + args.instance + '_' + str('42') + '.npz', V)
+
 
 if __name__ == '__main__':
     main()
-# V = np.zeros(4561650, dtype=np.float32)

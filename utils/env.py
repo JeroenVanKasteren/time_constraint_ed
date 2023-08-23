@@ -144,9 +144,9 @@ class TimeConstraintEDs:
 
         s.max_iter = kwargs.get('max_iter', np.Inf)  # max(size_i^2, 1e3)
         s.start_time = clock()
-        s.max_time = utils.tools.get_time(kwargs.get('max_time', None))
+        s.max_time = utils.tools.get_time(kwargs.get('max_time', None)) * 0.9
 
-        s.print_modulo = kwargs.get('print_modulo', 1e10)  # 1 for always
+        s.print_modulo = kwargs.get('print_modulo', 1e3)  # 1 for always
         s.convergence_check = kwargs.get('convergence_check', 1)
 
         s_states = array(list(product(np.arange(s.S + 1), repeat=s.J)), int32)
