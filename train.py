@@ -39,7 +39,7 @@ def load_args(raw_args=None):
     return args
 
 # Debug
-# args = {'instance': '01', 'method': 'ospi', 'time': '0-00:03:00',
+# args = {'instance': '01', 'method': 'ospi', 'time': '1-00:00:00',
 #         'job_id': 1, 'array_id': 1, 'x': 0}
 # args = tools.DotDict(args)
 
@@ -63,7 +63,7 @@ def main(raw_args=None):
         print('No more instances to solve within', args.time,
               'index:', args.array_id - 1 + args.x)
         exit(0)
-    inst = inst.loc[args.array_id - 1 + args.x]
+    inst = inst.iloc[args.array_id - 1 + args.x]
 
     env = Env(J=inst.J, S=inst.S, D=inst.D, gamma=inst.gamma,
               e=inst.e, t=inst.t, c=inst.c, r=inst.r, P=inst.P,
@@ -76,18 +76,19 @@ def main(raw_args=None):
                 '_job_' + str(args.job_id) + '_' + str(args.array_id) + '.csv')
 
     pi_learner = PolicyIteration()
-    v_file = FILEPATH_V + 'v_' + args.instance + '_' + str(inst[0]) + '.npz'
     if args.method == 'vi':
         learner = ValueIteration(env, pi_learner)
+        v_file = (FILEPATH_V + 'v_' + args.instance + '_' + str(inst[0])
+                  + '_vi.npz')
         if v_file in os.listdir(FILEPATH_V):
-            learner.V = np.load(FILEPATH_V + 'v_' + args.instance + '_' +
-                                str(inst[0]) + '.npz')
+            learner.V = np.load(v_file)
         learner.value_iteration(env)
     else:
         learner = OneStepPolicyImprovement(env, pi_learner)
+        v_file = (FILEPATH_V + 'v_' + args.instance + '_' + str(inst[0])
+                  + '_ospi.npz')
         if v_file in os.listdir(FILEPATH_V):
-            learner.V = np.load(FILEPATH_V + 'v_' + args.instance + '_' +
-                                str(inst[0]) + '.npz')
+            learner.V = np.load(v_file)
         learner.one_step_policy_improvement(env)
         learner.get_g(env)
 
@@ -100,9 +101,8 @@ def main(raw_args=None):
                     '_' + args.method + '_job_' + str(args.job_id) + '_' +
                     str(args.array_id) + '.csv')
     else:
-        learner.V
-        np.savez(FILEPATH_V + 'v_' + args.instance + '_' +
-                 str(inst[0]) + '.npz', learner.V)
+        np.savez(FILEPATH_V + 'v_' + args.instance + '_' + str(inst[0]) + '_'
+                 + args.method + '.npz', learner.V)
 
 
 if __name__ == '__main__':
