@@ -4,11 +4,13 @@ This file contains the simulation of the multi-class queueing system.
 Convert to a class when it works.
 """
 
+import argparse
 import heapq as hq
 import numba as nb
 import numpy as np
-from utils import TimeConstraintEDs as Env
+# import pandas as pd
 from time import perf_counter as clock
+from utils import TimeConstraintEDs as Env
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
@@ -58,20 +60,34 @@ x = nb.typed.List([1.232, 3.21, 5.21, 7.54, 9.765, 2.35, 4.85, 6.00, 8.1, 0.23])
 print(heapsort(x))
 '''
 
+# def load_args(raw_args=None):
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument('--job_id', default='0')  # SULRM_JOBID
+#     parser.add_argument('--array_id', default='0')  # SLURM_ARRAY_TASK_ID
+#     parser.add_argument('--time')  # SLURM_TIMELIMIT
+#     parser.add_argument('--instance', default='01')  # User input
+#     parser.add_argument('--method')  # User input, vi or ospi
+#     parser.add_argument('--x', default=0)  # User input
+#     args = parser.parse_args(raw_args)
+#     args.job_id = int(args.job_id)
+#     args.array_id = int(args.array_id)
+#     args.x = float(args.x)
+#     return args
+
 # @nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i8, tp.i8, tp.f8,
 #                   DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F1, tp.f8[:, :, :]),
 #          parallel=True, error_model='numpy')
-def simulate_multi_class_system(J, S, lab_i, mu_i, r_i, c_i, t_i, N,
+def simulate_multi_class_system(J, S, lab, mu, r, c, t, gamma, N,
                                 arrival_times, service_times):
     # initialize the system
-    state = np.zeros(J+1, dtype=np.int32)
+    x = np.zeros(J+1, dtype=np.int32)
+    s = np.zeros(J+1, dtype=np.int32)
     total_reward = np.zeros(J+1)
     total_cost = np.zeros(J+1)
     time = 0
-    arr_per_class = np.ones(J, dtype=np.int32)
-    ser_per_class = np.zeros(J, dtype=np.int32)
-    exp_wait_per_class = np.zeros(J, dtype=np.float32)
-    wait_per_class = np.zeros(J, dtype=np.float32)
+    arr = np.ones(J, dtype=np.int32)
+    avg_wait = np.zeros(J, dtype=np.float32)
+    wait = np.zeros(J, dtype=np.float32)
     heap = nb.typed.List.empty_list(heap_type)
 
     # initialize the event list
@@ -79,7 +95,7 @@ def simulate_multi_class_system(J, S, lab_i, mu_i, r_i, c_i, t_i, N,
         hq.heappush(heap, (arrival_times[i, 0], i, 'arrival'))
 
     # run the simulation
-    while arr_per_class.sum() < N:
+    while arr.sum() < N:
         # get next event
         event = hq.heappop(heap)
         time = event[0]
@@ -114,48 +130,84 @@ def simulate_multi_class_system(J, S, lab_i, mu_i, r_i, c_i, t_i, N,
 
         # check if any service initiation events can occur
         if np.sum(state) < S:
-            prob = r_i / np.sum(r_i)
-            i = np.random.choice(J, p=prob)
             if state[i] > 0:
                 state[i] -= 1
                 total_reward[i] += r_i[i]
                 events.append((t, i, 'departure'))
 
+    if policy == 'fcfs':
+        pi = np.argmax(x)
+    elif policy == 'sdf':
+        pi = np.argmin(t - x)
+    elif policy == 'sdf_prior':
+        y = t - x
+        pi = np.argmax(y == np.min(y[y >= 0]))
+    elif policy == 'cmu':
+        y = wait * lab * mu
+    elif policy == 'ospi':
+
+    if policy == ospi:
+        learner = OneStepPolicyImprovement(env, pi_learner)
+        pi = 0
+        # x
+        # s
+        # state = (i * d_i['sizes_i'][0] + np.sum(x * sizes_x + s * sizes_s))
+        # j is the class to admit
+        # i indicates which class just arrived
+        # i = J if no class arrived
+        for j in range(J):
+            if (x[j] > 0) or (j == i):
+                w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
+                i_not_admitted = 0
+                if (i < J) and (i != j):
+                    i_not_admitted = sizes_x_n[i]
+                for y in range(x[j] + 1):
+                    next_state = (np.sum(
+                        x * sizes_x_n + s * sizes_s_n)
+                                  - (x[j] - y) * sizes_x_n[j]
+                                  + i_not_admitted
+                                  + sizes_s_n[j])
+                    w += P_xy[j, x[j], y] * V[next_state]
+                if w > W[state]:
+                    W[state] = w
+
+
+
+def get_v_app_i(env, i):
+    """Calculate V for a single queue."""
+    s = env.s_star[i]
+    lab = env.lab[i]
+    mu = env.mu[i]
+    rho = env.rho[i]
+    a = env.a[i]
+    r = env.r[i]
+    g = env.g[i]
+    v_i = np.zeros(env.D + 1)
+
+    # V(x) for x<=0, with V(-s)=0
+    v_x_le_0 = lambda y: (1 - (y / a) ** s) / (1 - y / a) * np.exp(a - y)
+    v_i[0] = (g - lab * r) / lab * quad_vec(v_x_le_0, a, np.inf)[0]
+    # V(x) for x>0
+    frac = (s * mu + env.gamma) / (lab + env.gamma)
+    trm = np.exp(a) / a ** (s-1) * gamma_fun(s) * reg_up_inc_gamma(s, a)
+    x = np.arange(1, env.D + 1)
+    v_i[x] = (v_i[0] + (s * mu * r - g) / (env.gamma * s * mu * (1 - rho)**2)
+              * (lab + env.gamma - lab * x * (rho - 1)
+                 - (lab + env.gamma) * frac**x)
+              + 1 / (env.gamma * (rho - 1))
+              * (g - s * mu * r - env.gamma / lab * (g + (g - lab*r)/rho * trm))
+              * (-rho + frac**(x - 1)))
+    # -1_{x > gamma*t}[...]
+    x = np.arange(env.gamma * env.t[i] + 1, env.D + 1).astype(int)
+    v_i[x] -= env.c[i] / (env.gamma * (1 - rho)**2) * \
+        (lab + env.gamma - lab * (x - env.gamma * env.t[i] - 1)
+         * (rho - 1) - (lab + env.gamma) * frac**(x - env.gamma * env.t[i] - 1))
+    return v_i
 
 
 
 
-
 #
-#
-#
-#
-#
-#
-# import argparse
-# import pandas as pd
-# from time import perf_counter as clock
-# from utils import tools, TimeConstraintEDs as Env, PolicyIteration, \
-#     ValueIteration, OneStepPolicyImprovement
-#
-# FILEPATH_INSTANCE = 'results/instances_'
-# FILEPATH_RESULT = 'results/result_'
-# MAX_TARGET_PROB = 0.9
-#
-#
-# def load_args(raw_args=None):
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument('--job_id', default='0')  # SULRM_JOBID
-#     parser.add_argument('--array_id', default='0')  # SLURM_ARRAY_TASK_ID
-#     parser.add_argument('--time')  # SLURM_TIMELIMIT
-#     parser.add_argument('--instance', default='01')  # User input
-#     parser.add_argument('--method')  # User input, vi or ospi
-#     parser.add_argument('--x', default=0)  # User input
-#     args = parser.parse_args(raw_args)
-#     args.job_id = int(args.job_id)
-#     args.array_id = int(args.array_id)
-#     args.x = float(args.x)
-#     return args
 #
 # # Debug
 # # args = {'instance': '01', 'method': 'ospi', 'time': '0-00:03:00',
