@@ -6,16 +6,6 @@ N classes, N=2,3,4 (SIMS := # experiments each)
 
 python train.py --job_id 1 --array_id 1 --time 0-00:03:00 --instance 01 --method vi
 
-Check how many jobs needed:
-import pandas as pd
-
-inst = pd.read_csv('results/instances_01.csv')
-print('Solved vi: ' + str(inst['vi_g'].count()) + '\n' +
-      'left vi: ' + str(len(inst) - inst['vi_g'].count()) + '\n' +
-      'Solved ospi: ' + str(inst['ospi_g'].count()) + '\n' +
-      'left ospi: ' + str(len(inst) - inst['ospi_g'].count()) + '\n' +
-      'Solved both: ' + str(inst['opt_gap'].count()))
-
 @author: Jeroen van Kasteren (jeroen.van.kasteren@vu.nl)
 Created on 19-3-2020.
 """
@@ -95,12 +85,19 @@ def main(raw_args=None):
         learner.value_iteration(env)
     else:
         learner = OneStepPolicyImprovement(env, pi_learner)
+        pi_file = (FILEPATH_V + 'pi_' + args.instance + '_' + str(inst[0])
+                   + '_ospi.npz')
+        if pi_file in os.listdir(FILEPATH_V):
+            learner.pi = np.load(pi_file)
+        else:
+            learner.one_step_policy_improvement(env)
         v_file = (FILEPATH_V + 'v_' + args.instance + '_' + str(inst[0])
                   + '_ospi.npz')
         if v_file in os.listdir(FILEPATH_V):
             learner.V = np.load(v_file)
-        learner.one_step_policy_improvement(env)
-        learner.get_g(env)
+            learner.get_g(env, learner.V)
+        else:
+            learner.get_g(env, learner.V_app)
 
     if learner.converged:
         inst.at[args.method + '_g'] = learner.g

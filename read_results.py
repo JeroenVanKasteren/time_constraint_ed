@@ -44,4 +44,10 @@ for file in os.listdir(FILEPATH_RESULT):
                                       / float(inst.loc[index, 'vi_g']))
     os.rename(FILEPATH_RESULT + file, FILEPATH_READ + file)
 
+print('Solved vi: ' + str(inst['vi_g'].count()) + '\n' +
+      'left vi: ' + str(len(inst) - inst['vi_g'].count()) + '\n' +
+      'Solved ospi: ' + str(inst['ospi_g'].count()) + '\n' +
+      'left ospi: ' + str(len(inst) - inst['ospi_g'].count()) + '\n' +
+      'Solved both: ' + str(inst['opt_gap'].count()))
+
 inst.to_csv(FILEPATH_INSTANCE, index=False)
