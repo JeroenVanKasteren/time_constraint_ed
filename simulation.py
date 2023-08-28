@@ -20,14 +20,20 @@ BATCH_SIZE = 100  # batch size for KPI
 env = Env(J=2, S=4, gamma=10, D=50, P=1e3, e=1e-5, seed=42,
           max_time='0-00:10:30', convergence_check=10, print_modulo=100)
 
-rng = np.random.default_rng()  # add seed
-arrival_times = np.empty((env.J, N), dtype=np.float32)
-service_times = np.empty((env.J, N), dtype=np.float32)
-for i in range(env.J):
-    arrival_times[i, :] = env.rng.exponential(1 / env.lab[i], N)
-    service_times[i, :] = env.rng.exponential(1 / env.mu[i], N)
+def get_arr_and_ser_times(env):
+    arrival_times = np.empty((env.J, N), dtype=np.float32)
+    service_times = np.empty((env.J, N), dtype=np.float32)
+    for i in range(env.J):
+        arrival_times[i, :] = env.rng.exponential(1 / env.lab[i], N)
+        service_times[i, :] = env.rng.exponential(1 / env.mu[i], N)
+    return arrival_times, service_times
 
 heap_type = nb.typeof((0.0, 0, 'event'))  # (time, class, event)
+
+@nb.njit
+def update_mean(mean, x, n):
+    """Welford's method to update the mean."""
+    return mean + (x - mean) / n
 
 '''
 he following functions from the heapq module are supported:
@@ -99,34 +105,29 @@ def simulate_multi_class_system(J, S, lab, mu, r, c, t, gamma, N,
         # get next event
         event = hq.heappop(heap)
         time = event[0]
-        j = event[1]
+        i = event[1]
         type_event = event[2]
 
-        if type_event == 'arrival':
-            arr_per_class[j] += 1
-            # https://stackoverflow.com/questions/12636613/how-to-calculate-moving-average-without-keeping-the-count-and-data-total
-            # Welford's method
-            exp_wait_per_class[j] += wait_per_class[j] * state[j]
-            if state[i_queue] < S:
-                state[i_queue] += 1
-                events.append((t_event + np.random.exponential(1/lambda_i[i_event]), i_event, 'arrival'))
-            else:
-                events.append((t_event + np.random.exponential(1/lambda_i[i_event]), i_event, 'dropped'))
+        if type_event == 'arrival':  # arrival of FIL by design
+            arr[i] += 1
+            wait[i] = 0
 
-        elif type_event == 'departure':
-            # remove the customer from the queue
-            if state[i_event] > 0:
-                state[i_event] -= 1
-                if np.sum(total_reward[:J]) >= t_i[i_event]:
-                    total_cost[i_event] += c_i[i_event]
-                    t_i[i_event] *= 2
+            # if taken into service, update waiting time
+            avg_wait[i] = update_mean(avg_wait[i], 0, arr[i])
+
+        else:  # type_event == 'departure':
+            s[i] -= 1
+            avg_wait[i] = update_mean(avg_wait[i], wait[i], arr[i])
+
+        # add service completion
+        hq.heappush(heap,
+                    (time + service_times[i, s[i]], i,
+                     'departure'))
 
         # add new arrival
         hq.heappush(heap,
-                    (time + arrival_times[i, arr_per_class[i]], i, 'arrival'))
-        # add service completion
-        hq.heappush(heap,
-                    (time + service_times[i, ser_per_class[i]], i, 'departure'))
+                    (time + arrival_times[i, arr[i]], i, 'arrival'))
+
 
         # check if any service initiation events can occur
         if np.sum(state) < S:
