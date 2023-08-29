@@ -36,7 +36,7 @@ Constants
 
 Dependent variables
 'alpha' No. gamma transitions allowed to wait, float
-'P_xy'(i, x, y) trans. prob. class i, jump time from x to y, float 3D-array
+'p_xy'(i, x, y) trans. prob. class i, jump time from x to y, float 3D-array
 'tau' uniformization constant, float
 'dim' (D+1, S+1), +1 to include 0 state, tuple
 'size' number of states, int
@@ -133,7 +133,7 @@ class TimeConstraintEDs:
         s.target_prob = s.get_tail_prob(s.S, s.load, sum(s.lab), mu, pi_0,
                                         max(s.t))
 
-        s.P_xy = s.trans_prob()
+        s.p_xy = s.trans_prob()
 
         s.dim = tuple(np.repeat([s.D + 1, s.S + 1], s.J))
         s.sizes = utils.tools.def_sizes(s.dim)
@@ -221,20 +221,20 @@ class TimeConstraintEDs:
         return D
 
     def trans_prob(self):
-        """P_xy(i, x, y) transition prob. for class i to jump from x to y."""
-        P_xy = np.zeros((self.J, self.D + 1, self.D + 1))
+        """p_xy(i, x, y) transition prob. for class i to jump from x to y."""
+        p_xy = np.zeros((self.J, self.D + 1, self.D + 1))
         gamma = self.gamma
         A = np.indices((self.D + 1, self.D + 1))  # x=A[0], y=A[1]
         mask_tril = A[0, 1:, 1:] >= A[1, 1:, 1:]
         for i in range(self.J):
             lab = self.lab[i]
-            P_xy[i, 1:, 1:][mask_tril] = (gamma / (lab + gamma)) ** \
-                                         (A[0, 1:, 1:][mask_tril] -
-                                          A[1, 1:, 1:][mask_tril]) * \
-                                         lab / (lab + gamma)
-            P_xy[i, 1:, 0] = (gamma / (lab + gamma)) ** A[0, 1:, 0]
-        P_xy[:, 0, 0] = 1
-        return P_xy
+            p_xy[i, 1:, 1:][mask_tril] = ((gamma / (lab + gamma))
+                                          ** (A[0, 1:, 1:][mask_tril]
+                                              - A[1, 1:, 1:][mask_tril])
+                                          * lab / (lab + gamma))
+            p_xy[i, 1:, 0] = (gamma / (lab + gamma)) ** A[0, 1:, 0]
+        p_xy[:, 0, 0] = 1
+        return p_xy
 
     def get_pi_0(self, s, rho, lab):
         """Calculate pi(0)."""

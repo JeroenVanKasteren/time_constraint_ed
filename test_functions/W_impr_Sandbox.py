@@ -86,7 +86,7 @@ for test_range in range(n):  # Update each state.
     V = V.reshape(env.size)
     W = W.reshape(env.size_i)
     Pi, stable = get_w(V, W, Pi, env.J, env.D, env.gamma, env.KEEP_IDLE,
-                       d_i1, d_i2, d_f, env.P_xy)
+                       d_i1, d_i2, d_f, env.p_xy)
     V = V.reshape(env.dim)
     W = W.reshape(env.dim_i)
 print(env.timer(False, name, env.trace)/n)

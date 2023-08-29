@@ -23,6 +23,7 @@ env = Env(J=1, S=3, load=0.75, gamma=20., D=100, P=1e3, e=1e-4, trace=True,
 
 # -------------------- Without x<0 -------------------------
 
+
 def get_v_app_i(env, i):
     """Calculate V for a single queue."""
     s = env.s_star[i]
@@ -71,7 +72,7 @@ for i in range(env.J):
     RHS = np.zeros(env.D + 1)
     x = np.arange(1, env.D)  # x>=1
     RHS[x] = (env.gamma*V[i, x+1]
-              + s * env.mu[i] * (env.r[i] + np.sum(env.P_xy[i, 1:env.D, :env.D]
+              + s * env.mu[i] * (env.r[i] + np.sum(env.p_xy[i, 1:env.D, :env.D]
                                                    * V[i, 0:env.D], 1))
               + (env.tau - env.gamma - s * env.mu[i]) * V[i, x])
     x = np.arange(env.t[i] * env.gamma+1, env.D).astype(int)  # x>t*gamma

@@ -102,9 +102,9 @@ V = np.array(np.random.rand(env.size), dtype=np.float32)
 Pi = env.init_pi()
 Pi = Pi.reshape(env.size_i)
 W = W_rand.copy()
-W_new = get_w(V, W, Pi, env.J, env.D, env.gamma, d_i1, d_i2, d_f, env.P_xy)
+W_new = get_w(V, W, Pi, env.J, env.D, env.gamma, d_i1, d_i2, d_f, env.p_xy)
 W = W_rand.copy()
-W_old = get_w_old(V, W, Pi, env.J, env.D, env.gamma, d_i1, d_i2, d_f, env.P_xy)
+W_old = get_w_old(V, W, Pi, env.J, env.D, env.gamma, d_i1, d_i2, d_f, env.p_xy)
 print(np.allclose(W_new, W_old))  # True
 
 name = "Test W"
@@ -119,7 +119,7 @@ for test_range in range(n):  # Update each state.
     W = env.init_w(V, W)
     V = V.reshape(env.size)
     W = W.reshape(env.size_i)
-    W = get_w(V, W, Pi, env.J, env.D, env.gamma, d_i1, d_i2, d_f, env.P_xy)
+    W = get_w(V, W, Pi, env.J, env.D, env.gamma, d_i1, d_i2, d_f, env.p_xy)
     V = V.reshape(env.dim)
     W = W.reshape(env.dim_i)
 print(env.timer(False, name, env.trace)/n)

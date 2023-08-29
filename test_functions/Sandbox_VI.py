@@ -33,7 +33,7 @@ while not (stopped | converged):  # Update each state.
     V = V.reshape(env.size)
     W = W.reshape(env.size_i)
     W = vi_learner.get_w(V, W, env.J, env.D, env.gamma, env.d_i1, env.d_i2,
-                         env.d_f1, env.P_xy)
+                         env.d_f1, env.p_xy)
     V = V.reshape(env.dim)
     W = W.reshape(env.dim_i)
     V_t = pi_learner.get_v(env, V, W)
@@ -50,7 +50,7 @@ W = W.reshape(env.size_i)
 Pi = Pi.reshape(env.size_i)
 Pi, _ = pi_learner.policy_improvement(V, W, Pi, env.J, env.D, env.gamma,
                                       env.KEEP_IDLE, env.d_i1, env.d_i2,
-                                      env.d_f1, env.P_xy)
+                                      env.d_f1, env.p_xy)
 V = V.reshape(env.dim)
 Pi = Pi.reshape(env.dim_i)
 

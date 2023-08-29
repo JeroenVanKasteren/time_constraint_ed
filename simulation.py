@@ -20,80 +20,101 @@ BATCH_SIZE = 100  # batch size for KPI
 env = Env(J=2, S=4, gamma=10, D=50, P=1e3, e=1e-5, seed=42,
           max_time='0-00:10:30', convergence_check=10, print_modulo=100)
 
-def get_arr_and_ser_times(env):
-    arrival_times = np.empty((env.J, N), dtype=np.float32)
-    service_times = np.empty((env.J, N), dtype=np.float32)
-    for i in range(env.J):
-        arrival_times[i, :] = env.rng.exponential(1 / env.lab[i], N)
-        service_times[i, :] = env.rng.exponential(1 / env.mu[i], N)
-    return arrival_times, service_times
-
 heap_type = nb.typeof((0.0, 0, 'event'))  # (time, class, event)
+
+J = env.J
+S = env.S
+gamma = env.gamma
+t = env.t
+c = env.c
+r = env.r
+lab = env.lab
+mu = env.mu
+p_xy = env.p_xy
+
+arrival_times = np.empty((J, N), dtype=np.float32)
+service_times = np.empty((J, N), dtype=np.float32)
+for i in range(J):
+    arrival_times[i, :] = env.rng.exponential(1 / lab[i], N)
+    service_times[i, :] = env.rng.exponential(1 / mu[i], N)
+
+policy = 'fcfs'  # 'fcfs' 'sdf' 'sdf_prior' 'cmu' 'ospi'
+
 
 @nb.njit
 def update_mean(mean, x, n):
     """Welford's method to update the mean."""
     return mean + (x - mean) / n
 
-'''
-he following functions from the heapq module are supported:
 
-heapq.heapify()
-heapq.heappop()
-heapq.heappush()
-heapq.heappushpop()
-heapq.heapreplace()
-heapq.nlargest() : first two arguments only
-heapq.nsmallest() : first two arguments only
-Note: the heap must be seeded with at least one value to allow its type to be inferred; heap items are assumed to be homogeneous in type.
+@nb.njit
+def ospi(env, pi_learner):
+    learner = OneStepPolicyImprovement(env, pi_learner)
+    pi = 0
+    # x
+    # s
+    # state = (i * d_i['sizes_i'][0] + np.sum(x * sizes_x + s * sizes_s))
+    # j is the class to admit
+    # i indicates which class just arrived
+    # i = J if no class arrived
+    for j in range(J):
+        if (x[j] > 0) or (j == i):
+            w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
+            i_not_admitted = 0
+            if (i < J) and (i != j):
+                i_not_admitted = sizes_x_n[i]
+            for y in range(x[j] + 1):
+                next_state = (np.sum(
+                    x * sizes_x_n + s * sizes_s_n)
+                              - (x[j] - y) * sizes_x_n[j]
+                              + i_not_admitted
+                              + sizes_s_n[j])
+                w += P_xy[j, x[j], y] * V[next_state]
+            if w > W[state]:
+                W[state] = w
 
-import numba as nb
-import heapq as hq
 
-# ensure this as global variable
-entry_type = nb.typeof((0.0, 0, 'event'))
+@nb.njit
+def policy(arr_times, time, x, s):
+    if policy == 'fcfs':
+        return np.argmax(x)
+    elif policy == 'sdf':
+        return np.argmin(t - x)
+    elif policy == 'sdf_prior':
+        y = t - x
+        return np.argmax(y == np.min(y[y >= 0]))
+    elif policy == 'cmu':
+        return np.argmax((time - arr_times) * lab * mu)
+    elif policy == 'ospi':
+        return ospi(x, s) - 1  # TODO -1?
 
-@njit
-def heapsort(iterable):
-    time = 0
-    heap = nb.typed.List.empty_list(entry_type)
-    for i in range(len(iterable)):
-        hq.heappush(heap, (iterable[i], 0, 'arrival'))
-        time += iterable[i]
-    return heap, time
 
-x = nb.typed.List([1.232, 3.21, 5.21, 7.54, 9.765, 2.35, 4.85, 6.00, 8.1, 0.23])
-print(heapsort(x))
-'''
+@nb.njit
+def admission(avg_wait, heap, total_reward, arr, arr_times, dep, x, s, time):
+    """Assumed that sum(s)<S."""
+    pi = policy(arr_times, time, x)
+    if pi < J:  # add departure & arrival of class pi
+        hq.heappush(heap, (time + service_times[pi, dep[pi]], pi,
+                           'departure'))
+        total_reward += r[pi] - c[pi] if x[pi] > gamma * t[pi] else r[pi]
+        avg_wait[pi] = update_mean(avg_wait[pi], time - arr_times[pi],
+                                   arr[pi])
+        hq.heappush(heap,
+                    (time + arrival_times[pi, arr[pi]], pi, 'arrival'))
+    return avg_wait, heap, total_reward
 
-# def load_args(raw_args=None):
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument('--job_id', default='0')  # SULRM_JOBID
-#     parser.add_argument('--array_id', default='0')  # SLURM_ARRAY_TASK_ID
-#     parser.add_argument('--time')  # SLURM_TIMELIMIT
-#     parser.add_argument('--instance', default='01')  # User input
-#     parser.add_argument('--method')  # User input, vi or ospi
-#     parser.add_argument('--x', default=0)  # User input
-#     args = parser.parse_args(raw_args)
-#     args.job_id = int(args.job_id)
-#     args.array_id = int(args.array_id)
-#     args.x = float(args.x)
-#     return args
 
 # @nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i8, tp.i8, tp.f8,
 #                   DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F1, tp.f8[:, :, :]),
 #          parallel=True, error_model='numpy')
-def simulate_multi_class_system(J, S, lab, mu, r, c, t, gamma, N,
-                                arrival_times, service_times):
+def simulate_multi_class_system(N, arrival_times, service_times):
     # initialize the system
-    x = np.zeros(J+1, dtype=np.int32)
     s = np.zeros(J+1, dtype=np.int32)
     total_reward = np.zeros(J+1)
-    total_cost = np.zeros(J+1)
-    time = 0
     arr = np.ones(J, dtype=np.int32)
+    dep = np.zeros(J, dtype=np.int32)
     avg_wait = np.zeros(J, dtype=np.float32)
-    wait = np.zeros(J, dtype=np.float32)
+    arr_times = np.zeros(J, dtype=np.float32)
     heap = nb.typed.List.empty_list(heap_type)
 
     # initialize the event list
@@ -110,69 +131,12 @@ def simulate_multi_class_system(J, S, lab, mu, r, c, t, gamma, N,
 
         if type_event == 'arrival':  # arrival of FIL by design
             arr[i] += 1
-            wait[i] = 0
-
-            # if taken into service, update waiting time
-            avg_wait[i] = update_mean(avg_wait[i], 0, arr[i])
-
+            arr_times[i] = time
+            if np.sum(s) < S:
+                x = time - arr_times
+                avg_wait, heap, total_reward = admission()
         else:  # type_event == 'departure':
-            s[i] -= 1
-            avg_wait[i] = update_mean(avg_wait[i], wait[i], arr[i])
-
-        # add service completion
-        hq.heappush(heap,
-                    (time + service_times[i, s[i]], i,
-                     'departure'))
-
-        # add new arrival
-        hq.heappush(heap,
-                    (time + arrival_times[i, arr[i]], i, 'arrival'))
-
-
-        # check if any service initiation events can occur
-        if np.sum(state) < S:
-            if state[i] > 0:
-                state[i] -= 1
-                total_reward[i] += r_i[i]
-                events.append((t, i, 'departure'))
-
-    if policy == 'fcfs':
-        pi = np.argmax(x)
-    elif policy == 'sdf':
-        pi = np.argmin(t - x)
-    elif policy == 'sdf_prior':
-        y = t - x
-        pi = np.argmax(y == np.min(y[y >= 0]))
-    elif policy == 'cmu':
-        y = wait * lab * mu
-    elif policy == 'ospi':
-
-    if policy == ospi:
-        learner = OneStepPolicyImprovement(env, pi_learner)
-        pi = 0
-        # x
-        # s
-        # state = (i * d_i['sizes_i'][0] + np.sum(x * sizes_x + s * sizes_s))
-        # j is the class to admit
-        # i indicates which class just arrived
-        # i = J if no class arrived
-        for j in range(J):
-            if (x[j] > 0) or (j == i):
-                w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
-                i_not_admitted = 0
-                if (i < J) and (i != j):
-                    i_not_admitted = sizes_x_n[i]
-                for y in range(x[j] + 1):
-                    next_state = (np.sum(
-                        x * sizes_x_n + s * sizes_s_n)
-                                  - (x[j] - y) * sizes_x_n[j]
-                                  + i_not_admitted
-                                  + sizes_s_n[j])
-                    w += P_xy[j, x[j], y] * V[next_state]
-                if w > W[state]:
-                    W[state] = w
-
-
+            heap, total_reward = admission()
 
 def get_v_app_i(env, i):
     """Calculate V for a single queue."""
@@ -208,7 +172,20 @@ def get_v_app_i(env, i):
 
 
 
-#
+
+# def load_args(raw_args=None):
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument('--job_id', default='0')  # SULRM_JOBID
+#     parser.add_argument('--array_id', default='0')  # SLURM_ARRAY_TASK_ID
+#     parser.add_argument('--time')  # SLURM_TIMELIMIT
+#     parser.add_argument('--instance', default='01')  # User input
+#     parser.add_argument('--method')  # User input, vi or ospi
+#     parser.add_argument('--x', default=0)  # User input
+#     args = parser.parse_args(raw_args)
+#     args.job_id = int(args.job_id)
+#     args.array_id = int(args.array_id)
+#     args.x = float(args.x)
+#     return args
 #
 # # Debug
 # # args = {'instance': '01', 'method': 'ospi', 'time': '0-00:03:00',

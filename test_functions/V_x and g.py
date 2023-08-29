@@ -63,7 +63,7 @@ def V_f(env, g):
 pi_0 = env.get_pi_0(env.s_star, env.rho)
 tail_prob = env.get_tail_prob(env.S, env.rho, pi_0, env.gamma*env.t)
 g = (env.r - env.c*tail_prob) * (env.lab + pi_0*env.lab**2/env.gamma)
-P_xy = env.P_xy[0]  # [0]
+P_xy = env.p_xy[0]  # [0]
 V = V_f(env, g)
 
 x = np.arange(-S, D+1)

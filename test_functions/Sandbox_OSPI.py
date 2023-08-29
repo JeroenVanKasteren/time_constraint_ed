@@ -81,7 +81,7 @@ V_app = V_app.reshape(env.size)
 W = W.reshape(env.size_i)
 Pi = Pi.reshape(env.size_i)
 Pi, _ = policy_improvement(V_app, W, Pi, env.J, env.D, env.gamma, env.KEEP_IDLE,
-                           env.d_i1, env.d_i2, env.d_f, env.P_xy)
+                           env.d_i1, env.d_i2, env.d_f, env.p_xy)
 env.timer(False, name, env.trace)
 
 env.timer(True, name, env.trace)

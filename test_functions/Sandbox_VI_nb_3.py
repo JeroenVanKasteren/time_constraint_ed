@@ -130,6 +130,6 @@ delta = np.ones(env.size, dtype=np.float32) * np.inf
 start_VI = clock()
 V, g, converged, count = value_iteration(V, W, delta, env.gamma, env.d_i0,
                                          env.d_i1, env.d_i2, env.d_f0, env.d_f1,
-                                         env.P_xy)
+                                         env.p_xy)
 env.time_print(clock()-start_VI)
 print(f"g %.3f, converged {converged}, count {count} " % g)

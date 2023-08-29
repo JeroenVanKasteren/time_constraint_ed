@@ -68,7 +68,7 @@ size_i = env.size_i
 dim_i = env.dim_i
 s_states = env.s_states
 x_states = env.x_states
-P_xy = env.P_xy
+P_xy = env.p_xy
 
 
 def init_W(env, V, W):

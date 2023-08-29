@@ -33,7 +33,7 @@ while not stable:
     Pi, stable = pi_learner.policy_improvement(V, W, Pi, env.J, env.D,
                                                env.gamma, env.KEEP_IDLE,
                                                env.d_i1, env.d_i2, env.d_f1,
-                                               env.P_xy)
+                                               env.p_xy)
     V = V.reshape(env.dim)
     W = W.reshape(env.dim_i)
     if count > env.max_iter:

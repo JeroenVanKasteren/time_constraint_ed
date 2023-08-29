@@ -127,7 +127,7 @@ class PolicyIteration:
                       DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F1, tp.f8[:, :, :]),
              parallel=True, error_model='numpy')
     def get_w(V, W, Pi, J, D, gamma,
-              d_i1, d_i2, d_f1, P_xy):
+              d_i1, d_i2, d_f1, p_xy):
         """W given policy."""
         sizes_x = d_i1['sizes_i'][1:J + 1]
         sizes_s = d_i1['sizes_i'][J + 1:J * 2 + 1]
@@ -154,7 +154,7 @@ class PolicyIteration:
                                           - (x[j] - y) * sizes_x_n[j]
                                           + i_not_admitted
                                           + sizes_s_n[j])
-                            W[state] += P_xy[j, x[j], y] * V[next_state]
+                            W[state] += p_xy[j, x[j], y] * V[next_state]
         return W
 
     @staticmethod
@@ -193,7 +193,7 @@ class PolicyIteration:
         DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F1, tp.f8[:, :, :]),
         parallel=True, error_model='numpy')
     def policy_improvement(V, W, Pi, J, D, gamma, keep_idle,
-                           d_i, d_i2, d_f1, P_xy):
+                           d_i, d_i2, d_f1, p_xy):
         """W given policy."""
         sizes_x = d_i['sizes_i'][1:J + 1]
         sizes_s = d_i['sizes_i'][J + 1:J * 2 + 1]
@@ -226,7 +226,7 @@ class PolicyIteration:
                                               - (x[j] - y) * sizes_x_n[j]
                                               + i_not_admitted
                                               + sizes_s_n[j])
-                                value += P_xy[j, x[j], y] * V[next_state]
+                                value += p_xy[j, x[j], y] * V[next_state]
                             if value > w:
                                 Pi[state] = j + 1
                                 w = value
@@ -244,7 +244,7 @@ class PolicyIteration:
             V = V.reshape(env.size)
             W = W.reshape(env.size_i)
             W = self.get_w(V, W, Pi, env.J, env.D, env.gamma,
-                           env.d_i1, env.d_i2, env.d_f1, env.P_xy)
+                           env.d_i1, env.d_i2, env.d_f1, env.p_xy)
             V = V.reshape(env.dim)
             W = W.reshape(env.dim_i)
             V_t = self.get_v(env, V, W)
@@ -273,7 +273,7 @@ class PolicyIteration:
             s.Pi, s.stable = s.policy_improvement(s.V, s.W, s.Pi, env.J, env.D,
                                                   env.gamma, env.KEEP_IDLE,
                                                   env.d_i1, env.d_i2, env.d_f1,
-                                                  env.P_xy)
+                                                  env.p_xy)
             s.V = s.V.reshape(env.dim)
             s.W = s.W.reshape(env.dim_i)
             if s.iter > env.max_iter:
@@ -303,7 +303,7 @@ class ValueIteration:
     @nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i8, tp.i8, tp.f8,
                       DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F1, tp.f8[:, :, :]),
              parallel=True, error_model='numpy')
-    def get_w(V, W, J, D, gamma, d_i, d_i2, d_f1, P_xy):
+    def get_w(V, W, J, D, gamma, d_i, d_i2, d_f1, p_xy):
         """W given policy."""
         sizes_x = d_i['sizes_i'][1:J + 1]
         sizes_s = d_i['sizes_i'][J + 1:J * 2 + 1]
@@ -330,7 +330,7 @@ class ValueIteration:
                                               - (x[j] - y) * sizes_x_n[j]
                                               + i_not_admitted
                                               + sizes_s_n[j])
-                                w += P_xy[j, x[j], y] * V[next_state]
+                                w += p_xy[j, x[j], y] * V[next_state]
                             if w > W[state]:
                                 W[state] = w
         return W
@@ -342,7 +342,7 @@ class ValueIteration:
             s.V = s.V.reshape(env.size)
             s.W = s.W.reshape(env.size_i)
             s.W = s.get_w(s.V, s.W, env.J, env.D, env.gamma,
-                          env.d_i1, env.d_i2, env.d_f1, env.P_xy)
+                          env.d_i1, env.d_i2, env.d_f1, env.p_xy)
             s.V = s.V.reshape(env.dim)
             s.W = s.W.reshape(env.dim_i)
             s.V_t = s.pi_learner.get_v(env, s.V, s.W)
@@ -361,7 +361,7 @@ class ValueIteration:
         s.Pi, _ = s.pi_learner.policy_improvement(s.V, s.W, s.Pi, env.J, env.D,
                                                   env.gamma, env.KEEP_IDLE,
                                                   env.d_i1, env.d_i2, env.d_f1,
-                                                  env.P_xy)
+                                                  env.p_xy)
         s.V = s.V.reshape(env.dim)
         s.W = s.W.reshape(env.dim_i)
         s.Pi = s.Pi.reshape(env.dim_i)
@@ -435,7 +435,7 @@ class OneStepPolicyImprovement:
         s.Pi, _ = s.pi_learner.policy_improvement(s.V_app, W, s.Pi, env.J,
                                                   env.D, env.gamma,
                                                   env.KEEP_IDLE, env.d_i1,
-                                                  env.d_i2, env.d_f1, env.P_xy)
+                                                  env.d_i2, env.d_f1, env.p_xy)
         s.V_app = s.V_app.reshape(env.dim)
         s.Pi = s.Pi.reshape(env.dim_i)
 
