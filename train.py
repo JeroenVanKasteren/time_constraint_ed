@@ -39,9 +39,9 @@ def load_args(raw_args=None):
     return args
 
 # Debug
-# args = {'instance': '01', 'method': 'ospi', 'time': '1-00:00:00',
-#         'job_id': 1, 'array_id': 1, 'x': 0}
-# args = tools.DotDict(args)
+args = {'instance': '01', 'method': 'ospi', 'time': '0-00:30:00',
+        'job_id': 1, 'array_id': 2, 'x': 0}
+args = tools.DotDict(args)
 
 
 def main(raw_args=None):
@@ -78,27 +78,28 @@ def main(raw_args=None):
     pi_learner = PolicyIteration()
     if args.method == 'vi':
         learner = ValueIteration(env, pi_learner)
-        v_file = (FILEPATH_V + 'v_' + args.instance + '_' + str(inst[0])
-                  + '_vi.npz')
+        v_file = ('v_' + args.instance + '_' + str(inst[0]) + '_vi.npz')
         if v_file in os.listdir(FILEPATH_V):
-            learner.V = np.load(v_file)
+            learner.V = np.load(FILEPATH_V + v_file)
         learner.value_iteration(env)
     else:
         learner = OneStepPolicyImprovement(env, pi_learner)
-        pi_file = (FILEPATH_V + 'pi_' + args.instance + '_' + str(inst[0])
-                   + '_ospi.npz')
+        pi_file = ('pi_' + args.instance + '_' + str(inst[0]) + '_ospi.npz')
         if pi_file in os.listdir(FILEPATH_V):
-            learner.pi = np.load(pi_file)
+            learner.Pi = np.load(FILEPATH_V + pi_file)
         else:
             learner.one_step_policy_improvement(env)
-        v_file = (FILEPATH_V + 'v_' + args.instance + '_' + str(inst[0])
-                  + '_ospi.npz')
+        v_file = ('v_' + args.instance + '_' + str(inst[0]) + '_ospi.npz')
         if v_file in os.listdir(FILEPATH_V):
-            learner.V = np.load(v_file)
+            learner.V = np.load(FILEPATH_V + v_file)
             learner.get_g(env, learner.V)
         else:
             learner.get_g(env, learner.V_app)
 
+    np.savez(FILEPATH_V + 'v_' + args.instance + '_' + str(inst[0]) + '_'
+             + args.method + '.npz', learner.V)
+    np.savez(FILEPATH_V + 'pi_' + args.instance + '_' + str(inst[0]) + '_'
+             + args.method + '.npz', learner.Pi)
     if learner.converged:
         inst.at[args.method + '_g'] = learner.g
         inst.at[args.method + '_iter'] = learner.iter
@@ -107,10 +108,6 @@ def main(raw_args=None):
         inst.to_csv(FILEPATH_RESULT + args.instance + '_' + str(inst[0]) +
                     '_' + args.method + '_job_' + str(args.job_id) + '_' +
                     str(args.array_id) + '.csv')
-    else:
-        np.savez(FILEPATH_V + 'v_' + args.instance + '_' + str(inst[0]) + '_'
-                 + args.method + '.npz', learner.V)
-
 
 if __name__ == '__main__':
     main()
