@@ -80,17 +80,20 @@ def main(raw_args=None):
         learner = ValueIteration(env, pi_learner)
         v_file = ('v_' + args.instance + '_' + str(inst[0]) + '_vi.npz')
         if v_file in os.listdir(FILEPATH_V):
+            print('Loading V from file')
             learner.V = np.load(FILEPATH_V + v_file)
         learner.value_iteration(env)
     else:
         learner = OneStepPolicyImprovement(env, pi_learner)
         pi_file = ('pi_' + args.instance + '_' + str(inst[0]) + '_ospi.npz')
         if pi_file in os.listdir(FILEPATH_V):
+            print('Loading Pi from file')
             learner.Pi = np.load(FILEPATH_V + pi_file)
         else:
             learner.one_step_policy_improvement(env)
         v_file = ('v_' + args.instance + '_' + str(inst[0]) + '_ospi.npz')
         if v_file in os.listdir(FILEPATH_V):
+            print('Loading V from file')
             learner.V = np.load(FILEPATH_V + v_file)
             learner.get_g(env, learner.V)
         else:
