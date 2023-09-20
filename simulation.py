@@ -32,11 +32,11 @@ lab = env.lab
 mu = env.mu
 p_xy = env.p_xy
 
-arrival_times = np.empty((J, N), dtype=np.float32)
-service_times = np.empty((J, N), dtype=np.float32)
+arrival_times = np.empty((J, N + 1), dtype=np.float32)  # +1 for last arrival
+service_times = np.empty((J, N + 1), dtype=np.float32)
 for i in range(J):
-    arrival_times[i, :] = env.rng.exponential(1 / lab[i], N)
-    service_times[i, :] = env.rng.exponential(1 / mu[i], N)
+    arrival_times[i, :] = env.rng.exponential(1 / lab[i], N + 1)
+    service_times[i, :] = env.rng.exponential(1 / mu[i], N + 1)
 
 policy = 'fcfs'  # 'fcfs' 'sdf' 'sdf_prior' 'cmu' 'ospi'
 
@@ -91,16 +91,14 @@ def policy(arr_times, time, x, s):
 
 @nb.njit
 def admission(avg_wait, heap, total_reward, arr, arr_times, dep, x, s, time):
-    """Assumed that sum(s)<S."""
-    pi = policy(arr_times, time, x)
+    """Assumes that sum(s)<S."""
+    pi = policy(arr_times, time, x, s)
     if pi < J:  # add departure & arrival of class pi
-        hq.heappush(heap, (time + service_times[pi, dep[pi]], pi,
-                           'departure'))
+        hq.heappush(heap, (time + service_times[pi, dep[pi]], pi, 'departure'))
         total_reward += r[pi] - c[pi] if x[pi] > gamma * t[pi] else r[pi]
         avg_wait[pi] = update_mean(avg_wait[pi], time - arr_times[pi],
                                    arr[pi])
-        hq.heappush(heap,
-                    (time + arrival_times[pi, arr[pi]], pi, 'arrival'))
+        hq.heappush(heap, (time + arrival_times[pi, arr[pi]], pi, 'arrival'))
     return avg_wait, heap, total_reward
 
 
@@ -134,9 +132,15 @@ def simulate_multi_class_system(N, arrival_times, service_times):
             arr_times[i] = time
             if np.sum(s) < S:
                 x = time - arr_times
-                avg_wait, heap, total_reward = admission()
+                avg_wait, heap, total_reward = admission(avg_wait, heap,
+                                                         total_reward, arr,
+                                                         arr_times, dep, x, s,
+                                                         time)
         else:  # type_event == 'departure':
-            heap, total_reward = admission()
+            avg_wait, heap, total_reward = admission(avg_wait, heap,
+                                                     total_reward, arr,
+                                                     arr_times, dep, x, s,
+                                                     time)
 
 def get_v_app_i(env, i):
     """Calculate V for a single queue."""
