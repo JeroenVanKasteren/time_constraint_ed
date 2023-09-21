@@ -44,7 +44,7 @@ policy = 'fcfs'  # 'fcfs' 'sdf' 'sdf_prior' 'cmu' 'ospi'
 @nb.njit
 def update_mean(mean, x, n):
     """Welford's method to update the mean."""
-    return mean + (x - mean) / n
+    return mean + (x - mean) / n  # avg_{n-1} = avg_{n-1} + (x_n - avg_{n-1})/n
 
 
 @nb.njit
@@ -96,9 +96,9 @@ def admission(avg_wait, heap, total_reward, arr, arr_times, dep, x, s, time):
     if pi < J:  # add departure & arrival of class pi
         hq.heappush(heap, (time + service_times[pi, dep[pi]], pi, 'departure'))
         total_reward += r[pi] - c[pi] if x[pi] > gamma * t[pi] else r[pi]
-        avg_wait[pi] = update_mean(avg_wait[pi], time - arr_times[pi],
-                                   arr[pi])
-        hq.heappush(heap, (time + arrival_times[pi, arr[pi]], pi, 'arrival'))
+        avg_wait[pi] = update_mean(avg_wait[pi], x[pi], arr[pi])
+        hq.heappush(heap,
+                    (arr_times[pi] + arrival_times[pi, arr[pi]], pi, 'arrival'))
     return avg_wait, heap, total_reward
 
 
@@ -107,6 +107,7 @@ def admission(avg_wait, heap, total_reward, arr, arr_times, dep, x, s, time):
 #          parallel=True, error_model='numpy')
 def simulate_multi_class_system(N, arrival_times, service_times):
     # initialize the system
+    time = 0.0
     s = np.zeros(J+1, dtype=np.int32)
     total_reward = np.zeros(J+1)
     arr = np.ones(J, dtype=np.int32)
@@ -123,13 +124,13 @@ def simulate_multi_class_system(N, arrival_times, service_times):
     while arr.sum() < N:
         # get next event
         event = hq.heappop(heap)
-        time = event[0]
+        time = event[0] if event[0] < time else time
         i = event[1]
         type_event = event[2]
 
         if type_event == 'arrival':  # arrival of FIL by design
             arr[i] += 1
-            arr_times[i] = time
+            arr_times[i] = event[0]
             if np.sum(s) < S:
                 x = time - arr_times
                 avg_wait, heap, total_reward = admission(avg_wait, heap,
