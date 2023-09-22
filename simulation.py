@@ -11,6 +11,7 @@ import numpy as np
 # import pandas as pd
 from time import perf_counter as clock
 from utils import TimeConstraintEDs as Env
+from utils import OneStepPolicyImprovement as Ospi
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
@@ -31,6 +32,7 @@ r = env.r
 lab = env.lab
 mu = env.mu
 p_xy = env.p_xy
+regret = np.max(r) - r + c
 
 arrival_times = np.empty((J, N + 1), dtype=np.float32)  # +1 for last arrival
 service_times = np.empty((J, N + 1), dtype=np.float32)
@@ -49,7 +51,8 @@ def update_mean(mean, x, n):
 
 @nb.njit
 def ospi(env, pi_learner):
-    learner = OneStepPolicyImprovement(env, pi_learner)
+    Ospi.get_v_app_i(env, i)
+
     pi = 0
     # x
     # s
@@ -76,15 +79,21 @@ def ospi(env, pi_learner):
 
 @nb.njit
 def policy(arr_times, time, x, s):
-    if policy == 'fcfs':
-        return np.argmax(x)
-    elif policy == 'sdf':
-        return np.argmin(t - x)
+    mask = x > 0  # If waiting
+    mask[i] = True  # or just arrived
+    if policy == 'fcfs':  # argmax(x)
+        return np.nanargmax(np.where(mask, x, np.nan))
+    elif policy == 'sdf':  # argmin(t - x)
+        return np.nanargmin(np.where(mask, t - x, np.nan))
     elif policy == 'sdf_prior':
-        y = t - x
-        return np.argmax(y == np.min(y[y >= 0]))
+        y = t - x  # Time till deadline
+        on_time = y >= 0
+        if np.any(on_time):
+            np.nanargmin(np.where(mask & on_time, t - x, np.nan))
+        else:  # FCFS
+            np.nanargmax(np.where(mask, x, np.nan))
     elif policy == 'cmu':
-        return np.argmax((time - arr_times) * lab * mu)
+        return np.argmax(regret * x * lab * mu)
     elif policy == 'ospi':
         return ospi(x, s) - 1  # TODO -1?
 
@@ -142,40 +151,6 @@ def simulate_multi_class_system(N, arrival_times, service_times):
                                                      total_reward, arr,
                                                      arr_times, dep, x, s,
                                                      time)
-
-def get_v_app_i(env, i):
-    """Calculate V for a single queue."""
-    s = env.s_star[i]
-    lab = env.lab[i]
-    mu = env.mu[i]
-    rho = env.rho[i]
-    a = env.a[i]
-    r = env.r[i]
-    g = env.g[i]
-    v_i = np.zeros(env.D + 1)
-
-    # V(x) for x<=0, with V(-s)=0
-    v_x_le_0 = lambda y: (1 - (y / a) ** s) / (1 - y / a) * np.exp(a - y)
-    v_i[0] = (g - lab * r) / lab * quad_vec(v_x_le_0, a, np.inf)[0]
-    # V(x) for x>0
-    frac = (s * mu + env.gamma) / (lab + env.gamma)
-    trm = np.exp(a) / a ** (s-1) * gamma_fun(s) * reg_up_inc_gamma(s, a)
-    x = np.arange(1, env.D + 1)
-    v_i[x] = (v_i[0] + (s * mu * r - g) / (env.gamma * s * mu * (1 - rho)**2)
-              * (lab + env.gamma - lab * x * (rho - 1)
-                 - (lab + env.gamma) * frac**x)
-              + 1 / (env.gamma * (rho - 1))
-              * (g - s * mu * r - env.gamma / lab * (g + (g - lab*r)/rho * trm))
-              * (-rho + frac**(x - 1)))
-    # -1_{x > gamma*t}[...]
-    x = np.arange(env.gamma * env.t[i] + 1, env.D + 1).astype(int)
-    v_i[x] -= env.c[i] / (env.gamma * (1 - rho)**2) * \
-        (lab + env.gamma - lab * (x - env.gamma * env.t[i] - 1)
-         * (rho - 1) - (lab + env.gamma) * frac**(x - env.gamma * env.t[i] - 1))
-    return v_i
-
-
-
 
 
 # def load_args(raw_args=None):
