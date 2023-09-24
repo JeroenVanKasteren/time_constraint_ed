@@ -50,28 +50,25 @@ def update_mean(mean, x, n):
 
 
 @nb.njit
-def ospi(env, pi_learner):
+def ospi(env, x, s, i):
     Ospi.get_v_app_i(env, i)
 
     pi = 0
     # x
     # s
-    # state = (i * d_i['sizes_i'][0] + np.sum(x * sizes_x + s * sizes_s))
-    # j is the class to admit
     # i indicates which class just arrived
     # i = J if no class arrived
-    for j in range(J):
+    for j in range(J):  # Class to admit
         if (x[j] > 0) or (j == i):
             w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
-            i_not_admitted = 0
+            i_not_admitted = 0  # TODO
             if (i < J) and (i != j):
                 i_not_admitted = sizes_x_n[i]
+            x_next = x.copy()
+            x_next[j] = y
+            s_next = s.copy()
+            s_next[j] += 1
             for y in range(x[j] + 1):
-                next_state = (np.sum(
-                    x * sizes_x_n + s * sizes_s_n)
-                              - (x[j] - y) * sizes_x_n[j]
-                              + i_not_admitted
-                              + sizes_s_n[j])
                 w += P_xy[j, x[j], y] * V[next_state]
             if w > W[state]:
                 W[state] = w
@@ -82,7 +79,7 @@ def policy(arr_times, time, x, s):
     mask = x > 0  # If waiting
     mask[i] = True  # or just arrived
     if policy == 'fcfs':  # argmax(x)
-        return np.nanargmax(np.where(mask, x, np.nan))
+        return np.nanargmax(np.where(mask, x, np.nan))S
     elif policy == 'sdf':  # argmin(t - x)
         return np.nanargmin(np.where(mask, t - x, np.nan))
     elif policy == 'sdf_prior':
