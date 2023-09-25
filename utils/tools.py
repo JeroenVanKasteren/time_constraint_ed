@@ -22,9 +22,12 @@ def strip_split(x):
 
 
 def get_time(time_string):
-    """Read in time in formats (D)D-HH:MM:SS, (H)H:MM:SS, or (M)M:SS."""
+    """Read in time in formats (D)D-HH:MM:SS, (H)H:MM:SS, or (M)M:SS.
+    Format in front of time is removed."""
     if ((time_string is not None) & (not pd.isnull(time_string)) &
             (time_string != np.inf)):
+        if '): ' in time_string:  # if readable format
+            time_string = time_string.split('): ')[1]
         if '-' in time_string:
             days, time = time_string.split('-')
         elif time_string.count(':') == 1:

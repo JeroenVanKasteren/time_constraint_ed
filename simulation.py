@@ -18,7 +18,7 @@ np.set_printoptions(precision=4, linewidth=150, suppress=True)
 N = 1000  # arrivals to simulate
 BATCH_SIZE = 100  # batch size for KPI
 
-env = Env(J=2, S=4, gamma=10, D=50, P=1e3, e=1e-5, seed=42,
+env = Env(J=3, S=4, gamma=10, D=50, P=1e3, e=1e-5, seed=42,
           max_time='0-00:10:30', convergence_check=10, print_modulo=100)
 
 heap_type = nb.typeof((0.0, 0, 'event'))  # (time, class, event)
@@ -51,7 +51,7 @@ def update_mean(mean, x, n):
 
 @nb.njit
 def ospi(env, x, s, i):
-    Ospi.get_v_app_i(env, i)
+
 
     pi = 0
     # x
@@ -72,6 +72,27 @@ def ospi(env, x, s, i):
                 w += P_xy[j, x[j], y] * V[next_state]
             if w > W[state]:
                 W[state] = w
+
+eye = np.eye(J, dtype=int)
+
+x = np.array([10, 14, 5])
+v = np.zeros((env.J, env.D + 1))
+for i in range(env.J):
+    v[i,] = Ospi.get_v_app_i(env, i)
+
+x_next = x if i == J else x + eye[i]
+v_sum = np.zeros(J)
+v_app = 0
+for j in range(J):
+    v_app += v[j, x_next[j]]
+    v_sum += v[j, x[j]]
+    v_sum[j] -= v[j, x[j]]
+
+pi = J
+w_max = v_app
+for j in range(J):
+    w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
+env.p_xy
 
 
 @nb.njit
