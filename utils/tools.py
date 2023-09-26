@@ -8,6 +8,7 @@ from time import strptime
 from sklearn.model_selection import ParameterGrid
 from utils import TimeConstraintEDs as Env
 
+
 def def_sizes(dim):
     """Docstring."""
     sizes = np.zeros(len(dim), np.int32)
@@ -88,6 +89,7 @@ def get_instance_grid(J, gamma, e, P, t, c, r, param_grid, max_target_prob):
           grid[grid['target_prob'] > max_target_prob])
     grid = grid[grid['target_prob'] < max_target_prob]
     return grid
+
 
 class DotDict(dict):
     """dot.notation access to dictionary attributes"""
