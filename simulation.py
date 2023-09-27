@@ -1,19 +1,21 @@
 """
 This file contains the simulation of the multi-class queueing system.
 
+TODO
+How to simulate when OSPI idles?
+
 Convert to a class when it works.
 """
 
-import argparse
+# import argparse
 import heapq as hq
 import numba as nb
 import numpy as np
 # import pandas as pd
-from time import perf_counter as clock
+# from time import perf_counter as clock
 from utils import TimeConstraintEDs as Env
 from utils import OneStepPolicyImprovement as Ospi
 
-np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
 N = 1000  # arrivals to simulate
 batch_size = 100  # batch size for KPI
@@ -55,7 +57,7 @@ def get_v_app(env):
     """Get the approximate value function for a given state."""
     v = np.zeros((env.J, env.D + 1))
     for i in range(env.J):
-        v[i,] = Ospi.get_v_app_i(env, i)
+        v[i, ] = Ospi.get_v_app_i(env, i)
     return v
 
 
@@ -63,8 +65,7 @@ heap_type = nb.typeof((0.0, 0, 'event'))  # (time, class, event)
 eye = np.eye(J, dtype=int)
 v = get_v_app(env)
 arrival_times, service_times = generate_times(J, N, lab, mu)
-kpi = np.zeros((N, 5))  # time, class, event, target_reached, waited
-
+kpi = np.zeros((N+1, 3))  # time, class, waited
 
 @nb.njit
 def ospi(x, i):
@@ -112,17 +113,20 @@ def policy(x, i):
 
 
 @nb.njit
-def admission(x, s, i, time, arr, dep, arr_times, heap, avg_wait, tot_reward):
+def admission(x, s, i, time, arr, n_admit, dep, arr_times, heap, kpi):
     """Assumes that sum(s)<S."""
     pi = policy(x, i)
     if pi < J:  # Take class pi into service, add its departure & new arrival
-        s[pi] += 1
+        kpi[n_admit, :] = time, pi, x[pi]
+        n_admit += 1
+        s += 1
         hq.heappush(heap, (time + service_times[pi, dep[pi]], pi, 'departure'))
-        tot_reward += r[pi] - c[pi] if x[pi] > gamma * t[pi] else r[pi]
-        avg_wait[pi] = update_mean(avg_wait[pi], x[pi], arr[pi])
         hq.heappush(heap,
                     (arr_times[pi] + arrival_times[pi, arr[pi]], pi, 'arrival'))
-    return avg_wait, heap, tot_reward, s
+    else:  # Idle
+        hq.heappush(heap,
+                    (time + 1/gamma, i, 'idle'))
+    return heap, kpi, n_admit, s
 
 
 @nb.njit
@@ -130,8 +134,9 @@ def simulate_multi_class_system(kpi):
     """Simulate a multi-class system."""
     # initialize the system
     time = 0.0
-    s = np.zeros(J+1, dtype=np.int32)
+    s = 0
     arr = np.ones(J, dtype=np.int32)
+    n_admit = 0
     dep = np.zeros(J, dtype=np.int32)
     avg_wait = np.zeros(J, dtype=np.float32)
     arr_times = np.zeros(J, dtype=np.float32)
@@ -146,102 +151,25 @@ def simulate_multi_class_system(kpi):
         time = event[0] if event[0] < time else time
         i = event[1]
         type_event = event[2]
-        if type_event == 'arrival':  # arrival of FIL by design
-            arr[i] += 1
-            arr_times[i] = event[0]
-            if np.sum(s) < S:
+        if type_event in ['arrival', 'idle']:  # arrival of FIL by design
+            if type_event == 'arrival':
+                arr[i] += 1
+                arr_times[i] = event[0]
+            if s < S:
                 x = time - arr_times
-                avg_wait, heap, tot_reward, s = \
-                    admission(x, s, i, time, arr, dep, arr_times, heap,
-                              avg_wait, tot_reward)
-        else:  # type_event == 'departure':
+                heap, kpi, n_admit, s = \
+                    admission(x, s, i, time, arr, n_admit, dep, arr_times, heap,
+                              kpi)
+        elif type_event == 'departure':
             dep[i] += 1
             s[i] -= 1  # ensures that sum(s) < S
             x = time - arr_times
-            avg_wait, heap, tot_reward, s = \
-                admission(x, s, J, time, arr, dep, arr_times, heap, avg_wait,
-                          tot_reward)
-    return tot_reward, arr, dep, avg_wait, arr_times
+            heap, kpi, n_admit, s = \
+                admission(x, s, i, time, arr, n_admit, dep, arr_times, heap,
+                          kpi)
+    return kpi
 
+simulate_multi_class_system(kpi)
 
-simulate_multi_class_system
-# def load_args(raw_args=None):
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument('--job_id', default='0')  # SULRM_JOBID
-#     parser.add_argument('--array_id', default='0')  # SLURM_ARRAY_TASK_ID
-#     parser.add_argument('--time')  # SLURM_TIMELIMIT
-#     parser.add_argument('--instance', default='01')  # User input
-#     parser.add_argument('--method')  # User input, vi or ospi
-#     parser.add_argument('--x', default=0)  # User input
-#     args = parser.parse_args(raw_args)
-#     args.job_id = int(args.job_id)
-#     args.array_id = int(args.array_id)
-#     args.x = float(args.x)
-#     return args
-#
-# # Debug
-# # args = {'instance': '01', 'method': 'ospi', 'time': '0-00:03:00',
-# #         'job_id': 1, 'array_id': 1, 'x': 0}
-# # args = tools.DotDict(args)
-#
-#
-# def main(raw_args=None):
-#     args = load_args(raw_args)
-#
-#     # ---- Problem ---- #
-#     # seed = args.job_id * args.array_id
-#
-#     inst = pd.read_csv(FILEPATH_INSTANCE + args.instance + '.csv')
-#     cols = ['t', 'c', 'r', 'lab', 'mu']
-#     inst.loc[:, cols] = inst.loc[:, cols].applymap(tools.strip_split)
-#     inst = inst[pd.isnull(inst[args.method + '_g'])]
-#     inst[args.method + '_time'] = inst[args.method + '_time'].map(
-#         lambda x: x if pd.isnull(x) else tools.get_time(x))
-#     inst = inst[(inst[args.method + '_time'] < tools.get_time(args.time)) |
-#                 pd.isnull(inst[args.method + '_time'])]
-#
-#     if args.array_id - 1 + args.x >= len(inst):
-#         print('No more instances to solve within', args.time,
-#               'index:', args.array_id - 1 + args.x )
-#         exit(0)
-#     inst = inst.loc[args.array_id - 1 + args.x]
-#
-#     env = Env(J=inst.J, S=inst.S, D=inst.D, gamma=inst.gamma,
-#               e=inst.e, t=inst.t, c=inst.c, r=inst.r, P=inst.P,
-#               lab=inst.lab, mu=inst.mu, max_time=args.time)
-#     inst[args.method + '_job_id'] = str(args.job_id) + '_' + str(args.array_id)
-#     inst[args.method + '_time'] = args.time
-#     inst.to_csv(FILEPATH_RESULT + args.instance + '_' + str(inst[0]) +
-#                 '_' + args.method +
-#                 '_job_' + str(args.job_id) + '_' + str(args.array_id) + '.csv')
-#
-#     pi_learner = PolicyIteration()
-#     if args.method == 'vi':
-#         learner = ValueIteration(env, pi_learner)
-#         learner.value_iteration(env)
-#     else:
-#         learner = OneStepPolicyImprovement(env, pi_learner)
-#         learner.one_step_policy_improvement(env)
-#         learner.get_g(env)
-#
-#     # save g trajectory
-#     # vi_learner.get_policy(env)
-#     # np.savez('Results/policy_' + args.id + '.npz',
-#     #          vi_learner.Pi, ospi_learner.Pi,
-#     #          vi_learner.V, ospi_learner.V_app)
-#     # np.load('Results/policy_SLURM_ARRAY_TASK_ID.npz')
-#
-#     if learner.converged:
-#         inst.at[args.method + '_g'] = learner.g
-#         inst.at[args.method + '_g_var'] = learner.N
-#         inst.at[args.method + '_time'] = tools.sec_to_time(clock()
-#                                                            - env.start_time)
-#         inst.to_csv(FILEPATH_RESULT + args.instance + '_' + str(inst[0]) +
-#                     '_' + args.method + '_job_' + str(args.job_id) + '_' +
-#                     str(args.array_id) + '.csv')
-#
-#
-# if __name__ == '__main__':
-#     main()
-#
-
+if __name__ == '__main__':
+    main()
