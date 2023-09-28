@@ -115,8 +115,8 @@ class TimeConstraintEDs:
         s.a = array(lab / mu, float)
         s.s_star = array(s.server_allocation(), float)
         s.rho = array(s.a / s.s_star, float)
-        s.pi_0 = s.get_pi_0(s.s_star, s.rho, s.lab)
-        s.tail_prob = s.get_tail_prob(s.s_star, s.rho, s.lab, s.mu,
+        s.pi_0 = s.get_pi_0(s.gamma, s.s_star, s.rho, s.lab)
+        s.tail_prob = s.get_tail_prob(s.gamma, s.s_star, s.rho, s.lab, s.mu,
                                       s.pi_0, s.gamma * s.t)
         s.g = s.get_g_app(s.pi_0, s.tail_prob)
         s.tau = float(s.S * max(s.mu) + sum(np.maximum(s.lab, s.gamma)))
@@ -125,15 +125,16 @@ class TimeConstraintEDs:
             s.D: int = kwargs.get('D')
         else:
             s.D: int = s.get_D()
-        s.cap_prob_i = s.get_tail_prob(s.s_star, s.rho,
+        s.cap_prob_i = s.get_tail_prob(s.gamma, s.s_star, s.rho,
                                        s.lab, s.mu, s.pi_0, s.D)
         mu = sum(s.lab) / sum(s.lab / s.mu)
-        pi_0 = s.get_pi_0(s.S, s.load, sum(s.lab))
-        s.cap_prob = s.get_tail_prob(s.S, s.load, sum(s.lab), mu, pi_0, s.D)
-        s.target_prob = s.get_tail_prob(s.S, s.load, sum(s.lab), mu, pi_0,
-                                        max(s.t))
+        pi_0 = s.get_pi_0(s.gamma, s.S, s.load, sum(s.lab))
+        s.cap_prob = s.get_tail_prob(s.gamma, s.S, s.load, sum(s.lab),
+                                     mu, pi_0, s.D)
+        s.target_prob = s.get_tail_prob(s.gamma, s.S, s.load, sum(s.lab), mu,
+                                        pi_0, max(s.t))
 
-        s.p_xy = s.trans_prob()
+        s.p_xy = s.trans_prob(s.J, s.D, s.lab, s.gamma)
 
         s.dim = tuple(np.repeat([s.D + 1, s.S + 1], s.J))
         s.sizes = utils.tools.def_sizes(s.dim)
@@ -214,20 +215,21 @@ class TimeConstraintEDs:
     def get_D(self):
         lab = sum(self.lab)
         mu = lab / sum(self.lab / self.mu)
-        pi_0 = self.get_pi_0(self.S, self.load, lab)
-        prob_delay = self.get_tail_prob(self.S, self.load, lab, mu, pi_0, 0)
+        pi_0 = self.get_pi_0(self.gamma, self.S, self.load, lab)
+        prob_delay = self.get_tail_prob(self.gamma, self.S, self.load,
+                                        lab, mu, pi_0, 0)
         D = int(np.ceil(-np.log(self.ZERO_ONE_PERC / prob_delay) /
                         (self.S * mu - lab) * self.gamma))
         return D
 
-    def trans_prob(self):
+    @staticmethod
+    def trans_prob(J, D, lab, gamma):
         """p_xy(i, x, y) transition prob. for class i to jump from x to y."""
-        p_xy = np.zeros((self.J, self.D + 1, self.D + 1))
-        gamma = self.gamma
-        A = np.indices((self.D + 1, self.D + 1))  # x=A[0], y=A[1]
+        p_xy = np.zeros((J, D + 1, D + 1))
+        A = np.indices((D + 1, D + 1))  # x=A[0], y=A[1]
         mask_tril = A[0, 1:, 1:] >= A[1, 1:, 1:]
-        for i in range(self.J):
-            lab = self.lab[i]
+        for i in range(J):
+            lab = lab[i]
             p_xy[i, 1:, 1:][mask_tril] = ((gamma / (lab + gamma))
                                           ** (A[0, 1:, 1:][mask_tril]
                                               - A[1, 1:, 1:][mask_tril])
@@ -236,18 +238,20 @@ class TimeConstraintEDs:
         p_xy[:, 0, 0] = 1
         return p_xy
 
-    def get_pi_0(self, s, rho, lab):
+    @staticmethod
+    def get_pi_0(gamma, s, rho, lab):
         """Calculate pi(0)."""
         return (1 / (s * np.exp(s * rho) / (s * rho) ** s
                      * gamma_fun(s) * reg_up_inc_gamma(s, s * rho)
-                     + (self.gamma + rho * lab) / self.gamma
+                     + (gamma + rho * lab) / gamma
                      * (1 / (1 - rho))))
 
-    def get_tail_prob(env, s, rho, lab, mu, pi_0, n):
+    @staticmethod
+    def get_tail_prob(gamma, s, rho, lab, mu, pi_0, n):
         """P(W>t)."""
-        return (pi_0 / (1 - rho) * (lab + env.gamma)
-                / (env.gamma + lab * pi_0)
-                * (1 - (s * mu - lab) / (s * mu + env.gamma)) ** n)
+        return (pi_0 / (1 - rho) * (lab + gamma)
+                / (gamma + lab * pi_0)
+                * (1 - (s * mu - lab) / (s * mu + gamma)) ** n)
 
     def get_g_app(s, pi_0, tail_prob):
         return (s.r - s.c * tail_prob) * (s.lab + pi_0 * s.lab ** 2 / s.gamma)
@@ -256,8 +260,8 @@ class TimeConstraintEDs:
         """Sums of g per queue, note that -reward is returned."""
         with np.errstate(divide='ignore', invalid='ignore'):
             rho = env.a / s
-            pi_0 = env.get_pi_0(s, rho, env.lab)
-            tail_prob = env.get_tail_prob(s, rho, env.lab, env.mu,
+            pi_0 = env.get_pi_0(env.gamma, s, rho, env.lab)
+            tail_prob = env.get_tail_prob(env.gamma, s, rho, env.lab, env.mu,
                                           pi_0, env.gamma * env.t)
         tail_prob[~np.isfinite(tail_prob)] = 1  # Correct dividing by 0
         pi_0[~np.isfinite(tail_prob)] = 0  # Correct dividing by 0

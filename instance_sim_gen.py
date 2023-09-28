@@ -25,8 +25,6 @@ MU_1_GRID = [1/3]
 
 grid = tools.get_instance_grid(J=2,
                                gamma=20,  # What value of gamma to use?
-                               e=1e-5,
-                               P=1e3,
                                t=np.array([1]*J),
                                c=np.array([1]*J),
                                r=np.array([1]*J),
