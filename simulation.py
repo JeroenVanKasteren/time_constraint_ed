@@ -16,17 +16,28 @@ import numpy as np
 from utils import TimeConstraintEDs as Env
 from utils import OneStepPolicyImprovement as Ospi
 
-
 N = 1000  # arrivals to simulate
 batch_size = 100  # batch size for KPI
 policy = 'fcfs'  # 'fcfs' 'sdf' 'sdf_prior' 'cmu' 'ospi'
+
+env = Env(J=3,
+          S=5,
+          D=100,
+          gamma=30,
+          e=0.1,
+          t=inst.t,
+          c=inst.c, r=inst.r, P=inst.P,
+              lab=inst.lab, mu=inst.mu, max_time=args.time,
+              convergence_check=10)
 
 J = 3
 S = 5
 gamma = 30
 D = 100
-t = env.t
-lab = env.lab
+t = np.array([1]*J)
+c = np.array([1]*J)
+r = np.array([1]*J)
+
 # load: float = sum(lab / mu) / s.S
 # s.imbalance = kwargs.get('imbalance',
 #                          s.rng.uniform(s.imbalance_MIN,
@@ -72,8 +83,8 @@ s.target_prob = s.get_tail_prob(s.gamma, s.S, s.load, sum(s.lab), mu,
 
 s.p_xy = s.trans_prob(s.J, s.D, s.lab, s.gamma)
 
-env = Env(J=J, S=S, D=D, gamma=gamma, t=t, c=c, r=r, P=inst.P,
-          lab=inst.lab, mu=inst.mu, max_time=args.time,
+env = Env(J=J, S=S, D=D, gamma=gamma, t=t, c=c, r=r, P=P,
+          lab=lab, mu=mu, max_time=time,
           convergence_check=10, seed=42)
 
 # @nb.njit
