@@ -91,6 +91,11 @@ def get_instance_grid(J, gamma, e, P, t, c, r, param_grid, max_target_prob):
     return grid
 
 
+def update_mean(mean, x, n):
+    """Welford's method to update the mean. Can be set to numba function."""
+    return mean + (x - mean) / n  # avg_{n-1} = avg_{n-1} + (x_n - avg_{n-1})/n
+
+
 class DotDict(dict):
     """dot.notation access to dictionary attributes"""
     __getattr__ = dict.get

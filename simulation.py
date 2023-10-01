@@ -16,6 +16,7 @@ import numpy as np
 from utils import TimeConstraintEDs as Env
 from utils import OneStepPolicyImprovement as Ospi
 
+# Constants
 N = 1000  # arrivals to simulate
 batch_size = 100  # batch size for KPI
 policy = 'fcfs'  # 'fcfs' 'sdf' 'sdf_prior' 'cmu' 'ospi'
@@ -30,67 +31,20 @@ env = Env(J=3,
               lab=inst.lab, mu=inst.mu, max_time=args.time,
               convergence_check=10)
 
-J = 3
-S = 5
-gamma = 30
-D = 100
-t = np.array([1]*J)
+# Set global variables
+J = env.J
+S = env.S
+gamma = env.gamma
+D = env.D
+t = np.array([30, 60, 120])
 c = np.array([1]*J)
 r = np.array([1]*J)
-
-# load: float = sum(lab / mu) / s.S
-# s.imbalance = kwargs.get('imbalance',
-#                          s.rng.uniform(s.imbalance_MIN,
-#                                        s.imbalance_MAX, s.J))
-# s.load = kwargs.get('load', s.rng.uniform(s.load_MIN, s.load_MAX))
-# lab = mu * s.S * s.load * s.imbalance / sum(s.imbalance)
+lab = env.lab
+mu = env.mu
 
 p_xy = env.p_xy
 regret = np.max(r) - r + c
 cmu = c * mu
-
-if any((t % (1 / s.gamma) != 0) | (t < 1 / s.gamma)):
-    t = np.floor(t * s.gamma) / s.gamma
-    if s.trace:
-        print('Rounded t down to nearest multiple of 1/gamma.\n')
-lab = array(lab, float)
-mu = array(mu, float)
-t = array(t, float)
-c = array(kwargs.get('c', array([1] * s.J)), float)
-r = array(kwargs.get('r', array([1] * s.J)), float)
-
-s.a = array(lab / mu, float)
-s.s_star = array(s.server_allocation(), float)
-s.rho = array(s.a / s.s_star, float)
-s.pi_0 = s.get_pi_0(s.gamma, s.s_star, s.rho, s.lab)
-s.tail_prob = s.get_tail_prob(s.gamma, s.s_star, s.rho, s.lab, s.mu,
-                              s.pi_0, s.gamma * s.t)
-s.g = s.get_g_app(s.pi_0, s.tail_prob)
-s.tau = float(s.S * max(s.mu) + sum(np.maximum(s.lab, s.gamma)))
-
-if 'D' in kwargs:
-    s.D: int = kwargs.get('D')
-else:
-    s.D: int = s.get_D()
-s.cap_prob_i = s.get_tail_prob(s.gamma, s.s_star, s.rho,
-                               s.lab, s.mu, s.pi_0, s.D)
-mu = sum(s.lab) / sum(s.lab / s.mu)
-pi_0 = s.get_pi_0(s.gamma, s.S, s.load, sum(s.lab))
-s.cap_prob = s.get_tail_prob(s.gamma, s.S, s.load, sum(s.lab),
-                             mu, pi_0, s.D)
-s.target_prob = s.get_tail_prob(s.gamma, s.S, s.load, sum(s.lab), mu,
-                                pi_0, max(s.t))
-
-s.p_xy = s.trans_prob(s.J, s.D, s.lab, s.gamma)
-
-env = Env(J=J, S=S, D=D, gamma=gamma, t=t, c=c, r=r, P=P,
-          lab=lab, mu=mu, max_time=time,
-          convergence_check=10, seed=42)
-
-# @nb.njit
-# def update_mean(mean, x, n):
-#    """Welford's method to update the mean."""
-#    return mean + (x - mean) / n  # avg_{n-1} = avg_{n-1} + (x_n - avg_{n-1})/n
 
 
 def generate_times(J, N, lab, mu):
@@ -116,6 +70,7 @@ eye = np.eye(J, dtype=int)
 v = get_v_app(env)
 arrival_times, service_times = generate_times(J, N, lab, mu)
 kpi = np.zeros((N+1, 3))  # time, class, waited
+
 
 @nb.njit
 def ospi(x, i):
@@ -219,7 +174,8 @@ def simulate_multi_class_system(kpi):
                           kpi)
     return kpi
 
-simulate_multi_class_system(kpi)
 
-if __name__ == '__main__':
-    main()
+kpi = simulate_multi_class_system(kpi)
+
+# if __name__ == '__main__':
+#     main()
