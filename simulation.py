@@ -1,46 +1,34 @@
 """
 This file contains the simulation of the multi-class queueing system.
-
-TODO
-How to simulate when OSPI idles?
-
-Convert to a class when it works.
 """
 
 # import argparse
 import heapq as hq
 import numba as nb
 import numpy as np
-# import pandas as pd
+import pandas as pd
 # from time import perf_counter as clock
 from utils import TimeConstraintEDs as Env
 from utils import OneStepPolicyImprovement as Ospi
 
-# Constants
-N = 1000  # arrivals to simulate
+# global constants
+N = 10  # arrivals to simulate
 batch_size = 100  # batch size for KPI
 policy = 'fcfs'  # 'fcfs' 'sdf' 'sdf_prior' 'cmu' 'ospi'
 
-env = Env(J=3,
-          S=5,
-          D=100,
-          gamma=30,
-          e=0.1,
-          t=inst.t,
-          c=inst.c, r=inst.r, P=inst.P,
-              lab=inst.lab, mu=inst.mu, max_time=args.time,
-              convergence_check=10)
-
-# Set global variables
-J = env.J
-S = env.S
-gamma = env.gamma
-D = env.D
+J = 3
+S = 5
+gamma = 30
+D = 100
 t = np.array([30, 60, 120])
 c = np.array([1]*J)
 r = np.array([1]*J)
+# lab = np.array([14/60*0.5, 14/60*0.4, 14/60*0.1])
+imbalance = np.array([1/2, 1, 2])
+mu = np.array([1/10, 1/20, 1/30])
+env = Env(J=J, S=S, D=D, gamma=gamma, t=t, c=c, r=r, mu=mu, imbalance=imbalance)
+# lab=lab, e=0.1, max_time=args.time,convergence_check=10)
 lab = env.lab
-mu = env.mu
 
 p_xy = env.p_xy
 regret = np.max(r) - r + c
@@ -54,7 +42,7 @@ def generate_times(J, N, lab, mu):
     for i in range(J):
         arrival_times[i, :] = env.rng.exponential(1 / lab[i], N + 1)
         service_times[i, :] = env.rng.exponential(1 / mu[i], N + 1)
-    return arrival_times, service_times
+    return nb.typed.List(arrival_times), nb.typed.List(service_times)
 
 
 def get_v_app(env):
@@ -72,10 +60,10 @@ arrival_times, service_times = generate_times(J, N, lab, mu)
 kpi = np.zeros((N+1, 3))  # time, class, waited
 
 
-@nb.njit
+# @nb.njit
 def ospi(x, i):
     """One-step policy improvement.
-    i indicates which class just arrived, i = J if no class arrived.
+    i indicate which class just arrived, i = J if no class arrived.
     """
     x = np.minimum(np.round(x / gamma), D)
     pi = J
@@ -96,7 +84,7 @@ def ospi(x, i):
     return pi
 
 
-@nb.njit
+# @nb.njit
 def policy(x, i):
     if policy == 'ospi':
         return ospi(x, i)
@@ -117,7 +105,7 @@ def policy(x, i):
         return np.nanargmax(np.where(mask, cmu, np.nan))
 
 
-@nb.njit
+# @nb.njit
 def admission(x, s, i, time, arr, n_admit, dep, arr_times, heap, kpi):
     """Assumes that sum(s)<S."""
     pi = policy(x, i)
@@ -125,16 +113,16 @@ def admission(x, s, i, time, arr, n_admit, dep, arr_times, heap, kpi):
         kpi[n_admit, :] = time, pi, x[pi]
         n_admit += 1
         s += 1
-        hq.heappush(heap, (time + service_times[pi, dep[pi]], pi, 'departure'))
+        hq.heappush(heap, (time + service_times[pi][dep[pi]], pi, 'departure'))
         hq.heappush(heap,
-                    (arr_times[pi] + arrival_times[pi, arr[pi]], pi, 'arrival'))
+                    (arr_times[pi] + arrival_times[pi][arr[pi]], pi, 'arrival'))
     else:  # Idle
         hq.heappush(heap,
                     (time + 1/gamma, i, 'idle'))
     return heap, kpi, n_admit, s
 
 
-@nb.njit
+#@nb.njit
 def simulate_multi_class_system(kpi):
     """Simulate a multi-class system."""
     # initialize the system
@@ -148,7 +136,7 @@ def simulate_multi_class_system(kpi):
     heap = nb.typed.List.empty_list(heap_type)
     # initialize the event list
     for i in range(J):
-        hq.heappush(heap, (arrival_times[i, 0], i, 'arrival'))
+        hq.heappush(heap, (arrival_times[i][0], i, 'arrival'))
     # run the simulation
     while arr.sum() < N:
         # get next event
@@ -176,6 +164,14 @@ def simulate_multi_class_system(kpi):
 
 
 kpi = simulate_multi_class_system(kpi)
+
+kpi_df = pd.Dataframe(kpi, columns=['time', 'class', 'wait'])
+kpi_df['g', 'target', 'avg_wait'] = np.nan
+for i in range(J):
+    mask = (kpi[1] == i)
+    kpi[mask, 'reward'] = np.where(kpi[mask, 'wait'] < t[i], r[i], r[i] - c[i])
+    kpi[mask, 'g'] = kpi[mask, 'reward'].cumsum() / kpi[mask, 'reward'].cumsum()
+
 
 # if __name__ == '__main__':
 #     main()

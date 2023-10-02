@@ -39,9 +39,9 @@ def load_args(raw_args=None):
     return args
 
 # Debug
-args = {'instance': '01', 'method': 'ospi', 'time': '0-00:30:00',
-        'job_id': 1, 'array_id': 2, 'x': 0}
-args = tools.DotDict(args)
+# args = {'instance': '01', 'method': 'ospi', 'time': '0-00:30:00',
+#         'job_id': 1, 'array_id': 2, 'x': 0}
+# args = tools.DotDict(args)
 
 
 def main(raw_args=None):
@@ -54,8 +54,8 @@ def main(raw_args=None):
     cols = ['t', 'c', 'r', 'lab', 'mu']
     inst.loc[:, cols] = inst.loc[:, cols].applymap(tools.strip_split)
     inst = inst[pd.isnull(inst[args.method + '_g'])]
-    inst[args.method + '_time'] = inst[args.method + '_time'].map(
-        lambda x: x if pd.isnull(x) else tools.get_time(x))
+    # inst[args.method + '_time'] = inst[args.method + '_time'].map(
+    #     lambda x: x if pd.isnull(x) else tools.get_time(x))
     # inst = inst[(inst[args.method + '_time'] < tools.get_time(args.time)) |
     #             pd.isnull(inst[args.method + '_time'])]
 
@@ -70,10 +70,6 @@ def main(raw_args=None):
               lab=inst.lab, mu=inst.mu, max_time=args.time,
               convergence_check=10)
     inst[args.method + '_job_id'] = str(args.job_id) + '_' + str(args.array_id)
-    inst[args.method + '_time'] = args.time
-    inst.to_csv(FILEPATH_RESULT + args.instance + '_' + str(inst[0]) +
-                '_' + args.method +
-                '_job_' + str(args.job_id) + '_' + str(args.array_id) + '.csv')
 
     pi_learner = PolicyIteration()
     if args.method == 'vi':
@@ -98,19 +94,24 @@ def main(raw_args=None):
             learner.get_g(env, learner.V)
         else:
             learner.get_g(env, learner.V_app)
+    if learner.g != 0:
+        inst.at[args.method + '_g_tmp'] = learner.g
+    if learner.converged:
+        inst.at[args.method + '_g'] = learner.g
+
+    inst.at[args.method + '_time'] = \
+        tools.sec_to_time(clock() - env.start_time +
+                          tools.get_time(inst.at[args.method + '_time']))
+    inst.at[args.method + '_iter'] += learner.iter
 
     np.savez(FILEPATH_V + 'v_' + args.instance + '_' + str(inst[0]) + '_'
              + args.method + '.npz', learner.V)
     np.savez(FILEPATH_V + 'pi_' + args.instance + '_' + str(inst[0]) + '_'
              + args.method + '.npz', learner.Pi)
-    if learner.converged:
-        inst.at[args.method + '_g'] = learner.g
-        inst.at[args.method + '_iter'] = learner.iter
-        inst.at[args.method + '_time'] = tools.sec_to_time(clock()
-                                                           - env.start_time)
-        inst.to_csv(FILEPATH_RESULT + args.instance + '_' + str(inst[0]) +
-                    '_' + args.method + '_job_' + str(args.job_id) + '_' +
-                    str(args.array_id) + '.csv')
+
+    inst.to_csv(FILEPATH_RESULT + args.instance + '_' + str(inst[0]) +
+                '_' + args.method + '_job_' + str(args.job_id) + '_' +
+                str(args.array_id) + '.csv')
 
 if __name__ == '__main__':
     main()

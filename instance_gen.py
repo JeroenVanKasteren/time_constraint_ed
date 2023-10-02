@@ -15,9 +15,11 @@ FILEPATH_INSTANCE = 'results/instances_01.csv'
 instance_columns = ['J', 'S', 'D', 'size', 'size_i',
                     'gamma', 'e', 't', 'c', 'r', 'P',
                     'lab', 'mu', 'load', 'target_prob',
-                    'vi_job_id', 'vi_attempts', 'vi_time', 'vi_iter', 'vi_g',
+                    'vi_job_id', 'vi_attempts', 'vi_time', 'vi_iter',
+                    'vi_g_tmp', 'vi_g',
                     'ospi_job_id',
-                    'ospi_attempts', 'ospi_time', 'ospi_iter', 'ospi_g',
+                    'ospi_attempts', 'ospi_time', 'ospi_iter',
+                    'vi_g_tmp', 'ospi_g',
                     'opt_gap']
 
 J = 2
@@ -45,13 +47,15 @@ grid = tools.generate_instance_grid(J=2,
 # Derive solved from value for g.
 grid['vi_job_id'] = ''
 grid['vi_attempts'] = 0
-grid['vi_time'] = np.nan
-grid['vi_iter'] = np.nan
+grid['vi_time'] = '00:00'
+grid['vi_iter'] = 0
+grid['vi_g_tmp'] = np.nan
 grid['vi_g'] = np.nan
 grid['ospi_job_id'] = ''
 grid['ospi_attempts'] = 0
-grid['ospi_time'] = np.nan
-grid['ospi_iter'] = np.nan
+grid['ospi_time'] = '00:00'
+grid['ospi_iter'] = 0
+grid['ospi_g_tmp'] = np.nan
 grid['ospi_g'] = np.nan
 grid['opt_gap'] = np.nan
 grid = grid[instance_columns]

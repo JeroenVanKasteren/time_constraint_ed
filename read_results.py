@@ -27,11 +27,12 @@ for file in os.listdir(FILEPATH_RESULT):
     result = pd.read_csv(FILEPATH_RESULT + file, index_col=0)
     index = int(result.loc['Unnamed: 0'][0])
     method = 'vi' if 'vi' in file else 'ospi'
+    inst.loc[index, method + '_iter'] = result.loc[method + '_iter'][0]
+    inst.loc[index, method + '_time'] = result.loc[method + '_time'][0]
+    inst.loc[index, method + '_g_tmp'] = result.loc[method + '_g_tmp'][0]
     if pd.isnull(inst.loc[index, method + '_g']):
         inst.loc[index, method + '_job_id'] = result.loc[method + '_job_id'][0]
         inst.loc[index, method + '_attempts'] += 1
-        inst.loc[index, method + '_time'] = result.loc[method + '_time'][0]
-        inst.loc[index, method + '_iter'] = result.loc[method + '_iter'][0]
         inst.loc[index, method + '_g'] = result.loc[method + '_g'][0]
     else:
         print('Instance', INSTANCE_ID + '_' + str(index),

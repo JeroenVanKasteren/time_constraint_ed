@@ -229,12 +229,12 @@ class TimeConstraintEDs:
         A = np.indices((D + 1, D + 1))  # x=A[0], y=A[1]
         mask_tril = A[0, 1:, 1:] >= A[1, 1:, 1:]
         for i in range(J):
-            lab = lab[i]
-            p_xy[i, 1:, 1:][mask_tril] = ((gamma / (lab + gamma))
+            lab_i = lab[i]
+            p_xy[i, 1:, 1:][mask_tril] = ((gamma / (lab_i + gamma))
                                           ** (A[0, 1:, 1:][mask_tril]
                                               - A[1, 1:, 1:][mask_tril])
-                                          * lab / (lab + gamma))
-            p_xy[i, 1:, 0] = (gamma / (lab + gamma)) ** A[0, 1:, 0]
+                                          * lab_i / (lab_i + gamma))
+            p_xy[i, 1:, 0] = (gamma / (lab_i + gamma)) ** A[0, 1:, 0]
         p_xy[:, 0, 0] = 1
         return p_xy
 
