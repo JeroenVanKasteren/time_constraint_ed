@@ -14,7 +14,7 @@ from utils import OneStepPolicyImprovement as Ospi
 # global constants
 N = 10  # arrivals to simulate
 batch_size = 100  # batch size for KPI
-policy = 'fcfs'  # 'fcfs' 'sdf' 'sdf_prior' 'cmu' 'ospi'
+strategy = 'fcfs'  # 'fcfs' 'sdf' 'sdf_prior' 'cmu' 'ospi'
 
 J = 3
 S = 5
@@ -24,9 +24,11 @@ t = np.array([30, 60, 120])
 c = np.array([1]*J)
 r = np.array([1]*J)
 # lab = np.array([14/60*0.5, 14/60*0.4, 14/60*0.1])
-imbalance = np.array([1/2, 1, 2])
+imbalance = np.array([0.5, 0.4, 0.1])
 mu = np.array([1/10, 1/20, 1/30])
-env = Env(J=J, S=S, D=D, gamma=gamma, t=t, c=c, r=r, mu=mu, imbalance=imbalance)
+load = 0.75
+env = Env(J=J, S=S, D=D, gamma=gamma, t=t, c=c, r=r, mu=mu, load=load,
+          imbalance=imbalance)
 # lab=lab, e=0.1, max_time=args.time,convergence_check=10)
 lab = env.lab
 
@@ -37,12 +39,12 @@ cmu = c * mu
 
 def generate_times(J, N, lab, mu):
     """Generate exponential arrival and service times."""
-    arrival_times = np.empty((J, N + 1), dtype=np.float32)  # +1, last arrival
-    service_times = np.empty((J, N + 1), dtype=np.float32)
+    arrival_times = nb.typed.List[np.float32]()  # +1, last arrival
+    service_times = nb.typed.List[np.float32]()
     for i in range(J):
-        arrival_times[i, :] = env.rng.exponential(1 / lab[i], N + 1)
-        service_times[i, :] = env.rng.exponential(1 / mu[i], N + 1)
-    return nb.typed.List(arrival_times), nb.typed.List(service_times)
+        arrival_times.append(nb.typed.List(env.rng.exponential(1 / lab[i], N + 1)))
+        service_times.append(nb.typed.List(env.rng.exponential(1 / mu[i], N + 1)))
+    return arrival_times, service_times
 
 
 def get_v_app(env):
@@ -86,22 +88,22 @@ def ospi(x, i):
 
 # @nb.njit
 def policy(x, i):
-    if policy == 'ospi':
+    if strategy == 'ospi':
         return ospi(x, i)
     mask = x > 0  # If waiting
     mask[i] = True  # or just arrived
-    if policy == 'fcfs':  # argmax(x)
+    if strategy == 'fcfs':  # argmax(x)
         return np.nanargmax(np.where(mask, x, np.nan))
-    elif policy == 'sdf':  # argmin(t - x)
+    elif strategy == 'sdf':  # argmin(t - x)
         return np.nanargmin(np.where(mask, t - x, np.nan))
-    elif policy == 'sdf_prior':
+    elif strategy == 'sdf_prior':
         y = t - x  # Time till deadline
         on_time = y >= 0
         if np.any(on_time):
             np.nanargmin(np.where(mask & on_time, t - x, np.nan))
         else:  # FCFS
             np.nanargmax(np.where(mask, x, np.nan))
-    elif policy == 'cmu':
+    elif strategy == 'cmu':
         return np.nanargmax(np.where(mask, cmu, np.nan))
 
 
@@ -128,12 +130,12 @@ def simulate_multi_class_system(kpi):
     # initialize the system
     time = 0.0
     s = 0
-    arr = np.ones(J, dtype=np.int32)
+    arr = np.zeros(J, dtype=np.int32)
+    arr_times = np.zeros(J, dtype=np.float32)
     n_admit = 0
     dep = np.zeros(J, dtype=np.int32)
-    avg_wait = np.zeros(J, dtype=np.float32)
-    arr_times = np.zeros(J, dtype=np.float32)
-    heap = nb.typed.List.empty_list(heap_type)
+    # heap = nb.typed.List.empty_list(heap_type)
+    heap = []  # TODO
     # initialize the event list
     for i in range(J):
         hq.heappush(heap, (arrival_times[i][0], i, 'arrival'))
@@ -141,7 +143,7 @@ def simulate_multi_class_system(kpi):
     while arr.sum() < N:
         # get next event
         event = hq.heappop(heap)
-        time = event[0] if event[0] < time else time
+        time = event[0] if event[0] > time else time
         i = event[1]
         type_event = event[2]
         if type_event in ['arrival', 'idle']:  # arrival of FIL by design

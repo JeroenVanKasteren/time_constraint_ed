@@ -775,7 +775,6 @@ One cannot call typeof from inside a jitted region,
 typed.List.empty_list and typed.Dict.empty take Numba types as arguments.
 '''
 
-import numpy as np
 import numba as nb
 import heapq as hq
 
@@ -786,14 +785,28 @@ def heapsort(iterable):
     time = 0
     heap = nb.typed.List.empty_list(entry_type)
     for i in range(len(iterable)):
-        #y = iterable[i] if len(np.shape(x)) == 1 else iterable[i][0]
-        hq.heappush(heap, (iterable[i][0], 0, 'arrival'))
+        hq.heappush(heap, (iterable[i], 0, 'arrival'))
         time += iterable[i]
     return heap, time
 
 
-x = nb.typed.List(np.array([[9., 2., 3.], [4., 5., 6.], [7., 8., 9.]]))
-print(heapsort(x))
+#@nb.njit
+def heapsort2(iterable):
+    time = 0
+    heap = nb.typed.List.empty_list(entry_type)
+    # heap = []
+    for i in range(len(iterable)):
+        hq.heappush(heap, (iterable[i][0], 0, 'arrival'))
+        time += iterable[i][1]
+    return heap, time
+
+
 x = nb.typed.List([1.232, 3.21, 5.21, 7.54, 9.765, 2.35, 4.85, 6.00, 8.1, 0.23])
 print(heapsort(x))
-iterable = x
+
+
+y = [[1.232, 3.21, 5.21], [7.54, 9.765, 2.35], [4.85, 6.00, 8.1]]
+iterable = nb.typed.List()
+for i in range(len(y)):
+    iterable.append(nb.typed.List(y[i]))
+print(heapsort2(iterable))
