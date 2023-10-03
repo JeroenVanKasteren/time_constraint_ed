@@ -157,7 +157,7 @@ def simulate_multi_class_system(kpi):
                               kpi)
         elif type_event == 'departure':
             dep[i] += 1
-            s[i] -= 1  # ensures that sum(s) < S
+            s -= 1  # ensures that sum(s) < S
             x = time - arr_times
             heap, kpi, n_admit, s = \
                 admission(x, s, i, time, arr, n_admit, dep, arr_times, heap,
@@ -166,13 +166,14 @@ def simulate_multi_class_system(kpi):
 
 
 kpi = simulate_multi_class_system(kpi)
-
-kpi_df = pd.Dataframe(kpi, columns=['time', 'class', 'wait'])
-kpi_df['g', 'target', 'avg_wait'] = np.nan
-for i in range(J):
-    mask = (kpi[1] == i)
-    kpi[mask, 'reward'] = np.where(kpi[mask, 'wait'] < t[i], r[i], r[i] - c[i])
-    kpi[mask, 'g'] = kpi[mask, 'reward'].cumsum() / kpi[mask, 'reward'].cumsum()
+# remove all rows with first column zeros of kpi dataframe
+kpi = kpi[~np.all(kpi == 0, axis=1)]
+# kpi_df = pd.Dataframe(kpi, columns=['time', 'class', 'wait'])
+# kpi_df['g', 'target', 'avg_wait'] = np.nan
+# for i in range(J):
+#     mask = (kpi[1] == i)
+#     kpi[mask, 'reward'] = np.where(kpi[mask, 'wait'] < t[i], r[i], r[i] - c[i])
+#     kpi[mask, 'g'] = kpi[mask, 'reward'].cumsum() / kpi[mask, 'reward'].cumsum()
 
 
 # if __name__ == '__main__':
