@@ -4,7 +4,8 @@ Iteratively solves different environments.
 Setup:
 N classes, N=2,3,4 (SIMS := # experiments each)
 
-python train.py --job_id 1 --array_id 1 --time 0-00:03:00 --instance 01 --method vi
+python train.py --job_id 1 --array_id 1 --time 0-00:03:00 --instance 01
+--method vi
 
 @author: Jeroen van Kasteren (jeroen.van.kasteren@vu.nl)
 Created on 19-3-2020.
@@ -112,6 +113,7 @@ def main(raw_args=None):
     inst.to_csv(FILEPATH_RESULT + args.instance + '_' + str(inst[0]) +
                 '_' + args.method + '_job_' + str(args.job_id) + '_' +
                 str(args.array_id) + '.csv')
+
 
 if __name__ == '__main__':
     main()

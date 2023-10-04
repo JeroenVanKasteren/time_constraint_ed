@@ -7,13 +7,13 @@ import heapq as hq
 import numba as nb
 import numpy as np
 import pandas as pd
-# from time import perf_counter as clock
+from time import perf_counter as clock
 from utils import TimeConstraintEDs as Env
-from utils import OneStepPolicyImprovement as Ospi
+from utils import tools
 
 # global constants
-N = 10  # arrivals to simulate
-batch_size = 100  # batch size for KPI
+N = 100  # arrivals to simulate
+batch_size = 1000  # batch size for KPI
 strategy = 'fcfs'  # 'fcfs' 'sdf' 'sdf_prior' 'cmu' 'ospi'
 
 J = 3
@@ -27,43 +27,28 @@ r = np.array([1]*J)
 imbalance = np.array([0.5, 0.4, 0.1])
 mu = np.array([1/10, 1/20, 1/30])
 load = 0.75
+convergence_check = 1e4
 env = Env(J=J, S=S, D=D, gamma=gamma, t=t, c=c, r=r, mu=mu, load=load,
           imbalance=imbalance)
-# lab=lab, e=0.1, max_time=args.time,convergence_check=10)
+# lab=lab, e=0.1, max_time=args.time)
 lab = env.lab
-
 p_xy = env.p_xy
 regret = np.max(r) - r + c
 cmu = c * mu
-
-
-def generate_times(J, N, lab, mu):
-    """Generate exponential arrival and service times."""
-    arrival_times = nb.typed.List[np.float32]()  # +1, last arrival
-    service_times = nb.typed.List[np.float32]()
-    for i in range(J):
-        arrival_times.append(nb.typed.List(env.rng.exponential(1 / lab[i], N + 1)))
-        service_times.append(nb.typed.List(env.rng.exponential(1 / mu[i], N + 1)))
-    return arrival_times, service_times
-
-
-def get_v_app(env):
-    """Get the approximate value function for a given state."""
-    v = np.zeros((env.J, env.D + 1))
-    for i in range(env.J):
-        v[i, ] = Ospi.get_v_app_i(env, i)
-    return v
+# start_time = env.start_time
+# max_time = env.max_time
+# broke = False
 
 
 heap_type = nb.typeof((0.0, 0, 'event'))  # (time, class, event)
 eye = np.eye(J, dtype=int)
-v = get_v_app(env)
-arrival_times, service_times = generate_times(J, N, lab, mu)
-kpi = np.zeros((N+1, 3))  # time, class, waited
+v = tools.get_v_app(env)
+arrival_times, service_times = tools.generate_times(env, J, lab, mu, N)
+kpi_np = np.zeros((N+1, 3))  # time, class, waited
 
 
 # @nb.njit
-def ospi(x, i):
+def ospi(fil, i, x):
     """One-step policy improvement.
     i indicate which class just arrived, i = J if no class arrived.
     """
@@ -77,7 +62,7 @@ def ospi(x, i):
         v_sum += v[j, x_next[j]]
         v_sum[j] -= v[j, x_next[j]]
     for j in range(J):  # Class to admit
-        if (x[j] > 0) or (j == i):
+        if fil[j]:
             w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
             w += p_xy[j, x[j], :x[j]+1] * (v_sum[j] + v[j, :x[j]+1])
             if w > w_max:
@@ -87,94 +72,90 @@ def ospi(x, i):
 
 
 # @nb.njit
-def policy(x, i):
+def policy(fil, i, x):
+    """Return the class to admit, assumes at least one FIL."""
     if strategy == 'ospi':
-        return ospi(x, i)
-    mask = x > 0  # If waiting
-    mask[i] = True  # or just arrived
+        return ospi(fil, i, x)
     if strategy == 'fcfs':  # argmax(x)
-        return np.nanargmax(np.where(mask, x, np.nan))
+        return np.nanargmax(np.where(fil, x, np.nan))
     elif strategy == 'sdf':  # argmin(t - x)
-        return np.nanargmin(np.where(mask, t - x, np.nan))
+        return np.nanargmin(np.where(fil, t - x, np.nan))
     elif strategy == 'sdf_prior':
         y = t - x  # Time till deadline
         on_time = y >= 0
         if np.any(on_time):
-            np.nanargmin(np.where(mask & on_time, t - x, np.nan))
+            np.nanargmin(np.where(fil & on_time, t - x, np.nan))
         else:  # FCFS
-            np.nanargmax(np.where(mask, x, np.nan))
+            np.nanargmax(np.where(fil, x, np.nan))
     elif strategy == 'cmu':
-        return np.nanargmax(np.where(mask, cmu, np.nan))
+        return np.nanargmax(np.where(fil, cmu, np.nan))
 
 
 # @nb.njit
-def admission(x, s, i, time, arr, n_admit, dep, arr_times, heap, kpi):
+def admission(arr, arr_times, dep, fil, heap, i, kpi, n_admit, s, time, x):
     """Assumes that sum(s)<S."""
-    pi = policy(x, i)
+    pi = policy(fil, i, x)
     if pi < J:  # Take class pi into service, add its departure & new arrival
         kpi[n_admit, :] = time, pi, x[pi]
         n_admit += 1
         s += 1
+        fil[pi] = 0
         hq.heappush(heap, (time + service_times[pi][dep[pi]], pi, 'departure'))
         hq.heappush(heap,
                     (arr_times[pi] + arrival_times[pi][arr[pi]], pi, 'arrival'))
     else:  # Idle
-        hq.heappush(heap,
-                    (time + 1/gamma, i, 'idle'))
-    return heap, kpi, n_admit, s
+        hq.heappush(heap, (time + 1/gamma, i, 'idle'))
+    return fil, heap, kpi, n_admit, s
 
 
 #@nb.njit
 def simulate_multi_class_system(kpi):
     """Simulate a multi-class system."""
-    # initialize the system
-    time = 0.0
+    time = 0.0  # initialize the system
     s = 0
+    fil = np.zeros(J, dtype=np.int32)
     arr = np.zeros(J, dtype=np.int32)
     arr_times = np.zeros(J, dtype=np.float32)
     n_admit = 0
     dep = np.zeros(J, dtype=np.int32)
     # heap = nb.typed.List.empty_list(heap_type)
     heap = []  # TODO
-    # initialize the event list
-    for i in range(J):
+    for i in range(J):  # initialize the event list
         hq.heappush(heap, (arrival_times[i][0], i, 'arrival'))
-    # run the simulation
-    while arr.sum() < N:
-        # get next event
-        event = hq.heappop(heap)
+    while n_admit < N:
+        event = hq.heappop(heap)  # get next event
         time = event[0] if event[0] > time else time
         i = event[1]
         type_event = event[2]
         if type_event in ['arrival', 'idle']:  # arrival of FIL by design
             if type_event == 'arrival':
                 arr[i] += 1
+                fil[i] = 1
                 arr_times[i] = event[0]
             if s < S:
-                x = time - arr_times
-                heap, kpi, n_admit, s = \
-                    admission(x, s, i, time, arr, n_admit, dep, arr_times, heap,
-                              kpi)
+                x = np.where(fil, time - arr_times, 0)
+                fil, heap, kpi, n_admit, s = admission(arr, arr_times, dep, fil,
+                                                       heap, i, kpi, n_admit, s,
+                                                       time, x)
         elif type_event == 'departure':
             dep[i] += 1
             s -= 1  # ensures that sum(s) < S
-            x = time - arr_times
-            heap, kpi, n_admit, s = \
-                admission(x, s, i, time, arr, n_admit, dep, arr_times, heap,
-                          kpi)
+            if sum(fil) > 0:
+                x = np.where(fil, time - arr_times, 0)
+                fil, heap, kpi, n_admit, s = admission(arr, arr_times, dep, fil,
+                                                       heap, i, kpi, n_admit, s,
+                                                       time, x)
+        # if (n_admit % convergence_check) == 0:
+        #     with nb.objmode():
+        #         if (clock() - start_time) > max_time:
+        #             broke = True
+        #             break
     return kpi
 
 
-kpi = simulate_multi_class_system(kpi)
-# remove all rows with first column zeros of kpi dataframe
-kpi = kpi[~np.all(kpi == 0, axis=1)]
-# kpi_df = pd.Dataframe(kpi, columns=['time', 'class', 'wait'])
-# kpi_df['g', 'target', 'avg_wait'] = np.nan
-# for i in range(J):
-#     mask = (kpi[1] == i)
-#     kpi[mask, 'reward'] = np.where(kpi[mask, 'wait'] < t[i], r[i], r[i] - c[i])
-#     kpi[mask, 'g'] = kpi[mask, 'reward'].cumsum() / kpi[mask, 'reward'].cumsum()
+kpi_np = simulate_multi_class_system(kpi_np)
 
 
+# print(tools.sec_to_time(clock() - env.start_time))
 # if __name__ == '__main__':
 #     main()

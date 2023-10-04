@@ -12,11 +12,11 @@ The implemented learners are:
 
 import numpy as np
 import numba as nb
+import utils
 from numba import types as tp
 from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy.integrate import quad_vec
 from time import perf_counter as clock
-from utils import tools
 
 
 class PolicyIteration:
@@ -106,20 +106,20 @@ class PolicyIteration:
                   f'delta: {delta_max - delta_min:.3f}, '
                   f'd_min: {delta_min:.3f}, d_max: {delta_max:.3f}, '
                   f'g: {g:.4f}')
-            print(tools.sec_to_time(clock() - env.start_time))
+            print(utils.tools.sec_to_time(clock() - env.start_time))
         if converged:
             iter = i if j == -1 else j
             print(f'{name} converged in {iter} iterations. '
                   f'g = {g:.4f}')
-            print(tools.sec_to_time(clock() - env.start_time))
+            print(utils.tools.sec_to_time(clock() - env.start_time))
         elif max_iter:
             print(f'{name} iter {i}, ({j}) reached max_iter '
                   f'({max_iter}), g ~ {g:.4f}')
-            print(tools.sec_to_time(clock() - env.start_time))
+            print(utils.tools.sec_to_time(clock() - env.start_time))
         elif max_time:
             print(f'{name} iter {i}, ({j}) reached max_time ({max_time}) '
                   f'g ~ %0.4f' % g)
-            print(tools.sec_to_time(clock() - env.start_time))
+            print(utils.tools.sec_to_time(clock() - env.start_time))
         return converged, max_iter | max_time, g
 
     @staticmethod

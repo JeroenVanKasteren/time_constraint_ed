@@ -50,7 +50,7 @@ Created on 19-3-2020.
 
 import numba as nb
 import numpy as np
-
+import utils
 from numba import types as tp
 from numpy import array, round, int32
 from numpy.random import randint
@@ -59,7 +59,6 @@ from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy import optimize
 from sys import getsizeof as size
 from time import perf_counter as clock
-import utils
 
 
 class TimeConstraintEDs:

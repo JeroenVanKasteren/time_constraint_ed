@@ -1,5 +1,5 @@
 """
-Load and visualize results.
+Load and visualize results of simulation.
 
 @author: Jeroen van Kasteren (jeroen.van.kasteren@vu.nl)
 """
@@ -14,6 +14,21 @@ INSTANCE_ID = '01'
 FILEPATH_INSTANCE = 'results/instances_' + INSTANCE_ID + '.csv'
 # FILEPATH_READ = 'results/read/'
 # FILEPATH_RESULT = 'results/'
+
+kpi_df = pd.DataFrame(kpi_np, columns=['time', 'class', 'wait'])
+kpi_df = kpi_df[kpi_df['time'] != 0]
+kpi_df = kpi_df.reindex(columns=[*kpi_df.columns.tolist(),
+                                 'reward', 'g', 'target', 'avg_wait'])
+for i in range(J):
+    mask = (kpi_df['class'] == i)
+    kpi_df.loc[mask, 'reward'] = np.where(kpi_df.loc[mask, 'wait'] <= t[i],
+                                          r[i], r[i] - c[i])
+    kpi_df.loc[mask, 'target'] = \
+        (np.where(kpi_df.loc[mask, 'wait'] <= t[i], 1,0).cumsum()
+         / np.arange(1, sum(mask)+1))
+    kpi_df.loc[mask, 'avg_wait'] = (kpi_df.loc[mask, 'wait'].cumsum()
+                                    / np.arange(1, sum(mask)+1))
+kpi_df['g'] = (kpi_df['reward'].cumsum() / kpi_df['time'])
 
 inst = pd.read_csv(FILEPATH_INSTANCE)
 cols = ['t', 'c', 'r', 'lab', 'mu']
@@ -99,3 +114,4 @@ plt.bar(inst['load'].unique(), inst_unsolved['load'].value_counts().reindex(uniq
 plt.bar(inst['load'].unique(), inst_conv['load'].value_counts().reindex(unique_loads, fill_value=0))
 plt.legend()
 plt.show()
+

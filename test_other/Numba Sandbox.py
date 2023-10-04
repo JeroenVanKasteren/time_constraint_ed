@@ -790,7 +790,7 @@ def heapsort(iterable):
     return heap, time
 
 
-#@nb.njit
+@nb.njit
 def heapsort2(iterable):
     time = 0
     heap = nb.typed.List.empty_list(entry_type)
@@ -810,3 +810,17 @@ iterable = nb.typed.List()
 for i in range(len(y)):
     iterable.append(nb.typed.List(y[i]))
 print(heapsort2(iterable))
+
+# ------------------------- Timing ---------------------------
+import numba as nb
+from time import perf_counter as clock
+
+start_time = clock()
+
+
+@nb.njit
+def my_numba_function():
+    with nb.objmode():
+        print('time: {}'.format(start_time - clock()))
+
+my_numba_function()

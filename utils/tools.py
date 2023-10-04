@@ -2,11 +2,13 @@
 Static functions for the project.
 """
 
+import numba as nb
 import numpy as np
 import pandas as pd
 from time import strptime
 from sklearn.model_selection import ParameterGrid
 from utils import TimeConstraintEDs as Env
+from utils import OneStepPolicyImprovement as Ospi
 
 
 def def_sizes(dim):
@@ -72,7 +74,7 @@ def get_instance_grid(J, gamma, e, P, t, c, r, param_grid, max_target_prob):
 
     for i, inst in grid.iterrows():
         env = Env(J=J, S=inst.S, gamma=gamma, P=P, e=e, t=t, c=c, r=r,
-                  mu=np.array([inst.mu_1, inst.mu_2]),  # TODO: generalize
+                  mu=np.array([inst.mu_1, inst.mu_2]),
                   load=inst.load,
                   imbalance=np.array([inst.imbalance, 1]))
         grid.loc[i, 'target_prob'] = env.target_prob
@@ -94,6 +96,24 @@ def get_instance_grid(J, gamma, e, P, t, c, r, param_grid, max_target_prob):
 def update_mean(mean, x, n):
     """Welford's method to update the mean. Can be set to numba function."""
     return mean + (x - mean) / n  # avg_{n-1} = avg_{n-1} + (x_n - avg_{n-1})/n
+
+
+def generate_times(env, J, lab, mu, N):
+    """Generate exponential arrival and service times."""
+    arrival_times = nb.typed.List[np.float32]()  # +1, last arrival
+    service_times = nb.typed.List[np.float32]()
+    for i in range(J):
+        arrival_times.append(nb.typed.List(env.rng.exponential(1 / lab[i], N + J)))
+        service_times.append(nb.typed.List(env.rng.exponential(1 / mu[i], N + J)))
+    return arrival_times, service_times
+
+
+def get_v_app(env):
+    """Get the approximate value function for a given state."""
+    v = np.zeros((env.J, env.D + 1))
+    for i in range(env.J):
+        v[i, ] = Ospi.get_v_app_i(env, i)
+    return v
 
 
 class DotDict(dict):
