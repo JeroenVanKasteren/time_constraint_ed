@@ -11,23 +11,33 @@ from time import perf_counter as clock
 from utils import TimeConstraintEDs as Env
 from utils import tools
 
-# global constants
-N = 100  # arrivals to simulate
-batch_size = 1000  # batch size for KPI
-strategy = 'fcfs'  # 'fcfs' 'sdf' 'sdf_prior' 'cmu' 'ospi'
+FILEPATH_INSTANCE = 'results/instance_sim_'
+FILEPATH_RESULT = 'results/result_'
+FILEPATH_PICKLES = 'results/value_functions/'
 
-J = 3
-S = 5
-gamma = 30
-D = 100
-t = np.array([30, 60, 120])
-c = np.array([1]*J)
-r = np.array([1]*J)
-# lab = np.array([14/60*0.5, 14/60*0.4, 14/60*0.1])
-imbalance = np.array([0.5, 0.4, 0.1])
-mu = np.array([1/10, 1/20, 1/30])
-load = 0.75
+# global constants
+N = 1e3  # arrivals to simulate determine when starting the running
+# Moreover, sum up N when doing multiple runs (continuing runs).
+start_K = 1e3
+batch_T = 1e4
+batch_size = 1000  # batch size for KPI
 convergence_check = 1e4
+strategy = 'fcfs'  # 'fcfs' 'sdf' 'sdf_prior' 'cmu' 'ospi'
+instance = '01'
+
+inst = tools.inst_load(FILEPATH_INSTANCE + instance + '.csv')
+
+J = inst.J
+S = inst.S
+gamma = inst.J
+D = inst.D
+t = inst.t
+c = inst.c
+r = inst.r
+mu = inst.mu
+load = inst.load
+imbalance = inst.imbalance
+
 env = Env(J=J, S=S, D=D, gamma=gamma, t=t, c=c, r=r, mu=mu, load=load,
           imbalance=imbalance)
 # lab=lab, e=0.1, max_time=args.time)
@@ -38,7 +48,6 @@ cmu = c * mu
 # start_time = env.start_time
 # max_time = env.max_time
 # broke = False
-
 
 heap_type = nb.typeof((0.0, 0, 'event'))  # (time, class, event)
 eye = np.eye(J, dtype=int)

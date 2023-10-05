@@ -116,6 +116,13 @@ def get_v_app(env):
     return v
 
 
+def inst_load(filepath):
+    cols = ['t', 'c', 'r', 'lab', 'mu']
+    inst = pd.read_csv(filepath)
+    inst.loc[:, cols] = inst.loc[:, cols].applymap(strip_split)
+    return inst
+
+
 class DotDict(dict):
     """dot.notation access to dictionary attributes"""
     __getattr__ = dict.get
