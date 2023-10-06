@@ -6,6 +6,7 @@ This file contains the simulation of the multi-class queueing system.
 import heapq as hq
 import numba as nb
 import numpy as np
+import os
 import pandas as pd
 from time import perf_counter as clock
 from utils import TimeConstraintEDs as Env
@@ -13,7 +14,40 @@ from utils import tools
 
 FILEPATH_INSTANCE = 'results/instance_sim_'
 FILEPATH_RESULT = 'results/result_'
-FILEPATH_PICKLES = 'results/value_functions/'
+FILEPATH_PICKLES = 'results/simulation_pickles/'
+
+
+# def load_args(raw_args=None):
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument('--job_id', default='0')  # SULRM_JOBID
+#     parser.add_argument('--array_id', default='0')  # SLURM_ARRAY_TASK_ID
+#     parser.add_argument('--time')  # SLURM_TIMELIMIT
+#     parser.add_argument('--instance', default='01')  # User input
+#     parser.add_argument('--method', default='not_specified')  # User input
+#     parser.add_argument('--x', default=0)  # User input
+#     args = parser.parse_args(raw_args)
+#     args.job_id = int(args.job_id)
+#     args.array_id = int(args.array_id)
+#     args.x = int(args.x)
+#     return args
+# args = load_args(raw_args)
+
+# Debug
+args = {'job_id': 1,
+        'array_id': 2,
+        'time': '0-00:30:00',
+        'instance': '01',
+        'method': 'not_specified',
+        'x': 0}
+args = tools.DotDict(args)
+
+inst = tools.inst_load(FILEPATH_INSTANCE + args.instance + '.csv')
+if args.method in inst['method']:
+    method_id = inst['method'].lt(args.method).idxmax()
+else:
+    method_id = args.array_id
+inst = inst.iloc[method_id]
+method = inst['method']
 
 # global constants
 N = 1e3  # arrivals to simulate determine when starting the running
@@ -22,31 +56,28 @@ start_K = 1e3
 batch_T = 1e4
 batch_size = 1000  # batch size for KPI
 convergence_check = 1e4
-strategy = 'fcfs'  # 'fcfs' 'sdf' 'sdf_prior' 'cmu' 'ospi'
-instance = '01'
 
-inst = tools.inst_load(FILEPATH_INSTANCE + instance + '.csv')
-
+# global variables
 J = inst.J
 S = inst.S
-gamma = inst.J
+gamma = inst.gamma
 D = inst.D
 t = inst.t
 c = inst.c
 r = inst.r
 mu = inst.mu
+lab = inst.lab
 load = inst.load
 imbalance = inst.imbalance
 
-env = Env(J=J, S=S, D=D, gamma=gamma, t=t, c=c, r=r, mu=mu, load=load,
-          imbalance=imbalance)
+env = Env(J=J, S=S, D=D, gamma=gamma, t=t, c=c, r=r, mu=mu, lab=lab)
 # lab=lab, e=0.1, max_time=args.time)
 lab = env.lab
 p_xy = env.p_xy
-regret = np.max(r) - r + c
+# regret = np.max(r) - r + c
 cmu = c * mu
-# start_time = env.start_time
-# max_time = env.max_time
+start_time = env.start_time
+max_time = env.max_time
 # broke = False
 
 heap_type = nb.typeof((0.0, 0, 'event'))  # (time, class, event)
@@ -55,6 +86,10 @@ v = tools.get_v_app(env)
 arrival_times, service_times = tools.generate_times(env, J, lab, mu, N)
 kpi_np = np.zeros((N+1, 3))  # time, class, waited
 
+# if pickle saved to simulation pickles, load it
+pickle_file = (FILEPATH_PICKLES + args.instance + '_' + method + '.pkl')
+if pickle_file in os.listdir(FILEPATH_PICKLES):
+    file = read_pickle()
 
 # @nb.njit
 def ospi(fil, i, x):
@@ -164,6 +199,7 @@ def simulate_multi_class_system(kpi):
 
 kpi_np = simulate_multi_class_system(kpi_np)
 
+pickle.dump()
 
 # print(tools.sec_to_time(clock() - env.start_time))
 # if __name__ == '__main__':

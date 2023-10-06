@@ -21,7 +21,10 @@ def def_sizes(dim):
 
 
 def strip_split(x):
-    return np.array([float(i) for i in x.strip('[]').split(', ')])
+    if ',' in x:
+        return np.array([float(i) for i in x.strip('[]').split(', ')])
+    else:
+        return np.array([float(i) for i in x.strip('[]').split()])
 
 
 def get_time(time_string):

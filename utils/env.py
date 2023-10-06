@@ -136,11 +136,12 @@ class TimeConstraintEDs:
         s.p_xy = s.trans_prob(s.J, s.D, s.lab, s.gamma)
 
         s.dim = tuple(np.repeat([s.D + 1, s.S + 1], s.J))
-        s.sizes = utils.tools.def_sizes(s.dim)
         s.size = np.prod(s.dim)
         s.dim_i = tuple(np.append(s.J + 1, np.repeat([s.D + 1, s.S + 1], s.J)))
-        s.sizes_i = utils.tools.def_sizes(s.dim_i)
         s.size_i = np.prod(s.dim_i).astype(int32)
+        if 'sim' not in kwargs:
+            s.sizes = utils.tools.def_sizes(s.dim)
+            s.sizes_i = utils.tools.def_sizes(s.dim_i)
 
         s.max_iter = kwargs.get('max_iter', np.Inf)  # max(size_i^2, 1e3)
         s.start_time = clock()
@@ -149,13 +150,16 @@ class TimeConstraintEDs:
         s.print_modulo = kwargs.get('print_modulo', 1e3)  # 1 for always
         s.convergence_check = kwargs.get('convergence_check', 1)
 
-        s_states = array(list(product(np.arange(s.S + 1), repeat=s.J)), int32)
-        # Valid states
-        s.s_states_v = s_states[np.sum(s_states, axis=1) <= s.S]
-        # Action states
-        s.s_states = s.s_states_v[np.sum(s.s_states_v, axis=1) < s.S]
-        s.s_states_full = s.s_states_v[np.sum(s.s_states_v, axis=1) == s.S]
-        s.x_states = array(list(product(np.arange(s.D + 1), repeat=s.J)), int32)
+        if 'sim' not in kwargs:
+            s_states = array(list(product(np.arange(s.S + 1), repeat=s.J)),
+                             int32)
+            # Valid states
+            s.s_states_v = s_states[np.sum(s_states, axis=1) <= s.S]
+            # Action states
+            s.s_states = s.s_states_v[np.sum(s.s_states_v, axis=1) < s.S]
+            s.s_states_full = s.s_states_v[np.sum(s.s_states_v, axis=1) == s.S]
+            s.x_states = array(list(product(np.arange(s.D + 1), repeat=s.J)),
+                               int32)
 
         s.d_i0 = nb.typed.Dict.empty(key_type=tp.unicode_type,
                                      value_type=tp.i8)
@@ -167,14 +171,15 @@ class TimeConstraintEDs:
         s.d_i0['print_modulo'] = np.int64(s.print_modulo)
         s.d_i1 = nb.typed.Dict.empty(key_type=tp.unicode_type,
                                      value_type=tp.i4[:])
-        s.d_i1['sizes'] = s.sizes
-        s.d_i1['sizes_i'] = s.sizes_i
-        s.d_i1['P_m'] = s.get_P_m()
-        s.d_i2 = nb.typed.Dict.empty(key_type=tp.unicode_type,
+        if 'sim' not in kwargs:
+            s.d_i1['sizes'] = s.sizes
+            s.d_i1['sizes_i'] = s.sizes_i
+            s.d_i1['P_m'] = s.get_P_m()
+            s.d_i2 = nb.typed.Dict.empty(key_type=tp.unicode_type,
                                      value_type=tp.i4[:, :])
-        s.d_i2['s'] = s.s_states
-        s.d_i2['s_valid'] = s.s_states_v
-        s.d_i2['x'] = s.x_states
+            s.d_i2['s'] = s.s_states
+            s.d_i2['s_valid'] = s.s_states_v
+            s.d_i2['x'] = s.x_states
         s.d_f0 = nb.typed.Dict.empty(key_type=tp.unicode_type,
                                      value_type=tp.f8)
         s.d_f0['max_iter'] = float(s.max_iter)
