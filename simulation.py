@@ -76,9 +76,25 @@ lab = env.lab
 p_xy = env.p_xy
 # regret = np.max(r) - r + c
 cmu = c * mu
-start_time = env.start_time
-max_time = env.max_time
-# broke = False
+
+
+def generate_times(J, N, lab, mu):
+    """Generate exponential arrival and service times."""
+    arrival_times = np.empty((J, N + 1), dtype=np.float32)  # +1, last arrival
+    service_times = np.empty((J, N + 1), dtype=np.float32)
+    for i in range(J):
+        arrival_times[i, :] = env.rng.exponential(1 / lab[i], N + 1)
+        service_times[i, :] = env.rng.exponential(1 / mu[i], N + 1)
+    return arrival_times, service_times
+
+
+def get_v_app(env):
+    """Get the approximate value function for a given state."""
+    v = np.zeros((env.J, env.D + 1))
+    for i in range(env.J):
+        v[i, ] = Ospi.get_v_app_i(env, i)
+    return v
+
 
 heap_type = nb.typeof((0.0, 0, 'event'))  # (time, class, event)
 eye = np.eye(J, dtype=int)

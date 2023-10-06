@@ -801,8 +801,28 @@ def heapsort2(iterable):
     return heap, time
 
 
+
+@nb.njit
+def heapsort2(iterable):
+    time = 0
+    heap = nb.typed.List.empty_list(entry_type)
+    for i in range(len(iterable)):
+        hq.heappush(heap, (iterable[i][0], 0, 'arrival'))
+        time += iterable[i][1]
+    return heap, time
+
+
 x = nb.typed.List([1.232, 3.21, 5.21, 7.54, 9.765, 2.35, 4.85, 6.00, 8.1, 0.23])
 print(heapsort(x))
+
+
+y = [[1.232, 3.21, 5.21], [7.54, 9.765, 2.35], [4.85, 6.00, 8.1]]
+iterable = nb.typed.List()
+for i in range(len(y)):
+    l = nb.typed.List()
+    l.append(nb.typed.List(y[i]))
+    iterable.append(l)
+print(heapsort2(iterable))
 
 
 y = [[1.232, 3.21, 5.21], [7.54, 9.765, 2.35], [4.85, 6.00, 8.1]]
