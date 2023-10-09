@@ -47,8 +47,6 @@ def load_args(raw_args=None):
 
 def main(raw_args=None):
     args = load_args(raw_args)
-
-    # ---- Problem ---- #
     # seed = args.job_id * args.array_id
 
     inst = pd.read_csv(FILEPATH_INSTANCE + args.instance + '.csv')

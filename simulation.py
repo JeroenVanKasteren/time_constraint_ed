@@ -2,35 +2,18 @@
 This file contains the simulation of the multi-class queueing system.
 """
 
-# import argparse
 import heapq as hq
 import numba as nb
 import numpy as np
 import os
-import pandas as pd
+import pickle as pkl
 from time import perf_counter as clock
 from utils import TimeConstraintEDs as Env
 from utils import tools
 
 FILEPATH_INSTANCE = 'results/instance_sim_'
-FILEPATH_RESULT = 'results/result_'
 FILEPATH_PICKLES = 'results/simulation_pickles/'
-
-
-# def load_args(raw_args=None):
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument('--job_id', default='0')  # SULRM_JOBID
-#     parser.add_argument('--array_id', default='0')  # SLURM_ARRAY_TASK_ID
-#     parser.add_argument('--time')  # SLURM_TIMELIMIT
-#     parser.add_argument('--instance', default='01')  # User input
-#     parser.add_argument('--method', default='not_specified')  # User input
-#     parser.add_argument('--x', default=0)  # User input
-#     args = parser.parse_args(raw_args)
-#     args.job_id = int(args.job_id)
-#     args.array_id = int(args.array_id)
-#     args.x = int(args.x)
-#     return args
-# args = load_args(raw_args)
+FILEPATH_RESULT = 'results/simulation_pickles/result_'
 
 # Debug
 args = {'job_id': 1,
@@ -40,7 +23,7 @@ args = {'job_id': 1,
         'method': 'not_specified',
         'x': 0}
 args = tools.DotDict(args)
-
+# args = tools.load_args()  # TODO
 inst = tools.inst_load(FILEPATH_INSTANCE + args.instance + '.csv')
 if args.method in inst['method']:
     method_id = inst['method'].lt(args.method).idxmax()
@@ -50,11 +33,8 @@ inst = inst.iloc[method_id]
 method = inst['method']
 
 # global constants
-N = 1e3  # arrivals to simulate determine when starting the running
+N = args.x if args.x > 0 else int(1e3)  # arrivals to simulate
 # Moreover, sum up N when doing multiple runs (continuing runs).
-start_K = 1e3
-batch_T = 1e4
-batch_size = 1000  # batch size for KPI
 convergence_check = 1e4
 
 # global variables
@@ -70,42 +50,18 @@ lab = inst.lab
 load = inst.load
 imbalance = inst.imbalance
 
-env = Env(J=J, S=S, D=D, gamma=gamma, t=t, c=c, r=r, mu=mu, lab=lab)
-# lab=lab, e=0.1, max_time=args.time)
-lab = env.lab
+env = Env(J=J, S=S, D=D, gamma=gamma, t=t, c=c, r=r, mu=mu, lab=lab,
+          seed=args.job_id*args.array_id, max_time=args.time, sim=1)
+max_time = env.max_time
 p_xy = env.p_xy
 # regret = np.max(r) - r + c
 cmu = c * mu
-
-
-def generate_times(J, N, lab, mu):
-    """Generate exponential arrival and service times."""
-    arrival_times = np.empty((J, N + 1), dtype=np.float32)  # +1, last arrival
-    service_times = np.empty((J, N + 1), dtype=np.float32)
-    for i in range(J):
-        arrival_times[i, :] = env.rng.exponential(1 / lab[i], N + 1)
-        service_times[i, :] = env.rng.exponential(1 / mu[i], N + 1)
-    return arrival_times, service_times
-
-
-def get_v_app(env):
-    """Get the approximate value function for a given state."""
-    v = np.zeros((env.J, env.D + 1))
-    for i in range(env.J):
-        v[i, ] = Ospi.get_v_app_i(env, i)
-    return v
-
 
 heap_type = nb.typeof((0.0, 0, 'event'))  # (time, class, event)
 eye = np.eye(J, dtype=int)
 v = tools.get_v_app(env)
 arrival_times, service_times = tools.generate_times(env, J, lab, mu, N)
-kpi_np = np.zeros((N+1, 3))  # time, class, waited
 
-# if pickle saved to simulation pickles, load it
-pickle_file = (FILEPATH_PICKLES + args.instance + '_' + method + '.pkl')
-if pickle_file in os.listdir(FILEPATH_PICKLES):
-    file = read_pickle()
 
 # @nb.njit
 def ospi(fil, i, x):
@@ -134,20 +90,20 @@ def ospi(fil, i, x):
 # @nb.njit
 def policy(fil, i, x):
     """Return the class to admit, assumes at least one FIL."""
-    if strategy == 'ospi':
+    if method == 'ospi':
         return ospi(fil, i, x)
-    if strategy == 'fcfs':  # argmax(x)
+    if method == 'fcfs':  # argmax(x)
         return np.nanargmax(np.where(fil, x, np.nan))
-    elif strategy == 'sdf':  # argmin(t - x)
+    elif method == 'sdf':  # argmin(t - x)
         return np.nanargmin(np.where(fil, t - x, np.nan))
-    elif strategy == 'sdf_prior':
+    elif method == 'sdf_prior':
         y = t - x  # Time till deadline
         on_time = y >= 0
         if np.any(on_time):
             np.nanargmin(np.where(fil & on_time, t - x, np.nan))
         else:  # FCFS
             np.nanargmax(np.where(fil, x, np.nan))
-    elif strategy == 'cmu':
+    elif method == 'cmu':
         return np.nanargmax(np.where(fil, cmu, np.nan))
 
 
@@ -168,21 +124,22 @@ def admission(arr, arr_times, dep, fil, heap, i, kpi, n_admit, s, time, x):
     return fil, heap, kpi, n_admit, s
 
 
-#@nb.njit
-def simulate_multi_class_system(kpi):
+# @nb.njit
+def simulate_multi_class_system(arr_times=np.zeros(J, dtype=np.float32),
+                                fil=np.zeros(J, dtype=np.int32),
+                                heap=[],  # heap = nb.typed.List.empty_list(heap_type)
+                                kpi=np.zeros((N + 1, 3)),
+                                n_admit=0,
+                                s=0,
+                                time=0.0,
+                                sims=N):
     """Simulate a multi-class system."""
-    time = 0.0  # initialize the system
-    s = 0
-    fil = np.zeros(J, dtype=np.int32)
     arr = np.zeros(J, dtype=np.int32)
-    arr_times = np.zeros(J, dtype=np.float32)
-    n_admit = 0
     dep = np.zeros(J, dtype=np.int32)
-    # heap = nb.typed.List.empty_list(heap_type)
-    heap = []  # TODO
-    for i in range(J):  # initialize the event list
-        hq.heappush(heap, (arrival_times[i][0], i, 'arrival'))
-    while n_admit < N:
+    if len(heap) == 0:
+        for i in range(J):  # initialize the event list
+            hq.heappush(heap, (arrival_times[i][0], i, 'arrival'))
+    while n_admit < sims:
         event = hq.heappop(heap)  # get next event
         time = event[0] if event[0] > time else time
         i = event[1]
@@ -210,13 +167,32 @@ def simulate_multi_class_system(kpi):
         #         if (clock() - start_time) > max_time:
         #             broke = True
         #             break
-    return kpi
+    return arr_times, fil, heap, kpi, s, time
 
 
-kpi_np = simulate_multi_class_system(kpi_np)
+def main():
+    pickle_file = (FILEPATH_RESULT + args.instance + '_' + method + '.pkl')
+    if pickle_file in os.listdir(FILEPATH_PICKLES):
+        arr_times, fil, heap, kpi, s, time = pkl.load(open(pickle_file, 'rb'))
+        m = np.sum(kpi[:, 0] == 0)  # simulations left
+        if m < 2:
+            kpi = np.concat((kpi, np.zeros((N + 1, 3))))
+            n, m = N, 0
+        else:
+            n, m = m, len(kpi) - m
+        kpi = simulate_multi_class_system(arr_times=arr_times,
+                                          fil=fil,
+                                          heap=heap,
+                                          kpi=kpi,
+                                          n_admit=m,
+                                          s=s,
+                                          time=time,
+                                          sims=n)
+    else:
+        arr_times, fil, heap, kpi, s, time = simulate_multi_class_system()
+    print(tools.sec_to_time(clock() - env.start_time))
+    pkl.dump([arr_times, fil, heap, kpi, s, time], open(pickle_file, 'wb'))
 
-pickle.dump()
 
-# print(tools.sec_to_time(clock() - env.start_time))
-# if __name__ == '__main__':
-#     main()
+if __name__ == '__main__':
+    main()

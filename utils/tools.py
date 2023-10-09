@@ -2,8 +2,10 @@
 Static functions for the project.
 """
 
+import argparse
 import numba as nb
 import numpy as np
+import os
 import pandas as pd
 from time import strptime
 from sklearn.model_selection import ParameterGrid
@@ -18,6 +20,21 @@ def def_sizes(dim):
     for i in range(len(dim) - 2, -1, -1):
         sizes[i] = sizes[i + 1] * dim[i + 1]
     return sizes
+
+
+def load_args(raw_args=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--job_id', default='0')  # SULRM_JOBID
+    parser.add_argument('--array_id', default='0')  # SLURM_ARRAY_TASK_ID
+    parser.add_argument('--time')  # SLURM_TIMELIMIT
+    parser.add_argument('--instance', default='01')  # User input
+    parser.add_argument('--method', default='not_specified')  # User input
+    parser.add_argument('--x', default=0)  # User input
+    args = parser.parse_args(raw_args)
+    args.job_id = int(args.job_id)
+    args.array_id = int(args.array_id)
+    args.x = int(args.x)
+    return args
 
 
 def strip_split(x):
@@ -124,6 +141,12 @@ def inst_load(filepath):
     inst = pd.read_csv(filepath)
     inst.loc[:, cols] = inst.loc[:, cols].applymap(strip_split)
     return inst
+
+
+def remove_empty_files(directory):
+    for file in os.listdir(directory):
+        if os.path.getsize(os.path.join(directory, file)) == 0:
+            os.remove(os.path.join(directory, file))
 
 
 class DotDict(dict):

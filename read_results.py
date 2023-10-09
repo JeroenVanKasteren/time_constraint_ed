@@ -1,6 +1,5 @@
 """
-Process all unread result files
-Load and visualize results.
+Process all unread result files.
 
 @author: Jeroen van Kasteren (jeroen.van.kasteren@vu.nl)
 """
@@ -8,17 +7,16 @@ Load and visualize results.
 import pandas as pd
 import os
 
+import utils.tools
+from utils import tools
+
 INSTANCE_ID = '01'
 FILEPATH_INSTANCE = 'results/instances_' + INSTANCE_ID + '.csv'
 FILEPATH_READ = 'results/read/'
 FILEPATH_RESULT = 'results/'
 
 inst = pd.read_csv(FILEPATH_INSTANCE)
-
-# Remove empty ones
-for file in os.listdir(FILEPATH_READ):
-    if os.path.getsize(os.path.join(FILEPATH_READ, file)) == 0:
-        os.remove(os.path.join(FILEPATH_READ, file))
+tools.remove_empty_files(FILEPATH_READ)
 
 # Process all unread result files
 for file in os.listdir(FILEPATH_RESULT):
