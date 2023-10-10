@@ -22,7 +22,6 @@ kpi_df = kpi_df[kpi_df['time'] != 0]
 kpi_df = kpi_df.reindex(columns=[*kpi_df.columns.tolist(),
                                  'reward', 'g', 'target', 'avg_wait'])
 
-
 inst = pd.read_csv(FILEPATH_INSTANCE)
 cols = ['t', 'c', 'r', 'lab', 'mu']
 inst.loc[:, cols] = inst.loc[:, cols].applymap(tools.strip_split)

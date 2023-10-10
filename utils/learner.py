@@ -257,11 +257,16 @@ class PolicyIteration:
             inner_iter += 1
         return V, g, converged, inner_iter
 
-    def policy_iteration(s, env):
+    def policy_iteration(s, env, g_mem=[], *kwargs):
         """Docstring."""
-        s.V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
+        if ('V' in kwargs) & ('Pi' in kwargs):
+            s.V = kwargs.get('V')
+            s.Pi = kwargs.get('Pi')
+        else:
+            s.V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
+            s.Pi = s.init_pi(env)
         s.W = np.zeros(env.dim_i, dtype=np.float32)
-        s.Pi = s.init_pi(env)
+
         s.Pi = s.Pi.reshape(env.size_i)
         while not s.stable:
             s.V, s.g, _, _ = s.policy_evaluation(env, s.V, s.W, s.Pi, s.g,
@@ -279,7 +284,9 @@ class PolicyIteration:
             if s.iter > env.max_iter:
                 break
             s.iter += 1
+            g_mem.append(s.g)
         s.Pi = s.Pi.reshape(env.dim_i)
+        return g_mem
 
 
 class ValueIteration:

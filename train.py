@@ -24,21 +24,6 @@ FILEPATH_RESULT = 'results/result_'
 FILEPATH_V = 'results/value_functions/'
 MAX_TARGET_PROB = 0.9
 
-
-def load_args(raw_args=None):
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--job_id', default='0')  # SULRM_JOBID
-    parser.add_argument('--array_id', default='0')  # SLURM_ARRAY_TASK_ID
-    parser.add_argument('--time')  # SLURM_TIMELIMIT
-    parser.add_argument('--instance', default='01')  # User input
-    parser.add_argument('--method')  # User input, vi or ospi
-    parser.add_argument('--x', default=0)  # User input
-    args = parser.parse_args(raw_args)
-    args.job_id = int(args.job_id)
-    args.array_id = int(args.array_id)
-    args.x = int(args.x)
-    return args
-
 # Debug
 # args = {'instance': '01', 'method': 'ospi', 'time': '0-00:30:00',
 #         'job_id': 1, 'array_id': 2, 'x': 0}
@@ -46,7 +31,7 @@ def load_args(raw_args=None):
 
 
 def main(raw_args=None):
-    args = load_args(raw_args)
+    args = tools.load_args(raw_args)
     # seed = args.job_id * args.array_id
 
     inst = pd.read_csv(FILEPATH_INSTANCE + args.instance + '.csv')
@@ -78,7 +63,7 @@ def main(raw_args=None):
             print('Loading V from file')
             learner.V = np.load(FILEPATH_V + v_file)['arr_0']
         learner.value_iteration(env)
-    else:
+    elif args.method == 'ospi':
         learner = OneStepPolicyImprovement(env, pi_learner)
         pi_file = ('pi_' + args.instance + '_' + str(inst[0]) + '_ospi.npz')
         if pi_file in os.listdir(FILEPATH_V):
@@ -93,24 +78,41 @@ def main(raw_args=None):
             learner.get_g(env, learner.V)
         else:
             learner.get_g(env, learner.V_app)
-    if learner.g != 0:
-        inst.at[args.method + '_g_tmp'] = learner.g
-    if learner.converged:
-        inst.at[args.method + '_g'] = learner.g
+    elif args.method == 'pi':
+        learner = pi_learner
+        pi_file = ('pi_' + args.instance + '_' + str(inst[0]) + '_pi.npz')
+        v_file = ('v_' + args.instance + '_' + str(inst[0]) + '_pi.npz')
+        g_file = ('g_' + args.instance + '_' + str(inst[0]) + '_pi.npz')
+        if ((pi_file in os.listdir(FILEPATH_V)) &
+                (v_file in os.listdir(FILEPATH_V))):
+            print('Loading pi & v from file')
+            Pi = np.load(FILEPATH_V + pi_file)['arr_0']
+            V = np.load(FILEPATH_V + v_file)['arr_0']
+            g_mem = np.load(FILEPATH_V + g_file)['arr_0']
+            g_mem = learner.policy_iteration(env, g_mem=g_mem, Pi=Pi, V=V)
+        else:
+            g_mem = learner.policy_iteration(env)
+        np.savez(FILEPATH_V + 'g_' + args.instance + '_' + str(inst[0]) + '_'
+                 + args.method + '.npz', g_mem)
 
-    inst.at[args.method + '_time'] = \
-        tools.sec_to_time(clock() - env.start_time +
-                          tools.get_time(inst.at[args.method + '_time']))
-    inst.at[args.method + '_iter'] += learner.iter
+    if args.method in ['vi', 'ospi']:
+        if learner.g != 0:
+            inst.at[args.method + '_g_tmp'] = learner.g
+        if learner.converged:
+            inst.at[args.method + '_g'] = learner.g
+
+        inst.at[args.method + '_time'] = \
+            tools.sec_to_time(clock() - env.start_time +
+                              tools.get_time(inst.at[args.method + '_time']))
+        inst.at[args.method + '_iter'] += learner.iter
+        inst.to_csv(FILEPATH_RESULT + args.instance + '_' + str(inst[0]) +
+                    '_' + args.method + '_job_' + str(args.job_id) + '_' +
+                    str(args.array_id) + '.csv')
 
     np.savez(FILEPATH_V + 'v_' + args.instance + '_' + str(inst[0]) + '_'
              + args.method + '.npz', learner.V)
     np.savez(FILEPATH_V + 'pi_' + args.instance + '_' + str(inst[0]) + '_'
              + args.method + '.npz', learner.Pi)
-
-    inst.to_csv(FILEPATH_RESULT + args.instance + '_' + str(inst[0]) +
-                '_' + args.method + '_job_' + str(args.job_id) + '_' +
-                str(args.array_id) + '.csv')
 
 
 if __name__ == '__main__':

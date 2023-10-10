@@ -21,9 +21,10 @@ args = {'job_id': 1,
         'time': '0-00:30:00',
         'instance': '01',
         'method': 'not_specified',
-        'x': 0}
+        'x': 1e3}
 args = tools.DotDict(args)
 # args = tools.load_args()  # TODO
+
 inst = tools.inst_load(FILEPATH_INSTANCE + args.instance + '.csv')
 if args.method in inst['method']:
     method_id = inst['method'].lt(args.method).idxmax()
@@ -33,25 +34,24 @@ inst = inst.iloc[method_id]
 method = inst['method']
 
 # global constants
-N = args.x if args.x > 0 else int(1e3)  # arrivals to simulate
+N = int(args.x) if args.x > 0 else int(1e3)  # arrivals to simulate
 # Moreover, sum up N when doing multiple runs (continuing runs).
 convergence_check = 1e4
-
-# global variables
-J = inst.J
-S = inst.S
-gamma = inst.gamma
-D = inst.D
-t = inst.t
-c = inst.c
-r = inst.r
-mu = inst.mu
-lab = inst.lab
-load = inst.load
-imbalance = inst.imbalance
+J, S, gamma, D, t, c, r, mu, lab, load, imbalance = (inst.J,
+                                                     inst.S,
+                                                     inst.gamma,
+                                                     inst.D,
+                                                     inst.t,
+                                                     inst.c,
+                                                     inst.r,
+                                                     inst.mu,
+                                                     inst.lab,
+                                                     inst.load,
+                                                     inst.imbalance)
 
 env = Env(J=J, S=S, D=D, gamma=gamma, t=t, c=c, r=r, mu=mu, lab=lab,
-          seed=args.job_id*args.array_id, max_time=args.time, sim=1)
+          seed=args.job_id*args.array_id,
+          max_time=args.time, max_iter=args.max_iter, sim=1)
 max_time = env.max_time
 p_xy = env.p_xy
 # regret = np.max(r) - r + c
@@ -190,7 +190,9 @@ def main():
                                           sims=n)
     else:
         arr_times, fil, heap, kpi, s, time = simulate_multi_class_system()
-    print(tools.sec_to_time(clock() - env.start_time))
+    time = clock() - env.start_time
+    print(f'Total time: {tools.sec_to_time(time)}, '
+          f'time per iteration: {tools.sec_to_time(time / N)}')
     pkl.dump([arr_times, fil, heap, kpi, s, time], open(pickle_file, 'wb'))
 
 

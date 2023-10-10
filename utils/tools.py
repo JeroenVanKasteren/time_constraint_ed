@@ -30,6 +30,7 @@ def load_args(raw_args=None):
     parser.add_argument('--instance', default='01')  # User input
     parser.add_argument('--method', default='not_specified')  # User input
     parser.add_argument('--x', default=0)  # User input
+    parser.add_argument('--max_iter', default=np.Inf)  # User input
     args = parser.parse_args(raw_args)
     args.job_id = int(args.job_id)
     args.array_id = int(args.array_id)
@@ -123,8 +124,10 @@ def generate_times(env, J, lab, mu, N):
     arrival_times = nb.typed.List[np.float32]()  # +1, last arrival
     service_times = nb.typed.List[np.float32]()
     for i in range(J):
-        arrival_times.append(nb.typed.List(env.rng.exponential(1 / lab[i], N + J)))
-        service_times.append(nb.typed.List(env.rng.exponential(1 / mu[i], N + J)))
+        arrival_times.append(nb.typed.List(env.rng.exponential(1 / lab[i],
+                                                               N + J)))
+        service_times.append(nb.typed.List(env.rng.exponential(1 / mu[i],
+                                                               N + J)))
     return arrival_times, service_times
 
 
