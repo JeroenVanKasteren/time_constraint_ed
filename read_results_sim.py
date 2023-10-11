@@ -58,7 +58,7 @@ for file in os.listdir(FILEPATH_PICKLES):
     # per time
     times = kpi_df['time'].values[T::T] - kpi_df['time'].values[::T][:-1]
     MA = kpi_df['reward'].rolling(window=T).sum().values[T::T] / times
-    kpi_df['g'].iloc[-1]
+    kpi_df['g'].values[T::T][-1]
     MA.mean()
     conf_int = norm.ppf(1-alpha/2) * MA.std() / np.sqrt(len(MA))
     inst.loc[row_id, ['g', 'conf_int']] = MA.mean(), conf_int

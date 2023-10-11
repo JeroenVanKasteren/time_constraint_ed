@@ -51,7 +51,7 @@ J, S, gamma, D, t, c, r, mu, lab, load, imbalance = (inst.J,
 
 env = Env(J=J, S=S, D=D, gamma=gamma, t=t, c=c, r=r, mu=mu, lab=lab,
           seed=args.job_id*args.array_id,
-          max_time=args.time, max_iter=args.max_iter, sim=1)
+          max_time=args.time, max_iter=N, sim=1)
 max_time = env.max_time
 p_xy = env.p_xy
 # regret = np.max(r) - r + c
