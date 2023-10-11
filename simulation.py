@@ -21,7 +21,7 @@ args = {'job_id': 1,
         'time': '0-00:30:00',
         'instance': '01',
         'method': 'not_specified',
-        'x': 1e3}
+        'x': 1e4}
 args = tools.DotDict(args)
 # args = tools.load_args()  # TODO
 

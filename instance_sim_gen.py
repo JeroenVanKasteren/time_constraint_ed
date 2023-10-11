@@ -17,7 +17,7 @@ methods = ['ospi', 'cmu', 'fcfs', 'sdf', 'sdf_prior']
 input_columns = ['J', 'S', 'gamma', 'D', 't', 'c', 'r', 'mu', 'lab', 'load',
                  'imbalance']
 instance_columns = [*input_columns, 'N', 'start_K', 'batch_T',
-                    'method', 'g', 'var']
+                    'method', 'g', 'conf_int']
 
 inst = pd.DataFrame(0, index=np.arange(len(methods)), columns=instance_columns)
 
