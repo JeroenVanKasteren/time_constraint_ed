@@ -30,9 +30,11 @@ param_grid = {'S': [2, 5, 10],
               'mu_2': np.array([1, 1.5, 2]) * MU_1_GRID,
               'load': [0.5, 0.6, 0.7, 0.8],  # 0.9?
               'imbalance': [1 / 3, 1, 3]}
-mu = ['mu_']*J  # TODO
-for i in range(J):
-    mu[i] += str(i+1)
+# Idea for J > 2
+# mu = ['mu_']*J
+# for i in range(J):
+#     mu[i] += str(i+1)
+
 grid = tools.get_instance_grid(J=2,
                                gamma=15,
                                e=1e-5,

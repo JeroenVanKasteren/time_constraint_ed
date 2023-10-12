@@ -7,7 +7,6 @@ import numba as nb
 import numpy as np
 import os
 import pandas as pd
-from time import strptime
 from sklearn.model_selection import ParameterGrid
 from utils import TimeConstraintEDs as Env
 from utils import OneStepPolicyImprovement as Ospi
@@ -58,9 +57,8 @@ def get_time(time_string):
             days, time = 0, '0:'+time_string
         else:
             days, time = 0, time_string
-        x = strptime(time, '%H:%M:%S')
-        return (((int(days) * 24 + x.tm_hour) * 60 + x.tm_min) * 60
-                + x.tm_sec - 60)
+        hour, minutes, sec = [int(x) for x in time.split(':')]
+        return (((int(days) * 24 + hour) * 60 + minutes) * 60 + sec - 60)
     else:
         return np.Inf
 
@@ -150,6 +148,14 @@ def remove_empty_files(directory):
     for file in os.listdir(directory):
         if os.path.getsize(os.path.join(directory, file)) == 0:
             os.remove(os.path.join(directory, file))
+
+
+def solved_and_left(inst):
+    print('Solved vi: ' + str(inst['vi_g'].count()) + '\n' +
+          'left vi: ' + str(len(inst) - inst['vi_g'].count()) + '\n' +
+          'Solved ospi: ' + str(inst['ospi_g'].count()) + '\n' +
+          'left ospi: ' + str(len(inst) - inst['ospi_g'].count()) + '\n' +
+          'Solved both: ' + str(inst['opt_gap'].count()))
 
 
 class DotDict(dict):

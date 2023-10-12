@@ -4,14 +4,12 @@ Iteratively solves different environments.
 Setup:
 N classes, N=2,3,4 (SIMS := # experiments each)
 
-python train.py --job_id 1 --array_id 1 --time 0-00:03:00 --instance 01
---method vi
+python train.py --job_id 1 --array_id 1 --time 0-00:03:00 --instance 02 --method vi
 
 @author: Jeroen van Kasteren (jeroen.van.kasteren@vu.nl)
 Created on 19-3-2020.
 """
 
-import argparse
 import numpy as np
 import os
 import pandas as pd
@@ -54,6 +52,11 @@ def main(raw_args=None):
               lab=inst.lab, mu=inst.mu, max_time=args.time,
               convergence_check=10)
     inst[args.method + '_job_id'] = str(args.job_id) + '_' + str(args.array_id)
+    inst[args.method + '_job_id'] = str(args.job_id) + '_' + str(args.array_id)
+    inst[args.method + '_time'] = args.time
+    inst.to_csv(FILEPATH_RESULT + args.instance + '_' + str(inst[0]) +
+                '_' + args.method +
+                '_job_' + str(args.job_id) + '_' + str(args.array_id) + '.csv')
 
     pi_learner = PolicyIteration()
     if args.method == 'vi':
@@ -78,7 +81,7 @@ def main(raw_args=None):
             learner.get_g(env, learner.V)
         else:
             learner.get_g(env, learner.V_app)
-    elif args.method == 'pi':
+    else:  # args.method == 'pi':
         learner = pi_learner
         pi_file = ('pi_' + args.instance + '_' + str(inst[0]) + '_pi.npz')
         v_file = ('v_' + args.instance + '_' + str(inst[0]) + '_pi.npz')

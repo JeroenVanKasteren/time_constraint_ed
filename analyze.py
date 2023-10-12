@@ -6,34 +6,21 @@ Load and visualize results.
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import os
-from time import perf_counter as clock
 from utils import tools
 
 INSTANCE_ID = '01'
 FILEPATH_INSTANCE = 'results/instances_' + INSTANCE_ID + '.csv'
-# FILEPATH_READ = 'results/read/'
-# FILEPATH_RESULT = 'results/'
 
-inst = pd.read_csv(FILEPATH_INSTANCE)
-cols = ['t', 'c', 'r', 'lab', 'mu']
-inst.loc[:, cols] = inst.loc[:, cols].applymap(tools.strip_split)
+inst = tools.inst_load(FILEPATH_INSTANCE)
 inst['vi_time'] = inst['vi_time'].map(
     lambda x: x if pd.isnull(x) else tools.get_time(x))
 inst['ospi_time'] = inst['ospi_time'].map(
     lambda x: x if pd.isnull(x) else tools.get_time(x))
-inst_part = inst[pd.notnull(inst['ospi_g']) | pd.notnull(inst['vi_g'])]
 inst_conv = inst[pd.notnull(inst['ospi_g']) & pd.notnull(inst['vi_g'])]
+inst_part = inst[pd.notnull(inst['ospi_g']) | pd.notnull(inst['vi_g'])]
+inst_tmp = inst[pd.notnull(inst['ospi_g_tmp']) & pd.notnull(inst['vi_g_tmp'])]
 
-print('Solved vi: ' + str(inst['vi_g'].count()) + '\n' +
-      'left vi: ' + str(len(inst) - inst['vi_g'].count()) + '\n' +
-      'Solved ospi: ' + str(inst['ospi_g'].count()) + '\n' +
-      'left ospi: ' + str(len(inst) - inst['ospi_g'].count()) + '\n' +
-      'Solved both: ' + str(inst['opt_gap'].count()))
-
-# Mark bad results where weighted average of cap_prob is too big >0.05
-# results['w_cap_prob'] = (results['cap_prob'] * results['lambda']
-#                          / results['lambda'].apply(sum)).apply(sum)
+tools.solved_and_left(inst)
 
 plt.hist(inst_conv['opt_gap'])
 plt.show()

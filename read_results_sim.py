@@ -58,26 +58,12 @@ for file in os.listdir(FILEPATH_PICKLES):
     # per time
     times = kpi_df['time'].values[T::T] - kpi_df['time'].values[::T][:-1]
     MA = kpi_df['reward'].rolling(window=T).sum().values[T::T] / times
-    kpi_df['g'].iloc[-1]
-    MA.mean()
+    # MA.mean()
     conf_int = norm.ppf(1-alpha/2) * MA.std() / np.sqrt(len(MA))
-    inst.loc[row_id, ['g', 'conf_int']] = MA.mean(), conf_int
-kpi_df['g'].iloc[:2*T]
-(kpi_df['time'] - kpi_df.loc[0, 'time']).iloc[:2*T]
-
-
-MA.std()
-norm.ppf(1-alpha/2)
-inst.loc[row_id, 'g'] = kpi_df['g'].iloc[-1]
-inst.columns
-
-# import matplotlib.pyplot as plt
-plt.scatter(np.arange(len(MA)), MA)
-plt.show()
+    inst.loc[row_id, ['g', 'conf_int']] = kpi_df['g'].iloc[-1], conf_int
 
 # K analyses
+# import matplotlib.pyplot as plt
 # MA = kpi_df['wait'].rolling(window=T).mean().iloc[T::T]
 # plt.scatter(np.arange(len(MA)), MA)
 # plt.show()
-
-
