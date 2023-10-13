@@ -67,3 +67,5 @@ for file in os.listdir(FILEPATH_PICKLES):
 # MA = kpi_df['wait'].rolling(window=T).mean().iloc[T::T]
 # plt.scatter(np.arange(len(MA)), MA)
 # plt.show()
+
+inst.to_csv(FILEPATH_INSTANCE, index=False)

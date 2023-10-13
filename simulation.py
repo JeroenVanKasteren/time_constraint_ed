@@ -174,20 +174,19 @@ def main():
     pickle_file = (FILEPATH_RESULT + args.instance + '_' + method + '.pkl')
     if pickle_file in os.listdir(FILEPATH_PICKLES):
         arr_times, fil, heap, kpi, s, time = pkl.load(open(pickle_file, 'rb'))
-        m = np.sum(kpi[:, 0] == 0)  # simulations left
-        if m < 2:
-            kpi = np.concat((kpi, np.zeros((N + 1, 3))))
-            n, m = N, 0
-        else:
-            n, m = m, len(kpi) - m
-        kpi = simulate_multi_class_system(arr_times=arr_times,
-                                          fil=fil,
-                                          heap=heap,
-                                          kpi=kpi,
-                                          n_admit=m,
-                                          s=s,
-                                          time=time,
-                                          sims=n)
+        n_done = np.sum(kpi[:, 0] > 0)
+        n_left = N - n_done
+        if n_left > 2:
+            if len(kpi) < N:
+                kpi = np.concat((kpi, np.zeros((N - len(kpi) + 1, 3))))
+            kpi = simulate_multi_class_system(arr_times=arr_times,
+                                              fil=fil,
+                                              heap=heap,
+                                              kpi=kpi,
+                                              n_admit=n_done,
+                                              s=s,
+                                              time=time,
+                                              sims=n_left)
     else:
         arr_times, fil, heap, kpi, s, time = simulate_multi_class_system()
     time = clock() - env.start_time
