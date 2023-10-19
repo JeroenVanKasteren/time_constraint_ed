@@ -23,22 +23,22 @@ inst = pd.DataFrame(0, index=np.arange(len(methods)), columns=instance_columns)
 
 inst['J'] = 3
 inst['S'] = 5
-inst['t'] = [np.array([30, 60, 120]) for r in range(len(inst))]
+inst['t'] = [np.array([10, 60, 120]) for r in range(len(inst))]
 inst['D'] = 240
 inst['gamma'] = 1/5
 inst['c'] = [np.array([1, 1, 1]) for r in range(len(inst))]
 inst['r'] = [np.array([1, 1, 1]) for r in range(len(inst))]
-inst['mu'] = [np.array([1/6, 1/12, 1/18]) for r in range(len(inst))]
-inst['load'] = 0.75
-inst['imbalance'] = [np.array([0.5, 0.4, 0.1]) for r in range(len(inst))]
+inst['mu'] = [np.array([1/2.19, 1/2, 1/0.51])*1/60 for r in range(len(inst))]
+inst['load'] = 0.8
+inst['imbalance'] = [np.array([18, 94, 172])*1/284 for r in range(len(inst))]
+# lab np.array([14/60*0.1, 14/60*0.4, 14/60*0.5])
 
 env = Env(J=inst['J'][0], S=inst['S'][0], D=inst['D'][0],
           gamma=inst['gamma'][0],
           t=inst['t'][0], c=inst['c'][0], r=inst['r'][0], mu=inst['mu'][0],
           load=inst['load'][0], imbalance=inst['imbalance'][0], sim=True)
 
-inst['lab'] = [np.array([14/60*0.1, 14/60*0.4, 14/60*0.5])
-               for r in range(len(inst))]
+inst['lab'] = [env.lab for r in range(len(inst))]
 inst['method'] = methods
 inst = inst[instance_columns]
 

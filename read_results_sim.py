@@ -16,7 +16,7 @@ FILEPATH_INSTANCE = 'results/instance_sim_' + INSTANCE_ID + '.csv'
 FILEPATH_READ = 'results/read/'
 FILEPATH_PICKLES = 'results/simulation_pickles/'
 
-start_K = int(1e2)
+start_K = int(1e3)
 M = 50
 alpha = 0.05
 
@@ -26,6 +26,7 @@ methods = inst['method'].values
 tools.remove_empty_files(FILEPATH_READ)
 
 # Process all unread result files
+# file = 'result_' + INSTANCE_ID + '_cmu.pkl'
 for file in os.listdir(FILEPATH_PICKLES):
     if not file.startswith('result_' + INSTANCE_ID):
         continue
@@ -58,6 +59,7 @@ for file in os.listdir(FILEPATH_PICKLES):
     # per time
     times = kpi_df['time'].values[T::T] - kpi_df['time'].values[::T][:-1]
     MA = kpi_df['reward'].rolling(window=T).sum().values[T::T] / times
+
     # MA.mean()
     conf_int = norm.ppf(1-alpha/2) * MA.std() / np.sqrt(len(MA))
     inst.loc[row_id, ['g', 'conf_int']] = kpi_df['g'].iloc[-1], conf_int

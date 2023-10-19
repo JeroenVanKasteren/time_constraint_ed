@@ -1,5 +1,6 @@
 """
 This file contains the simulation of the multi-class queueing system.
+python simulation.py --job_id 1 --array_id 1 --time 00:05:00 --instance 01 --x 1e5 --method vi
 """
 
 import heapq as hq
@@ -17,11 +18,11 @@ FILEPATH_RESULT = 'results/simulation_pickles/result_'
 
 # Debug
 args = {'job_id': 1,
-        'array_id': 2,
-        'time': '0-00:30:00',
+        'array_id': 3,
+        'time': '0-00:05:00',
         'instance': '01',
         'method': 'not_specified',
-        'x': 1e4}
+        'x': 1e5}
 args = tools.DotDict(args)
 # args = tools.load_args()  # TODO
 
@@ -29,12 +30,13 @@ inst = tools.inst_load(FILEPATH_INSTANCE + args.instance + '.csv')
 if args.method in inst['method']:
     method_id = inst['method'].lt(args.method).idxmax()
 else:
-    method_id = args.array_id
+    method_id = args.array_id - 1
 inst = inst.iloc[method_id]
 method = inst['method']
 
 # global constants
-N = int(args.x) if args.x > 0 else int(1e3)  # arrivals to simulate
+N = int(args.x) if args.x > 0 else int(1e4)  # arrivals to simulate
+
 # Moreover, sum up N when doing multiple runs (continuing runs).
 convergence_check = 1e4
 J, S, gamma, D, t, c, r, mu, lab, load, imbalance = (inst.J,
@@ -51,7 +53,8 @@ J, S, gamma, D, t, c, r, mu, lab, load, imbalance = (inst.J,
 
 env = Env(J=J, S=S, D=D, gamma=gamma, t=t, c=c, r=r, mu=mu, lab=lab,
           seed=args.job_id*args.array_id,
-          max_time=args.time, max_iter=N, sim=1)
+          max_time=args.time, max_iter=N, sim='yes')
+start_time = env.start_time
 max_time = env.max_time
 p_xy = env.p_xy
 # regret = np.max(r) - r + c
@@ -68,7 +71,7 @@ def ospi(fil, i, x):
     """One-step policy improvement.
     i indicate which class just arrived, i = J if no class arrived.
     """
-    x = np.minimum(np.round(x / gamma), D)
+    x = np.minimum(np.round(x / gamma), D - 1).astype(int)
     pi = J
     x_next = x if i == J else x + eye[i]
     v_sum = np.zeros(J)
@@ -80,7 +83,7 @@ def ospi(fil, i, x):
     for j in range(J):  # Class to admit
         if fil[j]:
             w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
-            w += p_xy[j, x[j], :x[j]+1] * (v_sum[j] + v[j, :x[j]+1])
+            w += sum(p_xy[j, x[j], :x[j]+1] * (v_sum[j] + v[j, :x[j]+1]))
             if w > w_max:
                 pi = j
                 w_max = w
@@ -162,36 +165,39 @@ def simulate_multi_class_system(arr_times=np.zeros(J, dtype=np.float32),
                 fil, heap, kpi, n_admit, s = admission(arr, arr_times, dep, fil,
                                                        heap, i, kpi, n_admit, s,
                                                        time, x)
-        # if (n_admit % convergence_check) == 0:
-        #     with nb.objmode():
-        #         if (clock() - start_time) > max_time:
-        #             broke = True
-        #             break
+        if (n_admit % convergence_check) == 0:
+            with nb.objmode():
+                if (clock() - start_time) > max_time:
+                    break
     return arr_times, fil, heap, kpi, s, time
 
 
 def main():
-    pickle_file = (FILEPATH_RESULT + args.instance + '_' + method + '.pkl')
+    pickle_file = 'result_' + args.instance + '_' + method + '.pkl'
     if pickle_file in os.listdir(FILEPATH_PICKLES):
-        arr_times, fil, heap, kpi, s, time = pkl.load(open(pickle_file, 'rb'))
+        arr_times, fil, heap, kpi, s, time = pkl.load(open(FILEPATH_RESULT +
+                                                           pickle_file, 'rb'))
         n_done = np.sum(kpi[:, 0] > 0)
         n_left = N - n_done
         if n_left > 2:
             if len(kpi) < N:
                 kpi = np.concat((kpi, np.zeros((N - len(kpi) + 1, 3))))
-            kpi = simulate_multi_class_system(arr_times=arr_times,
-                                              fil=fil,
-                                              heap=heap,
-                                              kpi=kpi,
-                                              n_admit=n_done,
-                                              s=s,
-                                              time=time,
-                                              sims=n_left)
+            arr_times, fil, heap, kpi, s, time = simulate_multi_class_system(
+                arr_times=arr_times,
+                fil=fil,
+                heap=heap,
+                kpi=kpi,
+                n_admit=n_done,
+                s=s,
+                time=time,
+                sims=n_left)
     else:
         arr_times, fil, heap, kpi, s, time = simulate_multi_class_system()
+        n_left = N
     time = clock() - env.start_time
     print(f'Total time: {tools.sec_to_time(time)}, '
-          f'time per iteration: {tools.sec_to_time(time / N)}')
+          f'time per 10,000 iterations: '
+          f'{tools.sec_to_time(time / n_left * 1e4)}')
     pkl.dump([arr_times, fil, heap, kpi, s, time], open(pickle_file, 'wb'))
 
 
