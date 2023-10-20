@@ -12,7 +12,7 @@ import os
 import pandas as pd
 from utils import TimeConstraintEDs as Env
 
-FILEPATH_INSTANCE = 'results/instance_sim_01.csv'
+FILEPATH_INSTANCE = 'results/instance_sim_08.csv'
 methods = ['ospi', 'cmu', 'fcfs', 'sdf', 'sdf_prior']
 input_columns = ['J', 'S', 'gamma', 'D', 't', 'c', 'r', 'mu', 'lab', 'load',
                  'imbalance']
@@ -21,17 +21,16 @@ instance_columns = [*input_columns, 'N', 'start_K', 'batch_T',
 
 inst = pd.DataFrame(0, index=np.arange(len(methods)), columns=instance_columns)
 
-inst['J'] = 3
-inst['S'] = 5
-inst['t'] = [np.array([10, 60, 120]) for r in range(len(inst))]
-inst['D'] = 240
-inst['gamma'] = 1/5
-inst['c'] = [np.array([1, 1, 1]) for r in range(len(inst))]
-inst['r'] = [np.array([1, 1, 1]) for r in range(len(inst))]
-inst['mu'] = [np.array([1/2.19, 1/2, 1/0.51])*1/60 for r in range(len(inst))]
-inst['load'] = 0.8
-inst['imbalance'] = [np.array([18, 94, 172])*1/284 for r in range(len(inst))]
-# lab np.array([14/60*0.1, 14/60*0.4, 14/60*0.5])
+inst['J'] = 6
+inst['S'] = 10
+inst['t'] = [np.array([1]*6)*60 for r in range(len(inst))]
+inst['D'] = 120
+inst['gamma'] = 1
+inst['c'] = [np.array([1, 1, 1, 1, 1, 1]) for r in range(len(inst))]
+inst['r'] = [np.array([1, 1, 1, 1, 1, 1]) for r in range(len(inst))]
+inst['mu'] = [np.array([1, 2, 3, 4, 5, 6]) for r in range(len(inst))]
+inst['load'] = 0.9
+inst['imbalance'] = [np.array([1, 2, 3, 4, 5, 6])/21 for r in range(len(inst))]
 
 env = Env(J=inst['J'][0], S=inst['S'][0], D=inst['D'][0],
           gamma=inst['gamma'][0],

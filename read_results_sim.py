@@ -16,7 +16,7 @@ FILEPATH_INSTANCE = 'results/instance_sim_' + INSTANCE_ID + '.csv'
 FILEPATH_READ = 'results/read/'
 FILEPATH_PICKLES = 'results/simulation_pickles/'
 
-start_K = int(1e3)
+start_K = int(1e4)
 M = 50
 alpha = 0.05
 
@@ -26,7 +26,7 @@ methods = inst['method'].values
 tools.remove_empty_files(FILEPATH_READ)
 
 # Process all unread result files
-# file = 'result_' + INSTANCE_ID + '_cmu.pkl'
+# file = 'result_' + INSTANCE_ID + '_sdf.pkl'
 for file in os.listdir(FILEPATH_PICKLES):
     if not file.startswith('result_' + INSTANCE_ID):
         continue
@@ -59,15 +59,20 @@ for file in os.listdir(FILEPATH_PICKLES):
     # per time
     times = kpi_df['time'].values[T::T] - kpi_df['time'].values[::T][:-1]
     MA = kpi_df['reward'].rolling(window=T).sum().values[T::T] / times
-
-    # MA.mean()
     conf_int = norm.ppf(1-alpha/2) * MA.std() / np.sqrt(len(MA))
+    # MA.mean()
     inst.loc[row_id, ['g', 'conf_int']] = kpi_df['g'].iloc[-1], conf_int
 
 # K analyses
 # import matplotlib.pyplot as plt
 # MA = kpi_df['wait'].rolling(window=T).mean().iloc[T::T]
 # plt.scatter(np.arange(len(MA)), MA)
+# plt.show()
+#
+# plt.scatter(np.arange(len(MA)), MA.cumsum()/np.arange(len(MA)))
+# plt.show()
+#
+# plt.scatter(np.arange(len(kpi_df)), kpi_df['g'])
 # plt.show()
 
 inst.to_csv(FILEPATH_INSTANCE, index=False)
