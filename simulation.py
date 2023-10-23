@@ -78,29 +78,31 @@ heap_type = nb.typeof((0.0, 0, 'event'))  # (time, class, event)
 eye = np.eye(J, dtype=int)
 v = tools.get_v_app(env)
 arrival_times, service_times = tools.generate_times(env, J, lab, mu, N)
-
+print(type(v))
 
 @nb.njit(tp.i8(tp.i4[:], tp.i8, tp.f8[:]))
 def ospi(fil, i, x):
     """One-step policy improvement.
     i indicate which class just arrived, i = J if no class arrived.
     """
-    x = np.minimum(np.round(x / gamma), D - 1).astype(int)
+    for i in range(J):
+        x[i] = min(int(x[i] / gamma), D - 1)
     pi = J
     x_next = x if i == J else x + eye[i]
     v_sum = np.zeros(J)
     w_max = 0
-    for j in range(J):
-        w_max += v[j, x_next[j]]
-        v_sum += v[j, x_next[j]]
-        v_sum[j] -= v[j, x_next[j]]
-    for j in range(J):  # Class to admit
-        if fil[j]:
-            w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
-            w += sum(p_xy[j, x[j], :x[j]+1] * (v_sum[j] + v[j, :x[j]+1]))
-            if w > w_max:
-                pi = j
-                w_max = w
+    print(type(x_next[0]))
+    # for j in range(J):
+    #     w_max += v[j, x_next[j]]
+    #     v_sum += v[j, x_next[j]]
+    #     v_sum[j] -= v[j, x_next[j]]
+    # for j in range(J):  # Class to admit
+    #     if fil[j]:
+    #         w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
+    #         w += sum(p_xy[j, x[j], :x[j]+1] * (v_sum[j] + v[j, :x[j]+1]))
+    #         if w > w_max:
+    #             pi = j
+    #             w_max = w
     return pi
 
 
@@ -124,7 +126,7 @@ def policy(fil, i, x):
         return np.nanargmax(np.where(fil, cmu, np.nan))
 
 
-@nb.njit(tp.Tuple(tp.i4, nb.typed.List, tp.i8[:], tp.i8, tp.i8)(
+@nb.njit(tp.Tuple((tp.i4[:], nb.typed.List(heap_type), tp.i8[:], tp.i8, tp.i8))(
     tp.i4, tp.f4[:], tp.i4,  tp.i4[:], nb.typed.List(heap_type), tp.i8[:],
     tp.i8, tp.i8[:], tp.i8, tp.i8, tp.i8, tp.f8, tp.f8[:]))
 def admission(arr, arr_times, dep, fil, heap, i, kpi, n_admit, s, time, x):
@@ -143,8 +145,8 @@ def admission(arr, arr_times, dep, fil, heap, i, kpi, n_admit, s, time, x):
     return fil, heap, kpi, n_admit, s
 
 
-@nb.njit(tp.Tuple(tp.f4[:], tp.i4[:], nb.typed.List, tp.i8[:],
-                        tp.i8, tp.f8)(
+@nb.njit(tp.Tuple((tp.f4[:], tp.i4[:], nb.typed.List, tp.i8[:],
+                   tp.i8, tp.f8))(
     tp.f4[:], tp.i4[:], nb.typed.List(heap_type), tp.i8[:], tp.i8, tp.i8, tp.f8,
     tp.i8))
 def simulate_multi_class_system(arr_times=np.zeros(J, dtype=np.float32),
