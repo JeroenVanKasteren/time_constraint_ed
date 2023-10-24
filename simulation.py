@@ -32,10 +32,10 @@ FILEPATH_RESULT = 'results/simulation_pickles/result_'
 
 # Debug
 args = {'job_id': 1,
-        'array_id': 4,
+        'array_id': 5,
         'time': '0-00:05:00',
         'instance': '01',
-        'method': 'ospi',
+        'method': 'not specified',
         'x': 1e5}
 args = tools.DotDict(args)
 # args = tools.load_args()  # TODO
@@ -72,41 +72,43 @@ start_time = env.start_time
 max_time = env.max_time
 p_xy = env.p_xy
 # regret = np.max(r) - r + c
-cmu = c * mu
+sorted_order = sorted(tuple(zip(c * mu, t, range(J))), reverse=True)
+unsorted_order = sorted(zip(sorted_order, range(J)), key=lambda x: x[0][2])
+cmu_order = [item[1] for item in unsorted_order]
 
 heap_type = nb.typeof((0.0, 0, 'event'))  # (time, class, event)
 eye = np.eye(J, dtype=int)
 v = tools.get_v_app(env)
 arrival_times, service_times = tools.generate_times(env, J, lab, mu, N)
-print(type(v))
 
-@nb.njit(tp.i8(tp.i4[:], tp.i8, tp.f8[:]))
+
+# @nb.njit(tp.i8(tp.i4[:], tp.i8, tp.f8[:]))
 def ospi(fil, i, x):
     """One-step policy improvement.
     i indicate which class just arrived, i = J if no class arrived.
     """
-    for i in range(J):
-        x[i] = min(int(x[i] / gamma), D - 1)
+    x = np.minimum(np.round(x / gamma, 0), D - 1).astype(int)
+    # for i in range(J):
+    #     x[i] = min(np.round(x[i] / gamma, 0), D - 1)
     pi = J
     x_next = x if i == J else x + eye[i]
     v_sum = np.zeros(J)
     w_max = 0
-    print(type(x_next[0]))
-    # for j in range(J):
-    #     w_max += v[j, x_next[j]]
-    #     v_sum += v[j, x_next[j]]
-    #     v_sum[j] -= v[j, x_next[j]]
-    # for j in range(J):  # Class to admit
-    #     if fil[j]:
-    #         w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
-    #         w += sum(p_xy[j, x[j], :x[j]+1] * (v_sum[j] + v[j, :x[j]+1]))
-    #         if w > w_max:
-    #             pi = j
-    #             w_max = w
+    for j in range(J):
+        w_max += v[j, x_next[j]]
+        v_sum += v[j, x_next[j]]
+        v_sum[j] -= v[j, x_next[j]]
+    for j in range(J):  # Class to admit
+        if fil[j]:
+            w = r[j] - c[j] if x[j] > gamma * t[j] else r[j]
+            w += sum(p_xy[j, x[j], :x[j]+1] * (v_sum[j] + v[j, :x[j]+1]))
+            if w > w_max:
+                pi = j
+                w_max = w
     return pi
 
 
-@nb.njit(tp.i8(tp.i4[:], tp.i8, tp.f8[:]))
+# @nb.njit(tp.i8(tp.i4[:], tp.i8, tp.f8[:]))
 def policy(fil, i, x):
     """Return the class to admit, assumes at least one FIL."""
     if method == 'ospi':
@@ -118,17 +120,17 @@ def policy(fil, i, x):
     elif method == 'sdf_prior':
         y = t - x  # Time till deadline
         on_time = y >= 0
-        if np.any(on_time):
-            np.nanargmin(np.where(fil & on_time, t - x, np.nan))
+        if np.any(fil & on_time):
+            return np.nanargmin(np.where(fil & on_time, t - x, np.nan))
         else:  # FCFS
-            np.nanargmax(np.where(fil, x, np.nan))
+            return np.nanargmin(np.where(fil, x, np.nan))
     elif method == 'cmu':
-        return np.nanargmax(np.where(fil, cmu, np.nan))
+        return np.nanargmin(np.where(fil, cmu_order, np.nan))
 
 
-@nb.njit(tp.Tuple((tp.i4[:], nb.typed.List(heap_type), tp.i8[:], tp.i8, tp.i8))(
-    tp.i4, tp.f4[:], tp.i4,  tp.i4[:], nb.typed.List(heap_type), tp.i8[:],
-    tp.i8, tp.i8[:], tp.i8, tp.i8, tp.i8, tp.f8, tp.f8[:]))
+# @nb.njit(tp.Tuple((tp.i4[:], nb.typed.List(heap_type), tp.i8[:], tp.i8, tp.i8))(
+#     tp.i4, tp.f4[:], tp.i4,  tp.i4[:], nb.typed.List(heap_type), tp.i8[:],
+#     tp.i8, tp.i8[:], tp.i8, tp.i8, tp.i8, tp.f8, tp.f8[:]))
 def admission(arr, arr_times, dep, fil, heap, i, kpi, n_admit, s, time, x):
     """Assumes that sum(s)<S."""
     pi = policy(fil, i, x)
@@ -145,13 +147,13 @@ def admission(arr, arr_times, dep, fil, heap, i, kpi, n_admit, s, time, x):
     return fil, heap, kpi, n_admit, s
 
 
-@nb.njit(tp.Tuple((tp.f4[:], tp.i4[:], nb.typed.List, tp.i8[:],
-                   tp.i8, tp.f8))(
-    tp.f4[:], tp.i4[:], nb.typed.List(heap_type), tp.i8[:], tp.i8, tp.i8, tp.f8,
-    tp.i8))
+# @nb.njit(tp.Tuple((tp.f4[:], tp.i4[:], nb.typed.List, tp.i8[:],
+#                    tp.i8, tp.f8))(
+#     tp.f4[:], tp.i4[:], nb.typed.List(heap_type), tp.i8[:], tp.i8, tp.i8, tp.f8,
+#     tp.i8))
 def simulate_multi_class_system(arr_times=np.zeros(J, dtype=np.float32),
                                 fil=np.zeros(J, dtype=np.int32),
-                                heap = nb.typed.List.empty_list(heap_type),  # heap=[],
+                                heap=[],  # nb.typed.List.empty_list(heap_type),
                                 kpi=np.zeros((N + 1, 3), dtype=np.float64),
                                 n_admit=0,
                                 s=0,
@@ -218,13 +220,14 @@ def main():
         n_left = N
     if n_left > 0:
         time = clock() - env.start_time
-        print(f'Sims done: {np.sum(kpi[:, 0] > 0)}. (N={N}, n_left={n_left}) '
+        print(f'Sims done: {np.sum(kpi[:, 0] > 0)} (N={N}, n_left={n_left}). '
               f'Total time: {tools.sec_to_time(time)}, '
               f'time per 10,000 iterations: '
-              f'{tools.sec_to_time(time / n_left * 1e4)}')
+              f'{tools.sec_to_time(time / n_left * 1e4)}.')
         pkl.dump([arr_times, fil, heap, kpi, s, time], open(FILEPATH_PICKLES +
                                                             pickle_file, 'wb'))
-
+    else:
+        print(f'Already done {N} sims.')
 
 if __name__ == '__main__':
     main()
