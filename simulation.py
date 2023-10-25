@@ -21,7 +21,7 @@ import numba as nb
 import numpy as np
 import os
 import pickle as pkl
-from numba import types as tp
+# from numba import types as tp
 from time import perf_counter as clock
 from utils import TimeConstraintEDs as Env
 from utils import tools
@@ -31,23 +31,22 @@ FILEPATH_PICKLES = 'results/simulation_pickles/'
 FILEPATH_RESULT = 'results/simulation_pickles/result_'
 
 # Debug
-args = {'job_id': 1,
-        'array_id': 6,
-        'time': '0-00:05:00',
-        'instance': '01',
-        'method': 'not specified',
-        'x': 1e5}
-args = tools.DotDict(args)
-# args = tools.load_args()
+# args = {'job_id': 1,
+#         'array_id': 6,
+#         'time': '0-00:05:00',
+#         'instance': '01',
+#         'method': 'not specified',
+#         'x': 1e5}
+# args = tools.DotDict(args)
+args = tools.load_args()
 
-inst_nr = int(args.instance) + (args.array_id/5).astype(int)
+inst_nr = int(args.instance) + int(args.array_id/5)
 if inst_nr < 10:
     instance = '0' + str(inst_nr)
 else:
     instance = str(inst_nr)
-array_id = np.arange(20) % 5
 
-inst = tools.inst_load(FILEPATH_INSTANCE + args.instance + '.csv')
+inst = tools.inst_load(FILEPATH_INSTANCE + instance + '.csv')
 if args.method in inst['method'].values:
     method_id = (inst['method'] == args.method).idxmax()
 else:
