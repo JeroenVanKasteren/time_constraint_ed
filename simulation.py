@@ -32,19 +32,26 @@ FILEPATH_RESULT = 'results/simulation_pickles/result_'
 
 # Debug
 args = {'job_id': 1,
-        'array_id': 5,
+        'array_id': 6,
         'time': '0-00:05:00',
         'instance': '01',
         'method': 'not specified',
         'x': 1e5}
 args = tools.DotDict(args)
-# args = tools.load_args()  # TODO
+# args = tools.load_args()
+
+inst_nr = int(args.instance) + (args.array_id/5).astype(int)
+if inst_nr < 10:
+    instance = '0' + str(inst_nr)
+else:
+    instance = str(inst_nr)
+array_id = np.arange(20) % 5
 
 inst = tools.inst_load(FILEPATH_INSTANCE + args.instance + '.csv')
 if args.method in inst['method'].values:
     method_id = (inst['method'] == args.method).idxmax()
 else:
-    method_id = args.array_id - 1
+    method_id = (args.array_id - 1) % 5
 inst = inst.iloc[method_id]
 method = inst['method']
 
