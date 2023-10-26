@@ -33,7 +33,7 @@ def load_args(raw_args=None):
     args = parser.parse_args(raw_args)
     args.job_id = int(args.job_id)
     args.array_id = int(args.array_id)
-    args.x = int(args.x)
+    args.x = int(float(args.x))
     return args
 
 

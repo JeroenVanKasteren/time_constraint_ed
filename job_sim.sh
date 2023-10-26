@@ -9,4 +9,4 @@
 # time is rounded to minutes
 TIMELIMIT=`squeue -j $SLURM_JOB_ID -o "%l" | tail -1`
 
-python train.py --job_id $SLURM_JOBID --array_id $SLURM_ARRAY_TASK_ID --time $TIMELIMIT --instance 01 --x 1e7
+python simulation.py --job_id $SLURM_JOBID --array_id $SLURM_ARRAY_TASK_ID --time $TIMELIMIT --instance 01 --x 1e7
