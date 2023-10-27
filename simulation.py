@@ -203,7 +203,7 @@ def simulate_multi_class_system(arr_times=np.zeros(J, dtype=np.float32),
 
 
 def main():
-    pickle_file = 'result_' + args.instance + '_' + method + '.pkl'
+    pickle_file = 'result_' + instance + '_' + method + '.pkl'
     if pickle_file in os.listdir(FILEPATH_PICKLES):
         arr_times, fil, heap, kpi, s, time = pkl.load(open(FILEPATH_PICKLES +
                                                            pickle_file, 'rb'))
