@@ -11,7 +11,10 @@ import os
 from scipy.stats import norm
 from utils import tools
 
-INSTANCE_ID = '01'
+for inst_nr in range(1, 8):
+    ...  # TODO
+
+INSTANCE_ID = [instance = '0' + str(inst_nr)
 FILEPATH_INSTANCE = 'results/instance_sim_' + INSTANCE_ID + '.csv'
 FILEPATH_READ = 'results/read/'
 FILEPATH_PICKLES = 'results/simulation_pickles/'
