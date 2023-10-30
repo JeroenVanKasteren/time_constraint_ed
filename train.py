@@ -36,10 +36,6 @@ def main(raw_args=None):
     cols = ['t', 'c', 'r', 'lab', 'mu']
     inst.loc[:, cols] = inst.loc[:, cols].applymap(tools.strip_split)
     inst = inst[pd.isnull(inst[args.method + '_g'])]
-    # inst[args.method + '_time'] = inst[args.method + '_time'].map(
-    #     lambda x: x if pd.isnull(x) else tools.get_time(x))
-    # inst = inst[(inst[args.method + '_time'] < tools.get_time(args.time)) |
-    #             pd.isnull(inst[args.method + '_time'])]
 
     if args.array_id - 1 + args.x >= len(inst):
         print('No more instances to solve within', args.time,
@@ -81,6 +77,13 @@ def main(raw_args=None):
             learner.get_g(env, learner.V)
         else:
             learner.get_g(env, learner.V_app)
+    elif args.method == 'sdf':
+        learner = OneStepPolicyImprovement(env, pi_learner)
+        v_file = ('v_' + args.instance + '_' + str(inst[0]) + '_sdf.npz')
+        if v_file in os.listdir(FILEPATH_V):
+            print('Loading V from file')
+            learner.V = np.load(FILEPATH_V + v_file)['arr_0']
+        learner.get_g(env, learner.V)
     else:  # args.method == 'pi':
         learner = pi_learner
         pi_file = ('pi_' + args.instance + '_' + str(inst[0]) + '_pi.npz')
@@ -98,7 +101,7 @@ def main(raw_args=None):
         np.savez(FILEPATH_V + 'g_' + args.instance + '_' + str(inst[0]) + '_'
                  + args.method + '.npz', g_mem)
 
-    if args.method in ['vi', 'ospi']:
+    if args.method != 'pi':
         if learner.g != 0:
             inst.at[args.method + '_g_tmp'] = learner.g
         if learner.converged:

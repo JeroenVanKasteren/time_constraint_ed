@@ -151,11 +151,15 @@ def remove_empty_files(directory):
 
 
 def solved_and_left(inst):
-    print('Solved vi: ' + str(inst['vi_g'].count()) + '\n' +
-          'left vi: ' + str(len(inst) - inst['vi_g'].count()) + '\n' +
-          'Solved ospi: ' + str(inst['ospi_g'].count()) + '\n' +
-          'left ospi: ' + str(len(inst) - inst['ospi_g'].count()) + '\n' +
-          'Solved both: ' + str(inst['opt_gap'].count()))
+    methods = [column.split('_')[0] for column in inst.columns
+               if column.endswith('job_id')]
+    for method in methods:
+        print('Solved ' + method + ': ' + str(inst[method + '_g'].count()) +
+              ', left: ' +
+              str(len(inst) - inst[method + '_g'].count()))
+        if method != 'vi':
+            print('Solved both for ' + method + ': ' +
+                  str(inst[method + '_opt_gap'].count()))
 
 
 class DotDict(dict):

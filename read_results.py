@@ -8,7 +8,7 @@ import pandas as pd
 import os
 from utils import tools
 
-INSTANCE_ID = '01'
+INSTANCE_ID = '02'
 FILEPATH_INSTANCE = 'results/instances_' + INSTANCE_ID + '.csv'
 FILEPATH_READ = 'results/read/'
 FILEPATH_RESULT = 'results/'
@@ -22,7 +22,7 @@ for file in os.listdir(FILEPATH_RESULT):
         continue
     result = pd.read_csv(FILEPATH_RESULT + file, index_col=0)
     index = int(result.loc['Unnamed: 0'][0])
-    method = 'vi' if 'vi' in file else 'ospi'
+    method = file.split('_')[3]
     inst.loc[index, method + '_iter'] = result.loc[method + '_iter'][0]
     inst.loc[index, method + '_time'] = result.loc[method + '_time'][0]
     inst.loc[index, method + '_g_tmp'] = result.loc[method + '_g_tmp'][0]
@@ -34,11 +34,12 @@ for file in os.listdir(FILEPATH_RESULT):
         print('Instance', INSTANCE_ID + '_' + str(index),
               'already solved. Redundant job with id:',
               result.loc[method + '_job_id'][0])
-    if(pd.notnull(inst.loc[index, 'ospi_g']) &
+    if(pd.notnull(inst.loc[index, method + '_g']) &
             pd.notnull(inst.loc[index, 'vi_g'])):
-        inst.loc[index, 'opt_gap'] = (abs(float(inst.loc[index, 'ospi_g'])
-                                          - float(inst.loc[index, 'vi_g']))
-                                      / float(inst.loc[index, 'vi_g']))
+        inst.loc[index, method + '_opt_gap'] = \
+            (abs(float(inst.loc[index, method + '_g'])
+                 - float(inst.loc[index, 'vi_g']))
+             / float(inst.loc[index, 'vi_g']))
     os.rename(FILEPATH_RESULT + file, FILEPATH_READ + file)
 
 tools.solved_and_left(inst)

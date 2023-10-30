@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name "time_constraint_ED_sim"
 #SBATCH --nodes 1
-#SBATCH --time 0-00:10:00
-#SBATCH --array 1-5
+#SBATCH --time 0-03:00:00
+#SBATCH --array 1-40
 #SBATCH --output results/read/prints_%A_%a.out
 #SBATCH --error results/read/prints_%A_%a.err
 

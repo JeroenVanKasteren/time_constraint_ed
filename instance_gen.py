@@ -14,13 +14,15 @@ from utils import tools
 FILEPATH_INSTANCE = 'results/instances_02.csv'
 instance_columns = ['J', 'S', 'D', 'size', 'size_i',
                     'gamma', 'e', 't', 'c', 'r', 'P',
-                    'lab', 'mu', 'load', 'target_prob',
-                    'vi_job_id', 'vi_attempts', 'vi_time', 'vi_iter',
-                    'vi_g_tmp', 'vi_g',
-                    'ospi_job_id',
-                    'ospi_attempts', 'ospi_time', 'ospi_iter',
-                    'vi_g_tmp', 'ospi_g',
-                    'opt_gap']
+                    'lab', 'mu', 'load', 'target_prob']
+methods = ['vi', 'ospi', 'sdf']
+
+columns = ['_job_id', '_attempts', '_time', '_iter', '_g_tmp', '_g']
+heuristic_columns = ['_opt_gap_tmp', '_opt_gap']
+for method in methods:
+    instance_columns.extend([method + s for s in columns])
+    if method != 'vi':
+        instance_columns.extend([method + s for s in heuristic_columns])
 
 J = 2
 MU_1_GRID = [1/3]
@@ -46,19 +48,17 @@ grid = tools.get_instance_grid(J=2,
                                max_target_prob=0.9)
 
 # Derive solved from value for g.
-grid['vi_job_id'] = ''
-grid['vi_attempts'] = 0
-grid['vi_time'] = '00:00'
-grid['vi_iter'] = 0
-grid['vi_g_tmp'] = np.nan
-grid['vi_g'] = np.nan
-grid['ospi_job_id'] = ''
-grid['ospi_attempts'] = 0
-grid['ospi_time'] = '00:00'
-grid['ospi_iter'] = 0
-grid['ospi_g_tmp'] = np.nan
-grid['ospi_g'] = np.nan
-grid['opt_gap'] = np.nan
+for method in methods:
+    grid[method + '_job_id'] = ''
+    grid[method + '_attempts'] = 0
+    grid[method + '_time'] = '00:00'
+    grid[method + '_iter'] = 0
+    grid[method + '_g_tmp'] = np.nan
+    grid[method + '_g'] = np.nan
+    if method != 'vi':
+        grid[method + '_opt_gap_tmp'] = np.nan
+        grid[method + '_opt_gap'] = np.nan
+
 grid = grid[instance_columns]
 
 if os.path.isfile(FILEPATH_INSTANCE):

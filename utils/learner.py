@@ -32,10 +32,10 @@ class PolicyIteration:
         self.stable = False
 
     @staticmethod
-    def init_pi(env):
+    def init_pi(env, method):
         """
         Take the longest waiting queue into service (or last queue if tied).
-        Take arrivals directly into service.
+        Take arrivals into service when empty.
         """
         Pi = env.NOT_EVALUATED * np.ones(env.dim_i, dtype=np.int32)
         for s in env.s_states_v:
@@ -49,11 +49,16 @@ class PolicyIteration:
                     states_[1 + i] = x  # x_i = x
                     for j in range(env.J):
                         if j != i:
-                            states_[1 + j] = slice(0, x + 1)  # 0 <= x_j <= x_i
+                            if method == 'fcfs':
+                                x_max = x
+                            else:  # method == 'sdf':
+                                x_max = min(env.D,
+                                            max(0, env.gamma * env.t[j] -
+                                                (env.gamma * env.t[i] - x)))
+                            states_[1 + j] = slice(0, x_max + 1)
                     Pi[tuple(states_)] = i + 1
-                states_ = states.copy()
+                states_ = np.append([0] * (1 + env.J), s)
                 states_[0] = i
-                states_[1 + i] = 0
                 Pi[tuple(states_)] = i + 1  # Admit arrival (of i)
             states = np.concatenate(([env.J], [0] * env.J, s), axis=0)
             Pi[tuple(states)] = env.NONE_WAITING  # x_i = 0 All i
@@ -264,7 +269,7 @@ class PolicyIteration:
             s.Pi = kwargs.get('Pi')
         else:
             s.V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
-            s.Pi = s.init_pi(env)
+            s.Pi = s.init_pi(env, 'sdf')
         s.W = np.zeros(env.dim_i, dtype=np.float32)
 
         s.Pi = s.Pi.reshape(env.size_i)
@@ -301,7 +306,7 @@ class ValueIteration:
         self.V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
         self.V_t = np.zeros(env.dim, dtype=np.float32)
         self.W = np.zeros(env.dim_i, dtype=np.float32)
-        self.Pi = pi_learner.init_pi(env)
+        self.Pi = pi_learner.init_pi(env, 'sdf')
         self.g = 0
         self.iter = 0
         self.converged = False
@@ -373,6 +378,7 @@ class ValueIteration:
         s.W = s.W.reshape(env.dim_i)
         s.Pi = s.Pi.reshape(env.dim_i)
 
+
 class OneStepPolicyImprovement:
     """One-step policy improvement."""
 
@@ -381,7 +387,7 @@ class OneStepPolicyImprovement:
         self.V_app = self.get_v_app(env)
         if pi_learner is not None:
             self.pi_learner = pi_learner
-            self.Pi = pi_learner.init_pi(env)
+            self.Pi = pi_learner.init_pi(env, 'sdf')
             self.V = np.zeros(env.dim, dtype=np.float32)
             self.g = 0
             self.iter = 0
