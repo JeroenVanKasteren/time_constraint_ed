@@ -55,7 +55,7 @@ class PolicyIteration:
                                 x_max = min(env.D,
                                             max(0, env.gamma * env.t[j] -
                                                 (env.gamma * env.t[i] - x)))
-                            states_[1 + j] = slice(0, x_max + 1)
+                            states_[1 + j] = slice(0, int(x_max + 1))
                     Pi[tuple(states_)] = i + 1
                 states_ = np.append([0] * (1 + env.J), s)
                 states_[0] = i
