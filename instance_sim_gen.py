@@ -13,7 +13,7 @@ import pandas as pd
 from utils import TimeConstraintEDs as Env
 
 FILEPATH_INSTANCE = 'results/instance_sim_08.csv'
-methods = ['ospi', 'cmu', 'fcfs', 'sdf', 'sdf_prior']
+methods = ['ospi', 'cmu', 'fcfs', 'sdf', 'sdfprior']
 input_columns = ['J', 'S', 'gamma', 'D', 't', 'c', 'r', 'mu', 'lab', 'load',
                  'imbalance']
 instance_columns = [*input_columns, 'N', 'start_K', 'batch_T',

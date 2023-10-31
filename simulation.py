@@ -123,7 +123,7 @@ def policy(fil, i, x):
         return np.nanargmax(np.where(fil, x, np.nan))
     elif method == 'sdf':  # argmin(t - x)
         return np.nanargmin(np.where(fil, t - x, np.nan))
-    elif method == 'sdf_prior':
+    elif method == 'sdfprior':
         y = t - x  # Time till deadline
         on_time = y >= 0
         if np.any(fil & on_time):
