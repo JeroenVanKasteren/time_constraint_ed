@@ -61,18 +61,4 @@ for instance_name in instance_names:
         conf_int = norm.ppf(1-alpha/2) * MA.std() / np.sqrt(len(MA))
         # MA.mean()
         inst.loc[row_id, ['g', 'conf_int']] = kpi_df['g'].iloc[-1], conf_int
-    inst.to_csv(FILEPATH_INSTANCE, index=False)
-
-# K analyses
-# import matplotlib.pyplot as plt
-# MA = kpi_df['wait'].rolling(window=T).mean().iloc[T::T]
-# plt.scatter(np.arange(len(MA)), MA)
-# plt.show()
-#
-# plt.scatter(np.arange(len(MA)), MA.cumsum()/np.arange(len(MA)))
-# plt.show()
-#
-# plt.scatter(np.arange(len(kpi_df)), kpi_df['g'])
-# plt.show()
-
-
+    inst.to_csv(FILEPATH_INSTANCE + instance_name, index=False)
