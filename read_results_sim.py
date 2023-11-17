@@ -62,3 +62,4 @@ for instance_name in instance_names:
         # MA.mean()
         inst.loc[row_id, ['g', 'conf_int']] = kpi_df['g'].iloc[-1], conf_int
     inst.to_csv(FILEPATH_INSTANCE + instance_name, index=False)
+    print('saved:', instance_name)
