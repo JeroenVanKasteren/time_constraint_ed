@@ -23,16 +23,17 @@ tools.remove_empty_files(FILEPATH_READ)
 
 instance_names = [f for f in os.listdir(FILEPATH_INSTANCE)
                   if f.startswith('instance_sim_')]
+
+# Debug
+# instance_name = instance_names[0]
+# methods = ['ospi', 'cmu', 'fcfs', 'sdf', 'sdfprior']
+
 for instance_name in instance_names:
     inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)
     instance_id = instance_name.split('_')[2][:-4]
     methods = inst['method'].values
-    for file in os.listdir(FILEPATH_PICKLES):
-        if not file.startswith('result_' + instance_id + '_sdf.pkl'):
-            continue
-        method = file.split('_')[2][:-4]
-        print(method)
-        row_id = (inst['method'] == method).idxmax()
+    for row_id, method in enumerate(methods):
+        file = 'result_' + instance_id + '_' + method + '.pkl'
         _, _, _, kpi, _, _ = pkl.load(open(FILEPATH_PICKLES + file, 'rb'))
         kpi_df = pd.DataFrame(kpi, columns=['time', 'class', 'wait'])
         N = len(kpi_df)
