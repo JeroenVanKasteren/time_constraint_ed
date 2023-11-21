@@ -23,10 +23,15 @@ tools.remove_empty_files(FILEPATH_READ)
 
 instance_names = [f for f in os.listdir(FILEPATH_INSTANCE)
                   if f.startswith('instance_sim_')]
-
 # Debug
-# instance_name = instance_names[0]
-# methods = ['ospi', 'cmu', 'fcfs', 'sdf', 'sdfprior']
+"""
+instance_name = instance_names[0]
+inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)
+instance_id = instance_name.split('_')[2][:-4]
+methods = ['ospi', 'cmu', 'fcfs', 'sdf', 'sdfprior']
+method = methods[0]
+row_id = 0
+"""
 
 for instance_name in instance_names:
     inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)

@@ -72,7 +72,7 @@ J, S, gamma, D, t, c, r, mu, lab, load, imbalance = (inst.J,
                                                      inst.imbalance)
 
 env = Env(J=J, S=S, D=D, gamma=gamma, t=t, c=c, r=r, mu=mu, lab=lab,
-          seed=args.job_id*args.array_id,
+          seed=inst_nr,  # args.job_id*args.array_id,
           max_time=args.time, max_iter=N, sim='yes')
 start_time = env.start_time
 max_time = env.max_time
