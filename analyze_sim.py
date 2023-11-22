@@ -15,20 +15,27 @@ FILEPATH_PICKLES = 'results/simulation_pickles/'
 
 instance_names = [f for f in os.listdir(FILEPATH_INSTANCE)
                   if f.startswith('instance_sim_')]
-inst_nrs = [name.split('_')[2][:-4] for name in instance_names]
+# inst_nrs = [name.split('_')[2][:-4] for name in instance_names]
 
 inst = tools.inst_load(FILEPATH_INSTANCE + instance_names[0])
 methods = inst['method'].values
+# methods = ['ospi', 'cmu', 'fcfs', 'sdf', 'sdfprior']
 
-methods = ['ospi', 'cmu', 'fcfs', 'sdf', 'sdfprior']
-performances = {method: [] for method in methods}
+"""
+instance_name = instance_names[7]
+inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)
+instance_id = instance_name.split('_')[2][:-4]
+methods = inst['method'].values
+method = methods[4]
+row_id = 4
+"""
 
-method = methods[3]
+performances = {method: [[], []] for method in methods}
 for instance_name in instance_names:
-    inst = tools.inst_load(FILEPATH_INSTANCE + instance_names[0])
-    for method in methods:
-        performances[method].extend([inst['g'], inst['conf_int']])
-        # inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)
+    inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)
+    for row_id, method in enumerate(methods):
+        performances[method][0].extend([inst.loc[row_id, 'g']])
+        performances[method][1].extend([inst.loc[row_id, 'conf_int']])
 
 x = np.arange(len(methods))  # the label locations
 width = 0.25  # the width of the bars

@@ -25,12 +25,12 @@ instance_names = [f for f in os.listdir(FILEPATH_INSTANCE)
                   if f.startswith('instance_sim_')]
 # Debug
 """
-instance_name = instance_names[0]
+instance_name = instance_names[7]
 inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)
 instance_id = instance_name.split('_')[2][:-4]
-methods = ['ospi', 'cmu', 'fcfs', 'sdf', 'sdfprior']
-method = methods[0]
-row_id = 0
+methods = inst['method'].values
+method = methods[4]
+row_id = 4
 """
 
 for instance_name in instance_names:
@@ -52,8 +52,8 @@ for instance_name in instance_names:
                    inst.loc[row_id, 'c'])
         for i in range(inst.loc[row_id, 'J']):
             mask = (kpi_df['class'] == i)
-            kpi_df.loc[mask, 'reward'] = np.where(kpi_df.loc[mask, 'wait'] <= t[i],
-                                                  r[i], r[i] - c[i])
+            kpi_df.loc[mask, 'reward'] = np.where(kpi_df.loc[mask, 'wait']
+                                                  <= t[i], r[i], r[i] - c[i])
             kpi_df.loc[mask, 'target'] = \
                 (np.where(kpi_df.loc[mask, 'wait'] <= t[i], 1, 0).cumsum()
                  / np.arange(1, sum(mask) + 1))
