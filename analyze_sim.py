@@ -15,11 +15,10 @@ FILEPATH_PICKLES = 'results/simulation_pickles/'
 
 instance_names = [f for f in os.listdir(FILEPATH_INSTANCE)
                   if f.startswith('instance_sim_')]
-# inst_nrs = [name.split('_')[2][:-4] for name in instance_names]
+inst_nrs = [name.split('_')[2][:-4] for name in instance_names]
 
 inst = tools.inst_load(FILEPATH_INSTANCE + instance_names[0])
 methods = inst['method'].values
-# methods = ['ospi', 'cmu', 'fcfs', 'sdf', 'sdfprior']
 
 """
 instance_name = instance_names[7]
@@ -31,29 +30,33 @@ row_id = 4
 """
 
 performances = {method: [[], []] for method in methods}
+min_y, max_y = 0, 0
 for instance_name in instance_names:
     inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)
     for row_id, method in enumerate(methods):
         performances[method][0].extend([inst.loc[row_id, 'g']])
         performances[method][1].extend([inst.loc[row_id, 'conf_int']])
+    min_y = np.min([min_y, np.min(inst['g']-inst['conf_int'])])
+    max_y = np.max([max_y, np.max(inst['g']+inst['conf_int'])])
+min_y, max_y = np.floor(min_y*1.2), np.ceil(max_y*1.2)
 
-x = np.arange(len(methods))  # the label locations
-width = 0.25  # the width of the bars
+x = np.arange(len(instance_names))  # the label locations
+width = 0.15  # the width of the bars
 multiplier = 0
 
 fig, ax = plt.subplots(layout='constrained')
-for method, g, conf_int in performances.items():
+for method, [g, conf_int] in performances.items():
+    g, conf_int = np.array(g), np.array(conf_int)
     offset = width * multiplier
-    rects = ax.bar(x + offset, g, width, label=method, yerr=(g-conf_int,
-                                                             g+conf_int))
-    ax.bar_label(rects, padding=3)
+    rects = ax.bar(x + offset, g, width, label=method, yerr=conf_int)
+    ax.bar_label(rects, padding=3, fmt='{0:.3f}', fontsize=6, rotation=90)
     multiplier += 1
 
 ax.set_ylabel('g')
 ax.set_title('long term average reward')
-ax.set_xticks(x + width, methods)
+ax.set_xticks(x + width, inst_nrs)
 ax.legend(loc='upper left', ncols=3)
-ax.set_ylim(0, 250)
+ax.set_ylim(min_y, max_y)
 
 plt.show()
 

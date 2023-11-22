@@ -39,7 +39,8 @@ for instance_name in instance_names:
     methods = inst['method'].values
     for row_id, method in enumerate(methods):
         file = 'result_' + instance_id + '_' + method + '.pkl'
-        _, _, _, kpi, _, _ = pkl.load(open(FILEPATH_PICKLES + file, 'rb'))
+        arr_times, fil, heap, kpi, s, time = \
+            pkl.load(open(FILEPATH_PICKLES + file, 'rb'))
         kpi_df = pd.DataFrame(kpi, columns=['time', 'class', 'wait'])
         N = len(kpi_df)
         kpi_df = kpi_df[start_K:].reset_index()
@@ -69,5 +70,7 @@ for instance_name in instance_names:
         conf_int = norm.ppf(1-alpha/2) * MA.std() / np.sqrt(len(MA))
         # MA.mean()
         inst.loc[row_id, ['g', 'conf_int']] = kpi_df['g'].iloc[-1], conf_int
+        pkl.dump([arr_times, fil, heap, kpi_df, s, time],
+                 open(FILEPATH_PICKLES + file, 'wb'))
     inst.to_csv(FILEPATH_INSTANCE + instance_name, index=False)
     print('saved:', instance_name)
