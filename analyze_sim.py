@@ -7,6 +7,7 @@ Load and visualize results of simulation.
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import pickle as pkl
 from utils import tools
 
 FILEPATH_INSTANCE = 'results/'
@@ -15,6 +16,7 @@ FILEPATH_PICKLES = 'results/simulation_pickles/'
 
 instance_names = [f for f in os.listdir(FILEPATH_INSTANCE)
                   if f.startswith('instance_sim_')]
+instance_names = instance_names[1:6]
 inst_nrs = [name.split('_')[2][:-4] for name in instance_names]
 
 inst = tools.inst_load(FILEPATH_INSTANCE + instance_names[0])
@@ -62,8 +64,17 @@ plt.show()
 
 # https://matplotlib.org/stable/gallery/lines_bars_and_markers/barchart.html#sphx-glr-gallery-lines-bars-and-markers-barchart-py
 
+instance_name = instance_names[0]
+inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)
+instance_id = instance_name.split('_')[2][:-4]
+methods = inst['method'].values
+row_id = 0
+method = methods[row_id]
+file = 'result_' + instance_id + '_' + method + '.pkl'
+arr_times, fil, heap, kpi_df, s, time = (
+    pkl.load(open(FILEPATH_PICKLES + file, 'rb')))
+
 start_K = 1e4
-batch_T = 1e4
 
 plt.scatter(kpi_df['time']/60, kpi_df['g'])
 plt.xlabel('Running time (hours)')
