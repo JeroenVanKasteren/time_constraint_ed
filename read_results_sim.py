@@ -15,7 +15,7 @@ FILEPATH_INSTANCE = 'results/'
 FILEPATH_READ = 'results/read/'
 FILEPATH_PICKLES = 'results/simulation_pickles/'
 
-start_K = int(1e4)
+start_K = int(1e3)
 M = 50
 alpha = 0.05
 
@@ -38,12 +38,15 @@ for instance_name in instance_names:
     instance_id = instance_name.split('_')[2][:-4]
     methods = inst['method'].values
     for row_id, method in enumerate(methods):
+        print('instance:', instance_id, 'method:', method)
         file = 'result_' + instance_id + '_' + method + '.pkl'
         arr_times, fil, heap, kpi, s, time = \
             pkl.load(open(FILEPATH_PICKLES + file, 'rb'))
+        print(file)
         kpi_df = pd.DataFrame(kpi, columns=['time', 'class', 'wait'])
         N = len(kpi_df)
-        kpi_df = kpi_df[start_K:].reset_index()
+        if kpi_df['time'].iloc[0] < 1:
+            kpi_df = kpi_df[start_K:].reset_index()
         kpi_df = kpi_df[kpi_df['time'] != 0]
         kpi_df = kpi_df.reindex(columns=[*kpi_df.columns.tolist(),
                                          'reward', 'g', 'target', 'avg_wait'])
