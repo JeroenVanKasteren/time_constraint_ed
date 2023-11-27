@@ -25,12 +25,12 @@ instance_names = [f for f in os.listdir(FILEPATH_INSTANCE)
                   if f.startswith('instance_sim_')]
 # Debug
 """
-instance_name = instance_names[7]
+instance_name = instance_names[0]
 inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)
 instance_id = instance_name.split('_')[2][:-4]
 methods = inst['method'].values
-method = methods[4]
 row_id = 4
+method = methods[row_id]
 """
 
 for instance_name in instance_names:

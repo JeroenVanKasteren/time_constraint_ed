@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pickle as pkl
+import random
 from utils import tools
 
 FILEPATH_INSTANCE = 'results/'
@@ -16,20 +17,17 @@ FILEPATH_PICKLES = 'results/simulation_pickles/'
 
 instance_names = [f for f in os.listdir(FILEPATH_INSTANCE)
                   if f.startswith('instance_sim_')]
-instance_names = instance_names[1:6]
+# instance_names = instance_names[1:6]
 inst_nrs = [name.split('_')[2][:-4] for name in instance_names]
 
 inst = tools.inst_load(FILEPATH_INSTANCE + instance_names[0])
 methods = inst['method'].values
 
-"""
-instance_name = instance_names[7]
-inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)
-instance_id = instance_name.split('_')[2][:-4]
-methods = inst['method'].values
-method = methods[4]
-row_id = 4
-"""
+
+def round_significance(x, digits=1):
+    return 0 if x == 0 else np.round(x, -int(np.floor(np.log10(abs(x)))) -
+                                     (-digits + 1))
+
 
 performances = {method: [[], []] for method in methods}
 min_y, max_y = 0, 0
@@ -40,7 +38,7 @@ for instance_name in instance_names:
         performances[method][1].extend([inst.loc[row_id, 'conf_int']])
     min_y = np.min([min_y, np.min(inst['g']-inst['conf_int'])])
     max_y = np.max([max_y, np.max(inst['g']+inst['conf_int'])])
-min_y, max_y = np.floor(min_y*1.2), np.ceil(max_y*1.2)
+min_y, max_y = round_significance(min_y*1.2), round_significance(max_y*1.2)
 
 x = np.arange(len(instance_names))  # the label locations
 width = 0.15  # the width of the bars
@@ -64,23 +62,33 @@ plt.show()
 
 # https://matplotlib.org/stable/gallery/lines_bars_and_markers/barchart.html#sphx-glr-gallery-lines-bars-and-markers-barchart-py
 
-instance_name = instance_names[0]
+instance_name = instance_names[5]
 inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)
 instance_id = instance_name.split('_')[2][:-4]
 methods = inst['method'].values
-row_id = 0
+row_id = 2
 method = methods[row_id]
 file = 'result_' + instance_id + '_' + method + '.pkl'
 arr_times, fil, heap, kpi_df, s, time = (
     pkl.load(open(FILEPATH_PICKLES + file, 'rb')))
 
-start_K = 1e4
-
 plt.scatter(kpi_df['time']/60, kpi_df['g'])
 plt.xlabel('Running time (hours)')
 plt.ylabel('g')
 plt.title('g vs. time')
-# plt.legend(['vi', 'ospi'])
+plt.show()
+
+size = 200
+start = round_significance(random.randint(0, len(kpi_df)-size), 2)
+kpi_df_tmp = kpi_df[start:start+size]
+for i in range(inst.loc[row_id, 'J']):
+    mask = (kpi_df_tmp['class'] == i)
+    plt.scatter(kpi_df_tmp.loc[mask, 'time']/60, kpi_df_tmp.loc[mask, 'wait'],
+                marker='x', label=i)
+plt.xlabel('Time (hours)')
+plt.ylabel('wait')
+plt.title('Waiting time per class')
+plt.legend(loc='upper left')
 plt.show()
 
 
