@@ -37,25 +37,22 @@ args = {'job_id': 1,
         'instance': '01',
         'method': 'not specified',
         'x': 1e5}
-args = tools.DotDict(args)
-# args = tools.load_args()  TODO: uncomment this line
+# args = tools.DotDict(args)
+args = tools.load_args()
 
-for i in range(0, 6):  # TODO remove for
-    args.array_id = i  # Remove
-    inst_nr = int(args.instance) + int(args.array_id/5)
-    if inst_nr < 10:
-        instance = '0' + str(inst_nr)
-    else:
-        instance = str(inst_nr)
+inst_nr = int(args.instance) + int((args.array_id - 1)/5)
+if inst_nr < 10:
+    instance = '0' + str(inst_nr)
+else:
+    instance = str(inst_nr)
 
-    inst = tools.inst_load(FILEPATH_INSTANCE + instance + '.csv')
-    if args.method in inst['method'].values:
-        method_id = (inst['method'] == args.method).idxmax()
-    else:
-        method_id = (args.array_id - 1) % 5
-    inst = inst.iloc[method_id]
-    method = inst['method']
-    print(f'instance: {instance}, method: {method}, array_id: {args.array_id}.')
+inst = tools.inst_load(FILEPATH_INSTANCE + instance + '.csv')
+if args.method in inst['method'].values:
+    method_id = (inst['method'] == args.method).idxmax()
+else:
+    method_id = (args.array_id - 1) % 5
+inst = inst.iloc[method_id]
+method = inst['method']
 
 # global constants
 N = int(args.x) if args.x > 0 else int(1e4)  # arrivals to simulate
