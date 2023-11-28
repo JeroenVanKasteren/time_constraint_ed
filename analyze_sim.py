@@ -62,11 +62,11 @@ plt.show()
 
 # https://matplotlib.org/stable/gallery/lines_bars_and_markers/barchart.html#sphx-glr-gallery-lines-bars-and-markers-barchart-py
 
-instance_name = instance_names[5]
+instance_name = instance_names[4]
 inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)
 instance_id = instance_name.split('_')[2][:-4]
 methods = inst['method'].values
-row_id = 2
+row_id = 1
 method = methods[row_id]
 file = 'result_' + instance_id + '_' + method + '.pkl'
 arr_times, fil, heap, kpi_df, s, time = (
@@ -81,10 +81,15 @@ plt.show()
 size = 200
 start = round_significance(random.randint(0, len(kpi_df)-size), 2)
 kpi_df_tmp = kpi_df[start:start+size]
+x = np.arange(inst.J[0])
+ys = [i + x + (i * x) ** 2 for i in range(inst.J[0])]
+colors = plt.cm.rainbow(np.linspace(0, 1, len(ys)))
 for i in range(inst.loc[row_id, 'J']):
     mask = (kpi_df_tmp['class'] == i)
     plt.scatter(kpi_df_tmp.loc[mask, 'time']/60, kpi_df_tmp.loc[mask, 'wait'],
-                marker='x', label=i)
+                marker='x', label=i, color=colors[i])
+    plt.axhline(y=inst.t[0][i], color=colors[i], linestyle='-')
+
 plt.xlabel('Time (hours)')
 plt.ylabel('wait')
 plt.title('Waiting time per class')
