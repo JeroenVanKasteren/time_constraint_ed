@@ -79,7 +79,7 @@ plt.title('g vs. time')
 plt.show()
 
 size = 200
-start = round_significance(random.randint(0, len(kpi_df)-size), 2)
+start = 0  # round_significance(random.randint(0, len(kpi_df)-size), 2)
 kpi_df_tmp = kpi_df[start:start+size]
 x = np.arange(inst.J[0])
 ys = [i + x + (i * x) ** 2 for i in range(inst.J[0])]

@@ -15,7 +15,7 @@ FILEPATH_INSTANCE = 'results/'
 FILEPATH_READ = 'results/read/'
 FILEPATH_PICKLES = 'results/simulation_pickles/'
 
-start_K = int(1e3)
+start_K = 0  # int(1e3)
 M = 50
 alpha = 0.05
 
@@ -29,7 +29,7 @@ instance_name = instance_names[0]
 inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)
 instance_id = instance_name.split('_')[2][:-4]
 methods = inst['method'].values
-row_id = 4
+row_id = 0
 method = methods[row_id]
 """
 
@@ -38,11 +38,9 @@ for instance_name in instance_names:
     instance_id = instance_name.split('_')[2][:-4]
     methods = inst['method'].values
     for row_id, method in enumerate(methods):
-        print('instance:', instance_id, 'method:', method)
         file = 'result_' + instance_id + '_' + method + '.pkl'
         arr_times, fil, heap, kpi, s, time = \
             pkl.load(open(FILEPATH_PICKLES + file, 'rb'))
-        print(file)
         kpi_df = pd.DataFrame(kpi, columns=['time', 'class', 'wait'])
         N = len(kpi_df)
         if kpi_df['time'].iloc[0] < 1:
@@ -63,15 +61,15 @@ for instance_name in instance_names:
                  / np.arange(1, sum(mask) + 1))
             kpi_df.loc[mask, 'avg_wait'] = (kpi_df.loc[mask, 'wait'].cumsum()
                                             / np.arange(1, sum(mask) + 1))
-        kpi_df['g'] = (kpi_df['reward'].cumsum() /
-                       (kpi_df['time'] - kpi_df.loc[0, 'time']))
         # per admission
-        # MA = kpi_df['wait'].rolling(window=T).mean().values[T::T]
+        kpi_df['g'] = kpi_df['reward'].expanding().mean()
+        MA = kpi_df['reward'].rolling(window=T).mean().values[T::T]
         # per time
-        times = kpi_df['time'].values[T::T] - kpi_df['time'].values[::T][:-1]
-        MA = kpi_df['reward'].rolling(window=T).sum().values[T::T] / times
+        # kpi_df['g'] = (kpi_df['reward'].cumsum() /
+        #                (kpi_df['time'] - kpi_df.loc[0, 'time']))
+        # times = kpi_df['time'].values[T::T] - kpi_df['time'].values[::T][:-1]
+        # MA = kpi_df['reward'].rolling(window=T).sum().values[T::T] / times
         conf_int = norm.ppf(1-alpha/2) * MA.std() / np.sqrt(len(MA))
-        # MA.mean()
         inst.loc[row_id, ['g', 'conf_int']] = kpi_df['g'].iloc[-1], conf_int
         pkl.dump([arr_times, fil, heap, kpi_df, s, time],
                  open(FILEPATH_PICKLES + file, 'wb'))
