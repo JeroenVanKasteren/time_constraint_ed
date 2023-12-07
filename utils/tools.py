@@ -7,9 +7,14 @@ import numba as nb
 import numpy as np
 import os
 import pandas as pd
+from scipy.stats import norm
 from sklearn.model_selection import ParameterGrid
 from utils import TimeConstraintEDs as Env
 from utils import OneStepPolicyImprovement as Ospi
+
+
+def conf_int(alpha, data):
+    return norm.ppf(1 - alpha / 2) * data.std() / np.sqrt(len(data))
 
 
 def def_sizes(dim):
@@ -21,55 +26,23 @@ def def_sizes(dim):
     return sizes
 
 
-def load_args(raw_args=None):
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--job_id', default='0')  # SULRM_JOBID
-    parser.add_argument('--array_id', default='0')  # SLURM_ARRAY_TASK_ID
-    parser.add_argument('--time')  # SLURM_TIMELIMIT
-    parser.add_argument('--instance', default='01')  # User input
-    parser.add_argument('--method', default='not_specified')  # User input
-    parser.add_argument('--x', default=0)  # User input
-    parser.add_argument('--max_iter', default=np.Inf)  # User input
-    args = parser.parse_args(raw_args)
-    args.job_id = int(args.job_id)
-    args.array_id = int(args.array_id)
-    args.x = int(float(args.x))
-    return args
+class DotDict(dict):
+    """dot.notation access to dictionary attributes"""
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
 
 
-def strip_split(x):
-    if ',' in x:
-        return np.array([float(i) for i in x.strip('[]').split(', ')])
-    else:
-        return np.array([float(i) for i in x.strip('[]').split()])
-
-
-def get_time(time_string):
-    """Read in time in formats (D)D-HH:MM:SS, (H)H:MM:SS, or (M)M:SS.
-    Format in front of time is removed."""
-    if ((time_string is not None) & (not pd.isnull(time_string)) &
-            (time_string != np.inf)):
-        if '): ' in time_string:  # if readable format
-            time_string = time_string.split('): ')[1]
-        if '-' in time_string:
-            days, time = time_string.split('-')
-        elif time_string.count(':') == 1:
-            days, time = 0, '0:'+time_string
-        else:
-            days, time = 0, time_string
-        hour, minutes, sec = [int(x) for x in time.split(':')]
-        return (((int(days) * 24 + hour) * 60 + minutes) * 60 + sec - 60)
-    else:
-        return np.Inf
-
-
-def sec_to_time(time):
-    """Convert seconds to minutes and return readable format."""
-    time = int(time)
-    if time >= 60*60:
-        return f"(HH:MM:SS): {time // (60*60):02d}:{(time // 60) % 60:02d}:{time % 60:02d}"
-    else:
-        return f"(MM:SS): {time // 60:02d}:{time % 60:02d}"
+def generate_times(env, j, lab, mu, n):
+    """Generate exponential arrival and service times."""
+    arrival_times = nb.typed.List[np.float32]()  # +1, last arrival
+    service_times = nb.typed.List[np.float32]()
+    for i in range(j):
+        arrival_times.append(nb.typed.List(env.rng.exponential(1 / lab[i],
+                                                               n + j)))
+        service_times.append(nb.typed.List(env.rng.exponential(1 / mu[i],
+                                                               n + j)))
+    return arrival_times, service_times
 
 
 def get_instance_grid(J, gamma, e, P, t, c, r, param_grid, max_target_prob):
@@ -112,21 +85,23 @@ def get_instance_grid(J, gamma, e, P, t, c, r, param_grid, max_target_prob):
     return grid
 
 
-def update_mean(mean, x, n):
-    """Welford's method to update the mean. Can be set to numba function."""
-    return mean + (x - mean) / n  # avg_{n-1} = avg_{n-1} + (x_n - avg_{n-1})/n
-
-
-def generate_times(env, J, lab, mu, N):
-    """Generate exponential arrival and service times."""
-    arrival_times = nb.typed.List[np.float32]()  # +1, last arrival
-    service_times = nb.typed.List[np.float32]()
-    for i in range(J):
-        arrival_times.append(nb.typed.List(env.rng.exponential(1 / lab[i],
-                                                               N + J)))
-        service_times.append(nb.typed.List(env.rng.exponential(1 / mu[i],
-                                                               N + J)))
-    return arrival_times, service_times
+def get_time(time_string):
+    """Read in time in formats (D)D-HH:MM:SS, (H)H:MM:SS, or (M)M:SS.
+    Format in front of time is removed."""
+    if ((time_string is not None) & (not pd.isnull(time_string)) &
+            (time_string != np.inf)):
+        if '): ' in time_string:  # if readable format
+            time_string = time_string.split('): ')[1]
+        if '-' in time_string:
+            days, time = time_string.split('-')
+        elif time_string.count(':') == 1:
+            days, time = 0, '0:'+time_string
+        else:
+            days, time = 0, time_string
+        hour, minutes, sec = [int(x) for x in time.split(':')]
+        return (((int(days) * 24 + hour) * 60 + minutes) * 60 + sec - 60)
+    else:
+        return np.Inf
 
 
 def get_v_app(env):
@@ -144,10 +119,40 @@ def inst_load(filepath):
     return inst
 
 
+def load_args(raw_args=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--job_id', default='0')  # SULRM_JOBID
+    parser.add_argument('--array_id', default='0')  # SLURM_ARRAY_TASK_ID
+    parser.add_argument('--time')  # SLURM_TIMELIMIT
+    parser.add_argument('--instance', default='01')  # User input
+    parser.add_argument('--method', default='not_specified')  # User input
+    parser.add_argument('--x', default=0)  # User input
+    parser.add_argument('--max_iter', default=np.Inf)  # User input
+    args = parser.parse_args(raw_args)
+    args.job_id = int(args.job_id)
+    args.array_id = int(args.array_id)
+    args.x = int(float(args.x))
+    return args
+
+
 def remove_empty_files(directory):
     for file in os.listdir(directory):
         if os.path.getsize(os.path.join(directory, file)) == 0:
             os.remove(os.path.join(directory, file))
+
+
+def round_significance(x, digits=1):
+    return 0 if x == 0 else np.round(x, -int(np.floor(np.log10(abs(x)))) -
+                                     (-digits + 1))
+
+
+def sec_to_time(time):
+    """Convert seconds to minutes and return readable format."""
+    time = int(time)
+    if time >= 60*60:
+        return f"(HH:MM:SS): {time // (60*60):02d}:{(time // 60) % 60:02d}:{time % 60:02d}"
+    else:
+        return f"(MM:SS): {time // 60:02d}:{time % 60:02d}"
 
 
 def solved_and_left(inst):
@@ -162,8 +167,13 @@ def solved_and_left(inst):
                   str(inst[method + '_opt_gap'].count()))
 
 
-class DotDict(dict):
-    """dot.notation access to dictionary attributes"""
-    __getattr__ = dict.get
-    __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
+def strip_split(x):
+    if ',' in x:
+        return np.array([float(i) for i in x.strip('[]').split(', ')])
+    else:
+        return np.array([float(i) for i in x.strip('[]').split()])
+
+
+def update_mean(mean, x, n):
+    """Welford's method to update the mean. Can be set to numba function."""
+    return mean + (x - mean) / n  # avg_{n-1} = avg_{n-1} + (x_n - avg_{n-1})/n

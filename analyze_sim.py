@@ -9,7 +9,7 @@ import numpy as np
 import os
 import pickle as pkl
 import random
-from utils import tools
+import utils
 
 FILEPATH_INSTANCE = 'results/'
 FILEPATH_READ = 'results/read/'
@@ -18,49 +18,14 @@ FILEPATH_PICKLES = 'results/simulation_pickles/'
 instance_names = [f for f in os.listdir(FILEPATH_INSTANCE)
                   if f.startswith('instance_sim_')]
 # instance_names = instance_names[1:6]
-inst_nrs = [name.split('_')[2][:-4] for name in instance_names]
 
-inst = tools.inst_load(FILEPATH_INSTANCE + instance_names[0])
+inst = utils.tools.inst_load(FILEPATH_INSTANCE + instance_names[0])
 methods = inst['method'].values
 
+utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instance_names, methods, 'g')
+utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instance_names, methods,
+                              'perc')
 
-def round_significance(x, digits=1):
-    return 0 if x == 0 else np.round(x, -int(np.floor(np.log10(abs(x)))) -
-                                     (-digits + 1))
-
-
-performances = {method: [[], []] for method in methods}
-min_y, max_y = 0, 0
-for instance_name in instance_names:
-    inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)
-    for row_id, method in enumerate(methods):
-        performances[method][0].extend([inst.loc[row_id, 'g']])
-        performances[method][1].extend([inst.loc[row_id, 'conf_int']])
-    min_y = np.min([min_y, np.min(inst['g']-inst['conf_int'])])
-    max_y = np.max([max_y, np.max(inst['g']+inst['conf_int'])])
-min_y, max_y = round_significance(min_y*1.2), round_significance(max_y*1.2)
-
-x = np.arange(len(instance_names))  # the label locations
-width = 0.15  # the width of the bars
-multiplier = 0
-
-fig, ax = plt.subplots(layout='constrained')
-for method, [g, conf_int] in performances.items():
-    g, conf_int = np.array(g), np.array(conf_int)
-    offset = width * multiplier
-    rects = ax.bar(x + offset, g, width, label=method, yerr=conf_int)
-    ax.bar_label(rects, padding=3, fmt='{0:.3f}', fontsize=6, rotation=90)
-    multiplier += 1
-
-ax.set_ylabel('g')
-ax.set_title('long term average reward')
-ax.set_xticks(x + width, inst_nrs)
-ax.legend(loc='upper left', ncols=3)
-ax.set_ylim(min_y, max_y)
-
-plt.show()
-
-# https://matplotlib.org/stable/gallery/lines_bars_and_markers/barchart.html#sphx-glr-gallery-lines-bars-and-markers-barchart-py
 
 instance_name = instance_names[4]
 inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)

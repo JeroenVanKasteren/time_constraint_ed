@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 import pickle as pkl
 import os
-from scipy.stats import norm
 from utils import tools
 
 FILEPATH_INSTANCE = 'results/'
@@ -62,15 +61,17 @@ for instance_name in instance_names:
             kpi_df.loc[mask, 'avg_wait'] = (kpi_df.loc[mask, 'wait'].cumsum()
                                             / np.arange(1, sum(mask) + 1))
         # per admission
-        kpi_df['g'] = kpi_df['reward'].expanding().mean()
+        kpi_df['perc'] = kpi_df['reward'].expanding().mean()
         MA = kpi_df['reward'].rolling(window=T).mean().values[T::T]
+        ci_perc = tools.conf_int(alpha, MA)
+        inst.loc[row_id, ['perc', 'ci_perc']] = kpi_df['perc'].iloc[-1], ci_perc
         # per time
-        # kpi_df['g'] = (kpi_df['reward'].cumsum() /
-        #                (kpi_df['time'] - kpi_df.loc[0, 'time']))
-        # times = kpi_df['time'].values[T::T] - kpi_df['time'].values[::T][:-1]
-        # MA = kpi_df['reward'].rolling(window=T).sum().values[T::T] / times
-        conf_int = norm.ppf(1-alpha/2) * MA.std() / np.sqrt(len(MA))
-        inst.loc[row_id, ['g', 'conf_int']] = kpi_df['g'].iloc[-1], conf_int
+        kpi_df['g'] = (kpi_df['reward'].cumsum() /
+                       (kpi_df['time'] - kpi_df.loc[0, 'time']))
+        times = kpi_df['time'].values[T::T] - kpi_df['time'].values[::T][:-1]
+        MA = kpi_df['reward'].rolling(window=T).sum().values[T::T] / times
+        ci_g = tools.conf_int(alpha, MA)
+        inst.loc[row_id, ['g', 'ci_g']] = kpi_df['g'].iloc[-1], ci_g
         pkl.dump([arr_times, fil, heap, kpi_df, s, time],
                  open(FILEPATH_PICKLES + file, 'wb'))
     inst.to_csv(FILEPATH_INSTANCE + instance_name, index=False)
