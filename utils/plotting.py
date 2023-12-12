@@ -187,16 +187,18 @@ def plot_multi_bar(filepath, instance_names, methods, kpi):
     ax.set_ylim(min_y, max_y)
     plt.show()
 
-def plot_waiting(inst):
-    x = np.arange(inst.J[0])
-    ys = [i + x + (i * x) ** 2 for i in range(inst.J[0])]
-    colors = plt.cm.rainbow(np.linspace(0, 1, len(ys)))
-    for i in range(inst.loc[row_id, 'J']):
-        mask = (kpi_df_tmp['class'] == i)
-        plt.scatter(kpi_df_tmp.loc[mask, 'time']/60, kpi_df_tmp.loc[mask, 'wait'],
-                    marker='x', label=i, color=colors[i])
-        plt.axhline(y=inst.t[0][i], color=colors[i], linestyle='-')
 
+def plot_waiting(inst_row, kpi_df_full, size, start):
+    kpi_df = kpi_df_full[start:start + size]
+    x = np.arange(inst_row.J)
+    ys = [i + x + (i * x) ** 2 for i in range(inst_row.J)]
+    colors = plt.cm.rainbow(np.linspace(0, 1, len(ys)))
+    for i in range(inst_row.J):
+        mask = (kpi_df['class'] == i)
+        plt.scatter(kpi_df.loc[mask, 'time']/60,
+                    kpi_df.loc[mask, 'wait'],
+                    marker='x', label=i, color=colors[i])
+        plt.axhline(y=inst_row.t[i], color=colors[i], linestyle='-')
     plt.xlabel('Time (hours)')
     plt.ylabel('wait')
     plt.title('Waiting time per class')

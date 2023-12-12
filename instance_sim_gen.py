@@ -21,9 +21,9 @@ instance_columns = [*input_columns, 'N', 'start_K', 'batch_T',
 
 inst = pd.DataFrame(0, index=np.arange(len(methods)), columns=instance_columns)
 
-inst['J'] = 6
-inst['S'] = 10
-inst['t'] = [np.array([1]*6)*60 for r in range(len(inst))]
+inst['J'] = 1
+inst['S'] = 5
+inst['t'] = [np.array([1]*1)*60 for r in range(len(inst))]
 inst['D'] = 120
 inst['gamma'] = 1
 inst['c'] = [np.array([1, 1, 1, 1, 1, 1]) for r in range(len(inst))]
