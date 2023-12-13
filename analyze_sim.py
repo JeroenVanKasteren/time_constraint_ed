@@ -60,10 +60,11 @@ utils.plotting.plot_waiting(inst.loc[row_id], kpi_df, 1000, start)
 
 # Debugging by comparing theoretical results
 # create instance in instance_sim_gen with J=1 and S=5
+
 # Use instance 3 with mu_j = mu for all j and compare with FCFS
-inst_row = inst.loc[row_id]
-for i in range(inst_row.J):
-    lab_i = inst_row.lab[i] / sum(inst_row.lab)
-    pi_0 = utils.env.get_pi_0(inst_row.gamma, inst_row.S, inst_row.load, lab_i)
-    utils.env.get_tail_prob(inst_row.gamma, inst_row.S, inst_row.load, lab_i,
-                            pi_0, inst_row.t[i])
+# inst_row = inst.loc[row_id]
+# for i in range(inst_row.J):
+#     lab_i = inst_row.lab[i] / sum(inst_row.lab)
+#     pi_0 = utils.env.get_pi_0(inst_row.gamma, inst_row.S, inst_row.load, lab_i)
+#     utils.env.get_tail_prob(inst_row.gamma, inst_row.S, inst_row.load, lab_i,
+#                             pi_0, inst_row.t[i])

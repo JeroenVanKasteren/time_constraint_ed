@@ -22,6 +22,7 @@ tools.remove_empty_files(FILEPATH_READ)
 
 instance_names = [f for f in os.listdir(FILEPATH_INSTANCE)
                   if f.startswith('instance_sim_')]
+# instance_names = [instance_names[8]]
 # Debug
 """
 instance_name = instance_names[0]

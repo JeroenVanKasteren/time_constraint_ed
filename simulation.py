@@ -31,12 +31,12 @@ FILEPATH_PICKLES = 'results/simulation_pickles/'
 FILEPATH_RESULT = 'results/simulation_pickles/result_'
 
 # Debug
-args = {'job_id': 1,
-        'array_id': 6,
-        'time': '0-00:05:00',
-        'instance': '01',
-        'method': 'not specified',
-        'x': 1e5}
+# args = {'job_id': 1,
+#         'array_id': 5,
+#         'time': '0-00:10:00',
+#         'instance': '09',
+#         'method': 'not specified',
+#         'x': 1e5}
 # args = tools.DotDict(args)
 args = tools.load_args()
 
