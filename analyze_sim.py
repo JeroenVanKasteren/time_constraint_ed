@@ -25,12 +25,11 @@ utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instance_names, methods, 'g')
 utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instance_names, methods,
                               'perc')
 
-
-instance_name = instance_names[4]
+instance_name = instance_names[8]
 inst = utils.tools.inst_load(FILEPATH_INSTANCE + instance_name)
 instance_id = instance_name.split('_')[2][:-4]
 methods = inst['method'].values
-row_id = 1
+row_id = 2
 method = methods[row_id]
 file = 'result_' + instance_id + '_' + method + '.pkl'
 arr_times, fil, heap, kpi_df, s, time = (
@@ -39,7 +38,7 @@ arr_times, fil, heap, kpi_df, s, time = (
 plt.scatter(kpi_df['time']/60, kpi_df['g'])
 plt.xlabel('Running time (hours)')
 plt.ylabel('g')
-plt.title('g vs. time')
+plt.title('g vs. time for ' + method)
 plt.show()
 
 
@@ -62,7 +61,14 @@ utils.plotting.plot_waiting(inst.loc[row_id], kpi_df, 1000, start)
 # create instance in instance_sim_gen with J=1 and S=5
 
 # Use instance 3 with mu_j = mu for all j and compare with FCFS
-# inst_row = inst.loc[row_id]
+inst_row = inst.loc[row_id]
+env = utils.env.TimeConstraintEDs
+pi_0 = env.get_pi_0(inst_row.gamma, inst_row.S, inst_row.load, inst_row.lab[0])
+tail_prob = env.get_tail_prob(inst_row.gamma, inst_row.S, inst_row.load,
+                              inst_row.lab[0], inst_row.mu[0], pi_0,
+                              inst_row.t[0])
+g = (inst_row.r[0] - inst_row.c[0] * tail_prob) * inst_row.lab[0]
+print(g)
 # for i in range(inst_row.J):
 #     lab_i = inst_row.lab[i] / sum(inst_row.lab)
 #     pi_0 = utils.env.get_pi_0(inst_row.gamma, inst_row.S, inst_row.load, lab_i)
