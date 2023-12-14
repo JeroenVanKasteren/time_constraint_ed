@@ -63,14 +63,26 @@ utils.plotting.plot_waiting(inst.loc[row_id], kpi_df, 1000, start)
 # Use instance 3 with mu_j = mu for all j and compare with FCFS
 inst_row = inst.loc[row_id]
 env = utils.env.TimeConstraintEDs
-pi_0 = env.get_pi_0(inst_row.gamma, inst_row.S, inst_row.load, inst_row.lab[0])
-tail_prob = env.get_tail_prob(inst_row.gamma, inst_row.S, inst_row.load,
-                              inst_row.lab[0], inst_row.mu[0], pi_0,
-                              inst_row.t[0])
-g = (inst_row.r[0] - inst_row.c[0] * tail_prob) * inst_row.lab[0]
-print(g)
+
+def get_g(inst_row):
+    pi_0 = env.get_pi_0(inst_row.gamma, inst_row.S, inst_row.load,
+                        inst_row.lab[0])
+    tail_prob = env.get_tail_prob(inst_row.gamma, inst_row.S, inst_row.load,
+                                  inst_row.lab[0], inst_row.mu[0], pi_0,
+                                  inst_row.t[0])
+    g = (inst_row.r[0] - inst_row.c[0] * tail_prob) * inst_row.lab[0]
+    print(g)
 # for i in range(inst_row.J):
 #     lab_i = inst_row.lab[i] / sum(inst_row.lab)
 #     pi_0 = utils.env.get_pi_0(inst_row.gamma, inst_row.S, inst_row.load, lab_i)
 #     utils.env.get_tail_prob(inst_row.gamma, inst_row.S, inst_row.load, lab_i,
 #                             pi_0, inst_row.t[i])
+
+for instance_name in instance_names:
+    print(instance_name)
+    inst = utils.tools.inst_load(FILEPATH_INSTANCE + instance_name)
+    print(f'g bounds: [{inst.r[0]*inst.lab[0]}, 0]')
+    g =
+    print(f'Heuristic lower bound: [{inst.r[0] * inst.lab[0]}, 0]')
+    instance_id = instance_name.split('_')[2][:-4]
+
