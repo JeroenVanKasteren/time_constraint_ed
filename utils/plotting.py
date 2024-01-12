@@ -181,7 +181,10 @@ def plot_multi_bar(filepath, instance_names, methods, kpi):
         ax.bar_label(rects, padding=3, fmt='{0:.3f}', fontsize=6, rotation=90)
         multiplier += 1
     ax.set_ylabel('g')
-    ax.set_title('long term average reward')
+    if kpi == 'perc':
+        ax.set_ylabel('Percentage of arrivals served on time')
+    else:
+        ax.set_ylabel('Long term average reward')
     ax.set_xticks(x + width, inst_nrs)
     ax.legend(loc='upper left', ncols=3)
     ax.set_ylim(min_y, max_y)
