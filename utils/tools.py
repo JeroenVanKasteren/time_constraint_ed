@@ -7,6 +7,7 @@ import numba as nb
 import numpy as np
 import os
 import pandas as pd
+import pickle as pkl
 from scipy.stats import norm
 from sklearn.model_selection import ParameterGrid
 from utils import TimeConstraintEDs as Env
@@ -117,6 +118,20 @@ def inst_load(filepath):
     inst = pd.read_csv(filepath)
     inst.loc[:, cols] = inst.loc[:, cols].applymap(strip_split)
     return inst
+
+
+def load_result(method, instance_name):
+    inst = inst_load('results/' + instance_name)
+    instance_id = instance_name.split('_')[2][:-4]
+    methods = inst['method'].values
+    if isinstance(method, str):
+        row_id = np.where(methods == method)[0][0]
+    else:
+        row_id = method
+        method = inst['method'].values[row_id]
+    file = 'result_' + instance_id + '_' + method + '.pkl'
+    return (method, row_id, inst,
+            pkl.load(open('results/simulation_pickles/' + file, 'rb')))
 
 
 def load_args(raw_args=None):

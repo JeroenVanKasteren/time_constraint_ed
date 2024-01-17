@@ -156,20 +156,30 @@ def plot_v(env, V, zero_state, **kwargs):
     plt.show()
 
 
-def plot_multi_bar(filepath, instance_names, methods, kpi):
+def plot_multi_bar(filepath, instance_names, methods, kpi, normalize=False):
     # https://matplotlib.org/stable/gallery/lines_bars_and_markers/barchart.html#sphx-glr-gallery-lines-bars-and-markers-barchart-py
     performances = {method: [[], []] for method in methods}
     min_y, max_y = 0, 0
     inst_nrs = [name.split('_')[2][:-4] for name in instance_names]
     for instance_name in instance_names:
         inst = utils.tools.inst_load(filepath + instance_name)
+        optimal = sum(inst.r[0] * inst.lab[0])
         for row_id, method in enumerate(methods):
-            performances[method][0].extend([inst.loc[row_id, kpi]])
-            performances[method][1].extend([inst.loc[row_id, 'ci_' + kpi]])
+            if normalize:
+                performances[method][0].extend(
+                    [inst.loc[row_id, kpi] / optimal])
+                performances[method][1].extend(
+                    [inst.loc[row_id, 'ci_' + kpi] / optimal])
+            else:
+                performances[method][0].extend([inst.loc[row_id, kpi]])
+                performances[method][1].extend([inst.loc[row_id, 'ci_' + kpi]])
         min_y = np.min([min_y, np.min(inst[kpi] - inst['ci_' + kpi])])
         max_y = np.max([max_y, np.max(inst[kpi] + inst['ci_' + kpi])])
-    min_y, max_y = (utils.tools.round_significance(min_y * 1.1),
-                    utils.tools.round_significance(max_y * 1.1))
+    if normalize:
+        min_y, max_y = 0, 1
+    else:
+        min_y, max_y = (utils.tools.round_significance(min_y * 1.1),
+                        utils.tools.round_significance(max_y * 1.1))
     x = np.arange(len(instance_names))  # the label locations
     width = 0.15  # the width of the bars
     multiplier = 0
@@ -184,7 +194,10 @@ def plot_multi_bar(filepath, instance_names, methods, kpi):
     if kpi == 'perc':
         ax.set_ylabel('Percentage of arrivals served on time')
     else:
-        ax.set_ylabel('Long term average reward')
+        if normalize:
+            ax.set_ylabel('Optimality gap of g')
+        else:
+            ax.set_ylabel('Long term average reward')
     ax.set_xticks(x + width, inst_nrs)
     ax.legend(loc='upper left', ncols=3)
     ax.set_ylim(min_y, max_y)
@@ -206,4 +219,12 @@ def plot_waiting(inst_row, kpi_df_full, size, start):
     plt.ylabel('wait')
     plt.title('Waiting time per class')
     plt.legend(loc='upper left')
+    plt.show()
+
+
+def plot_convergence(kpi_df, method):
+    plt.scatter(kpi_df['time'] / 60, kpi_df['g'])
+    plt.xlabel('Running time (hours)')
+    plt.ylabel('g')
+    plt.title('g vs. time for ' + method)
     plt.show()
