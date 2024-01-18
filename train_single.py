@@ -15,22 +15,23 @@ np.set_printoptions(precision=4, linewidth=150, suppress=True)
 MAX_TARGET_PROB = 0.9
 
 # ---- Problem ---- #
-seed = np.random.randint(0, 1e8)
+seed = 42  # np.random.randint(0, 1e8)
 rho = 1
 smu = 0
 while smu * (1 - rho) < -np.log(MAX_TARGET_PROB):
-    env = Env(J=2, S=2, gamma=5, D=10, P=1e3, e=1e-5, seed=seed,
-              max_time='0-00:10:30', convergence_check=1, print_modulo=1,
-              max_iter=10)
+    env = Env(J=1, S=5, gamma=1, D=200, t=np.array([60]),
+              mu=np.array([0.033333]), lab=np.array([0.1416666]),
+              P=1e3, e=1e-4, seed=seed,
+              max_time='0-00:10:00', convergence_check=10, print_modulo=100,
+              max_iter=1e4)
     smu = env.S * sum(env.lab) / sum(env.lab / env.mu)
     rho = env.load
     seed += 1
-
 to_plot = []  # 'VI', 'PI', 'OSPI' (what to plot)
 
 # ------ Policy Iteration ------ #
 pi_learner = PolicyIteration()
-pi_learner.policy_iteration(env)
+# pi_learner.policy_iteration(env)
 
 # ------ Value Iteration ------ #
 vi_learner = ValueIteration(env, pi_learner)
@@ -39,7 +40,7 @@ vi_learner.get_policy(env)
 
 # ------ One Step Policy Improvement ------ #
 ospi_learner = OneStepPolicyImprovement(env, pi_learner)
-ospi_learner.get_g(env)
+ospi_learner.get_g(env, ospi_learner.V)
 
 
 def summarize_policy(env, learner):
@@ -90,19 +91,19 @@ def summarize_policy(env, learner):
                                        'Invalid_State': '{:,.2%}'.format}))
 
 
-summarize_policy(env, pi_learner)
+# summarize_policy(env, pi_learner)
 summarize_policy(env, vi_learner)
 summarize_policy(env, ospi_learner)
 
 print('g of OSPI:', np.around(ospi_learner.g, int(-np.log10(env.e)-1)))
 print('g of VI:', np.around(vi_learner.g, int(-np.log10(env.e)-1)))
-print('g of PI:', np.around(pi_learner.g, int(-np.log10(env.e)-1)))
+# print('g of PI:', np.around(pi_learner.g, int(-np.log10(env.e)-1)))
 print('Optimality gap (VI)', np.around(abs(ospi_learner.g-vi_learner.g)
-                                    / vi_learner.g,
-                                    int(-np.log10(env.e)-1))*100, '%')
-print('Optimality gap (PI)', np.around(abs(ospi_learner.g-pi_learner.g)
-                                    / pi_learner.g,
-                                    int(-np.log10(env.e)-1))*100, '%')
+                                       / vi_learner.g,
+                                       int(-np.log10(env.e)-1))*100, '%')
+# print('Optimality gap (PI)', np.around(abs(ospi_learner.g-pi_learner.g)
+#                                        / pi_learner.g,
+#                                        int(-np.log10(env.e)-1))*100, '%')
 
 for plot_learner in to_plot:
     if plot_learner == 'VI':

@@ -31,14 +31,16 @@ FILEPATH_PICKLES = 'results/simulation_pickles/'
 FILEPATH_RESULT = 'results/simulation_pickles/result_'
 
 # Debug
+"""
 args = {'job_id': 1,
-        'array_id': 5,
+        'array_id': 1,
         'time': '0-00:10:00',
-        'instance': '10',
+        'instance': '12',
         'method': 'not specified',
         'x': 1e5}
 args = tools.DotDict(args)
-# args = tools.load_args()
+# """
+args = tools.load_args()
 
 inst_nr = int(args.instance) + int((args.array_id - 1)/5)
 if inst_nr < 10:
@@ -195,6 +197,10 @@ def simulate_multi_class_system(arr_times=np.zeros(J, dtype=np.float32),
                                                        heap, i, kpi, n_admit, s,
                                                        time, x)
         if (n_admit % convergence_check) == 0:
+            print(f'Sims done: {n_admit} (N={N}). Total time: '
+                  f'{tools.sec_to_time(clock() - start_time)}, '
+                  f'time per 10,000 iterations: '
+                  f'{tools.sec_to_time((clock() - start_time) / n_admit * 1e4)}.')
             with nb.objmode():
                 if (clock() - start_time) > max_time:
                     print(f'Time limit {max_time} reached, stop simulation.')

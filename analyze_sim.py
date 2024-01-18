@@ -58,10 +58,6 @@ utils.plotting.plot_waiting(inst.loc[row_id], kpi_df, 1000, start)
 #     g = (inst_row.r[i] - inst_row.c[i] * tail_prob) * inst_row.lab[i]
 
 # Use instance 3 with mu_j = mu for all j and compare with FCFS
-inst = utils.tools.inst_load(FILEPATH_INSTANCE + instance_names[2])
-row_id = np.where(inst.method == 'fcfs')[0][0]
-inst_row = inst.loc[row_id]
-env = utils.env.TimeConstraintEDs
 
 
 def get_g(inst_row, gamma):
@@ -77,10 +73,31 @@ def get_g(inst_row, gamma):
     return g
 
 
-for instance_name in instance_names:
-    print(instance_name)
-    inst = utils.tools.inst_load(FILEPATH_INSTANCE + instance_name)
-    print(f'g bounds: [{sum(inst.r[0]*inst.lab[0])}, 0]')
-    print(f'Heuristic lower bound: [{get_g(inst.loc[0], inst_row.gamma)}, 0]')
-    print(f'Heuristic lower bound: [{get_g(inst.loc[0], 1e6)}, 0]')
-    instance_id = instance_name.split('_')[2][:-4]
+interested = [instance_names[i - 1] for i in [3, 9, 10, 11, 12]]
+env = utils.env.TimeConstraintEDs
+for instance_name in interested:
+    print(f'inst: {instance_name} \n'
+          f'g upper bound: {sum(inst.r[i] * inst.lab[i]):0.4f} \n'
+          f'Theory, gamma=1, g={get_g(inst.loc[i], inst.loc[i].gamma):0.4f}'
+          f' gamma>>1, {get_g(inst.loc[i], 1e6):0.4f}')
+    for i in range(len(methods)):
+        method, row_id, inst, (arr_times, fil, heap, kpi_df, s, time) = (
+            utils.tools.load_result(i, instance_name))
+        # of kpi_df dataframe average of reward column per class
+        #conditional reward
+        reward_per_class = kpi_df.groupby('class')['reward'].mean()
+        print(instance_name, method)
+        print(f'result: {inst.loc[i].g:0.4f}')
+        print(f'{reward_per_class} \n'
+              f'weighted average: '
+              f'{sum(reward_per_class * inst.lab[i]) / sum(inst.lab[i]):0.4f}'
+              f' mean: {kpi_df["reward"].mean():0.4f}')
+    print('')
+
+print(sum(kpi_df['reward']) / (kpi_df['time'].iloc[-1] - kpi_df.loc[0, 'time']))
+# kpi_df['g'] = (kpi_df['reward'].cumsum() /
+#                (kpi_df['time'] - kpi_df.loc[0, 'time']))
+# times = kpi_df['time'].values[T::T] - kpi_df['time'].values[::T][:-1]
+# MA = kpi_df['reward'].rolling(window=T).sum().values[T::T] / times
+# ci_g = tools.conf_int(alpha, MA)
+# inst.loc[row_id, ['g', 'ci_g']] = kpi_df['g'].iloc[-1], ci_g
