@@ -31,16 +31,16 @@ FILEPATH_PICKLES = 'results/simulation_pickles/'
 FILEPATH_RESULT = 'results/simulation_pickles/result_'
 
 # Debug
-"""
+# """
 args = {'job_id': 1,
         'array_id': 1,
         'time': '0-00:10:00',
-        'instance': '12',
+        'instance': '09',
         'method': 'not specified',
-        'x': 1e5}
+        'x': 1e2}
 args = tools.DotDict(args)
 # """
-args = tools.load_args()
+# args = tools.load_args()
 
 inst_nr = int(args.instance) + int((args.array_id - 1)/5)
 if inst_nr < 10:
