@@ -1,6 +1,6 @@
 """
 This file contains the simulation of the multi-class queueing system.
-python simulation.py --job_id 1 --array_id 1 --time 00:05:00 --instance 01 --x 1e5 --method vi
+python simulation_run.py --job_id 1 --array_id 1 --time 00:05:00 --instance 01 --x 1e5 --method vi
 
 Ospi clocking
 python
@@ -161,7 +161,7 @@ def admission(arr, arr_times, dep, fil, heap, i, kpi, n_admit, s, time, x):
 #     tp.i8))
 def simulate_multi_class_system(arr_times=np.zeros(J, dtype=np.float32),
                                 fil=np.zeros(J, dtype=np.int32),
-                                heap=[],  # nb.typed.List.empty_list(heap_type),
+                                heap=[],
                                 kpi=np.zeros((N + 1, 3), dtype=np.float64),
                                 n_admit=0,
                                 s=0,

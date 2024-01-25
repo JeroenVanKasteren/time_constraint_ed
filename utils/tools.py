@@ -34,15 +34,15 @@ class DotDict(dict):
     __delattr__ = dict.__delitem__
 
 
-def generate_times(env, j, lab, mu, n):
+def generate_times(env, n):
     """Generate exponential arrival and service times."""
     arrival_times = nb.typed.List[np.float32]()  # +1, last arrival
     service_times = nb.typed.List[np.float32]()
-    for i in range(j):
-        arrival_times.append(nb.typed.List(env.rng.exponential(1 / lab[i],
-                                                               n + j)))
-        service_times.append(nb.typed.List(env.rng.exponential(1 / mu[i],
-                                                               n + j)))
+    for i in range(env.J):
+        arrival_times.append(nb.typed.List(env.rng.exponential(1 / env.lab[i],
+                                                               n + env.J)))
+        service_times.append(nb.typed.List(env.rng.exponential(1 / env.mu[i],
+                                                               n + env.J)))
     return arrival_times, service_times
 
 
