@@ -122,14 +122,14 @@ def inst_load(filepath):
 
 def load_result(method, instance_name):
     inst = inst_load('results/' + instance_name)
-    instance_id = instance_name.split('_')[2][:-4]
+    inst_id = instance_name[-6:-4]
     methods = inst['method'].values
     if isinstance(method, str):
         row_id = np.where(methods == method)[0][0]
     else:
         row_id = method
         method = inst['method'].values[row_id]
-    file = 'result_' + instance_id + '_' + method + '.pkl'
+    file = 'result_' + inst_id + '_' + method + '.pkl'
     return (method, row_id, inst,
             pkl.load(open('results/simulation_pickles/' + file, 'rb')))
 

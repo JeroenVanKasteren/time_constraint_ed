@@ -1,27 +1,31 @@
 import heapq as hq
 import numpy as np
 import os
+import pandas as pd
 import pickle as pkl
 from time import perf_counter as clock
 from utils import TimeConstraintEDs as Env
 from utils import tools
 
-FILEPATH_INSTANCE = 'results/instance_sim_'
-FILEPATH_PICKLES = 'results/simulation_pickles/'
-FILEPATH_RESULT = 'results/simulation_pickles/result_'
 
 class Simulation:
 
+    FILEPATH_INSTANCE = 'results/instance_sim_'
+    FILEPATH_PICKLES = 'results/simulation_pickles/'
+    FILEPATH_RESULT = 'results/simulation_pickles/result_'
+
     def __init__(self, **kwargs):
+        self.inst_id = kwargs.get('inst_id')
         self.method = kwargs.get('method')
         self.N = kwargs.get('N', 1e5)
         self.convergence_check = kwargs.get('convergence_check', 1e4)
 
         inst = kwargs.get('inst')
+        inst = inst.iloc[(inst['method'] == self.method).idxmax()]
         self.env = Env(J=inst.J, S=inst.S, D=inst.D,
                        gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
                        mu=inst.mu, lab=inst.lab,
-                       seed=kwargs.get('inst_nr'),
+                       seed=int(kwargs.get('inst_id')),
                        max_time=kwargs.get('time', '0-00:10:00'),
                        max_iter=self.N, sim='yes')
 
@@ -105,19 +109,18 @@ class Simulation:
     def simulate_multi_class_system(self, **kwargs):
         """Simulate a multi-class system."""
         arr_times = kwargs.get('arr_times', np.zeros(self.J))
-        fil = kwargs.get('fil', np.zeros(self.J))
+        fil = kwargs.get('fil', np.zeros(self.J, dtype=np.int))
         heap = kwargs.get('heap', [])  # (time, class, event)
         kpi = kwargs.get('kpi', np.zeros((self.N + 1, 3)))
         n_admit = kwargs.get('n_admit', 0)
         s = kwargs.get('s', 0)
         time = kwargs.get('time', 0.0)
-        sims = kwargs.get('sims', self.N)
-        arr = np.zeros(self.J)
-        dep = np.zeros(self.J)
+        arr = kwargs.get('arr', np.zeros(self.J, dtype=np.int))
+        dep = kwargs.get('dep', np.zeros(self.J, dtype=np.int))
         if len(heap) == 0:
             for i in range(self.J):  # initialize the event list
                 hq.heappush(heap, (self.arrival_times[i][0], i, 'arrival'))
-        while n_admit < sims:
+        while n_admit < self.N:
             event = hq.heappop(heap)  # get next event
             time = event[0] if event[0] > time else time
             i = event[1]
@@ -151,37 +154,43 @@ class Simulation:
                     print(f'Time limit {self.env.max_time} reached, '
                           f'stop simulation.')
                     break
-        return arr_times, fil, heap, kpi, s, time
+        return {'arr': arr, 'arr_times': arr_times, 'dep': dep, 'fil': fil,
+                'heap': heap, 'kpi': kpi, 's': s, 'time': time}
 
-    def run(self):
-        pickle_file = 'result_' + instance + '_' + method + '.pkl'
-        if pickle_file in os.listdir(FILEPATH_PICKLES):
-            arr_times, fil, heap, kpi, s, time = pkl.load(open(FILEPATH_PICKLES +
-                                                               pickle_file, 'rb'))
+    def run(self, continue_run=True):
+        pickle_file = 'result_' + self.inst_id + '_' + self.method + '.pkl'
+        if pickle_file in os.listdir(self.FILEPATH_PICKLES) and continue_run:
+            pickle = pkl.load(open(self.FILEPATH_PICKLES + pickle_file, 'rb'))
+            kpi = pickle['kpi']
+            if isinstance(kpi, pd.DataFrame):
+                kpi = kpi[:, :3].to_numpy()
             n_done = np.sum(kpi[:, 0] > 0)
-            n_left = N - n_done
+            n_left = self.N - n_done
             if n_left > 2:
-                if len(kpi) < N:
-                    kpi = np.concatenate((kpi, np.zeros((N - len(kpi) + 1, 3))))
-                arr_times, fil, heap, kpi, s, time = simulate_multi_class_system(
-                    arr_times=arr_times,
-                    fil=fil,
-                    heap=heap,
+                if len(kpi) < self.N:
+                    kpi = np.concatenate((kpi,
+                                          np.zeros((self.N - len(kpi) + 1, 3))))
+                to_pickle = self.simulate_multi_class_system(
+                    arr=pickle['arr'],
+                    arr_times=pickle['arr_times'],
+                    dep=pickle['dep'],
+                    fil=pickle['fil'],
+                    heap=pickle['heap'],
                     kpi=kpi,
                     n_admit=n_done,
-                    s=s,
-                    time=time,
-                    sims=N)
+                    s=pickle['s'],
+                    time=pickle['time'])
         else:
-            arr_times, fil, heap, kpi, s, time = simulate_multi_class_system()
-            n_left = N
+            to_pickle = self.simulate_multi_class_system()
+            n_left = self.N
         if n_left > 0:
-            time = clock() - env.start_time
-            print(f'Sims done: {np.sum(kpi[:, 0] > 0)} (N={N}, n_left={n_left}). '
+            time = clock() - self.env.start_time
+            sims_done = np.sum(to_pickle['kpi'][:, 0] > 0)
+            print(f'Sims done: {sims_done} '
+                  f'(N={self.N}, n_left={n_left}). '
                   f'Total time: {tools.sec_to_time(time)}, '
                   f'time per 10,000 iterations: '
                   f'{tools.sec_to_time(time / n_left * 1e4)}.')
-            pkl.dump([arr_times, fil, heap, kpi, s, time], open(FILEPATH_PICKLES +
-                                                                pickle_file, 'wb'))
+            pkl.dump(to_pickle, open(self.FILEPATH_PICKLES + pickle_file, 'wb'))
         else:
-            print(f'Already done {N} sims.')
+            print(f'Already done {self.N} sims.')

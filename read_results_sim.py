@@ -37,13 +37,12 @@ method = methods[row_id]
 
 for instance_name in instance_names:
     inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)
-    instance_id = instance_name.split('_')[2][:-4]
+    inst_id = instance_name[-6:-4]
     methods = inst['method'].values
     for row_id, method in enumerate(methods):
-        file = 'result_' + instance_id + '_' + method + '.pkl'
-        arr_times, fil, heap, kpi, s, time = \
-            pkl.load(open(FILEPATH_PICKLES + file, 'rb'))
-        kpi_df = pd.DataFrame(kpi, columns=['time', 'class', 'wait'])
+        file = 'result_' + inst_id + '_' + method + '.pkl'
+        pickle = pkl.load(open(FILEPATH_PICKLES + file, 'rb'))
+        kpi_df = pd.DataFrame(pickle['kpi'], columns=['time', 'class', 'wait'])
         kpi_df = kpi_df[kpi_df['time'] != 0]
         kpi_df = kpi_df.reindex(columns=[*kpi_df.columns.tolist(), 'reward'])
         N = len(kpi_df)
@@ -56,6 +55,7 @@ for instance_name in instance_names:
             mask = (kpi_df['class'] == i)
             kpi_df.loc[mask, 'reward'] = np.where(kpi_df.loc[mask, 'wait']
                                                   <= t[i], r[i], r[i] - c[i])
+        pickle['kpi'] = kpi_df
         # per admission
         MA = kpi_df['reward'].values[K:].reshape(-1, M).mean(axis=0)
         ci_perc = tools.conf_int(alpha, MA)
@@ -65,7 +65,6 @@ for instance_name in instance_names:
         MA = kpi_df['reward'].values[K:].reshape(-1, M).sum(axis=0) / times
         ci_g = tools.conf_int(alpha, MA)
         inst.loc[row_id, ['g', 'ci_g']] = MA.mean(), ci_g
-        pkl.dump([arr_times, fil, heap, kpi_df, s, time],
-                 open(FILEPATH_PICKLES + file, 'wb'))
+        pkl.dump(pickle, open(FILEPATH_PICKLES + file, 'wb'))
     inst.to_csv(FILEPATH_INSTANCE + instance_name, index=False)
     print('saved:', instance_name)

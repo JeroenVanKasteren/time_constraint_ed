@@ -1,46 +1,45 @@
 import os
+from utils import tools, Simulation as Sim
 
-FILEPATH_INSTANCE = 'results/instance_sim_'
+FILEPATH_INSTANCE = 'results/'
 FILEPATH_PICKLES = 'results/simulation_pickles/'
 FILEPATH_RESULT = 'results/simulation_pickles/result_'
 
 instance_names = [f for f in os.listdir(FILEPATH_INSTANCE)
                   if f.startswith('instance_sim_')]
-inst = utils.tools.inst_load(FILEPATH_INSTANCE + instance_names[0])
-methods = inst['method'].values
+continue_run = False
+N = int(1e1)
 
 # interested = [instance_names[i - 1] for i in [3, 9, 10, 11, 12]]
-interested = [instance_names[i - 1] for i in [3]]
-for instance_name in interested:
-    inst = utils.tools.inst_load(FILEPATH_INSTANCE + instance_name)
-    pickle_file = 'result_' + instance + '_' + method + '.pkl'
-    if pickle_file in os.listdir(FILEPATH_PICKLES):
-        arr_times, fil, heap, kpi, s, time = pkl.load(open(FILEPATH_PICKLES +
-                                                           pickle_file, 'rb'))
-        n_done = np.sum(kpi[:, 0] > 0)
-        n_left = N - n_done
-        if n_left > 2:
-            if len(kpi) < N:
-                kpi = np.concatenate((kpi, np.zeros((N - len(kpi) + 1, 3))))
-            arr_times, fil, heap, kpi, s, time = simulate_multi_class_system(
-                arr_times=arr_times,
-                fil=fil,
-                heap=heap,
-                kpi=kpi,
-                n_admit=n_done,
-                s=s,
-                time=time,
-                sims=N)
-    else:
-        arr_times, fil, heap, kpi, s, time = simulate_multi_class_system()
-        n_left = N
-    if n_left > 0:
-        time = clock() - env.start_time
-        print(f'Sims done: {np.sum(kpi[:, 0] > 0)} (N={N}, n_left={n_left}). '
-              f'Total time: {tools.sec_to_time(time)}, '
-              f'time per 10,000 iterations: '
-              f'{tools.sec_to_time(time / n_left * 1e4)}.')
-        pkl.dump([arr_times, fil, heap, kpi, s, time], open(FILEPATH_PICKLES +
-                                                            pickle_file, 'wb'))
-    else:
-        print(f'Already done {N} sims.')
+inst_to_sim = [instance_names[i - 1] for i in [3]]
+for instance_name in inst_to_sim:
+    inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)
+    methods = inst['method'].values
+    for method in methods:
+        simulation = Sim(inst=inst,
+                         inst_id=instance_name[-6:-4],
+                         method=method,
+                         N=N)
+        simulation.run(continue_run=continue_run)
+
+
+# import utils
+# from utils import TimeConstraintEDs as Env
+# i = 0
+# method, row_id, inst, pickle = utils.tools.load_result(i, inst_to_sim[0])
+# print(pickle['kpi'])
+# env = Env(J=inst.J[0], S=inst.S[0], gamma=inst.gamma[0], t=inst.t[0],
+#           mu=inst.mu[0], lab=inst.lab[0], seed=int(inst_to_sim[0][-6:-4]),
+#           sim='yes')
+# arrival_times, service_times = tools.generate_times(env, N)
+for i in range(self.J):
+    print(self.arrival_times[i])
+    print(self.service_times[i])
+
+[76.51150681784864, 57.431555622055576, 96.79303299877344, 22.85213078633639, 222.95911449060162, 14.769779612665477, 100.51596251540576, 745.6695013171703, 59.368513406204734, 286.30440689609895, 114.93996257269602, 453.120108899403, 202.17882694162722]
+[89.08865003658882, 17.357253231682424, 10.663631304890904, 0.10797171794444559, 69.90148234531449, 53.665353546061894, 72.97192111788956, 39.21544797240597, 34.47663676422866, 35.388291852625834, 35.03593632288263, 2.4810339864880953, 129.41233926341206]
+[60.32751189405119, 2.797135972747264, 62.164594940336116, 130.58033066149747, 8.772402296132531, 33.043294974947834, 5.462786216104556, 52.45208948048644, 90.73601145628864, 38.64363506607093, 57.80655202691302, 49.35864106787747, 32.337661676213635]
+[106.21270753563851, 23.325454922490824, 122.40767955889434, 266.4054838810211, 11.794894106484637, 142.78370884372342, 42.83191409390317, 31.03087703554937, 12.262453010001456, 187.74583733384534, 7.525057205367587, 87.96239020737647, 36.72682481550938]
+[58.67323202820671, 26.977365251025855, 99.16826604264361, 4.794909697413921, 4.351259208751674, 41.999139698288246, 10.228493727214811, 63.87482387085932, 25.929710247773063, 12.79562220123459, 78.83615100054702, 1.904207653175186, 25.44417880631751]
+[48.058836181180155, 4.68169057739516, 9.206619727972422, 7.704060733875137, 19.68772557379628, 18.658032516268324, 20.66998069205326, 34.073342129226994, 11.845727470461648, 146.04365277329848, 62.1077686735398, 101.90530601666858, 122.00046019080837]
+

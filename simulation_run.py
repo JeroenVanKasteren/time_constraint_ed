@@ -49,11 +49,8 @@ else:
     instance = str(inst_nr)
 
 inst = tools.inst_load(FILEPATH_INSTANCE + instance + '.csv')
-if args.method in inst['method'].values:
-    method_id = (inst['method'] == args.method).idxmax()
-else:
-    method_id = (args.array_id - 1) % 5
-inst = inst.iloc[method_id]
+if args.method not in inst['method'].values:
+    args.method = inst['method'][(args.array_id - 1) % 5]
 method = inst['method']
 
 # global constants
