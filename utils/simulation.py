@@ -40,6 +40,9 @@ class Simulation:
         self.v = tools.get_v_app(self.env)
         self.arrival_times, self.service_times = \
             tools.generate_times(self.env, self.N)
+        for i in range(self.J):
+            print(self.arrival_times[i])
+            print(self.service_times[i])
 
     def ospi(self, fil, i, x):
         """One-step policy improvement.
@@ -98,16 +101,24 @@ class Simulation:
             n_admit += 1
             s += 1
             fil[pi] = 0
+            print(f'Dep: {time + self.service_times[pi][dep[pi]]:.2f} of {pi} '
+                  f'Arr: {time + self.arrival_times[pi][arr[pi]]:.2f} of {pi}')
             hq.heappush(heap, (time + self.service_times[pi][dep[pi]],
                                pi, 'departure'))
             hq.heappush(heap, (arr_times[pi] + self.arrival_times[pi][arr[pi]],
                                pi, 'arrival'))
+            arr[pi] += 1
+            dep[pi] += 1
         else:  # Idle
+            print(f'Idle: {time + 1/self.env.gamma:.2f}')
             hq.heappush(heap, (time + 1/self.env.gamma, i, 'idle'))
         return fil, heap, kpi, n_admit, s
 
     def simulate_multi_class_system(self, **kwargs):
-        """Simulate a multi-class system."""
+        """Simulate a multi-class system.
+        arr & dep keep track of arrivals and departures per class, both finished
+        and planned.
+        """
         arr_times = kwargs.get('arr_times', np.zeros(self.J))
         fil = kwargs.get('fil', np.zeros(self.J, dtype=np.int))
         heap = kwargs.get('heap', [])  # (time, class, event)
@@ -119,24 +130,25 @@ class Simulation:
         dep = kwargs.get('dep', np.zeros(self.J, dtype=np.int))
         if len(heap) == 0:
             for i in range(self.J):  # initialize the event list
+                print(f'Arr: {self.arrival_times[i][0]:.2f} of {i} ')
                 hq.heappush(heap, (self.arrival_times[i][0], i, 'arrival'))
+                arr[i] += 1
         while n_admit < self.N:
             event = hq.heappop(heap)  # get next event
             time = event[0] if event[0] > time else time
             i = event[1]
             type_event = event[2]
+            print(f'fil: {fil}, s: {s}, time: {time:.2f}, event:', type_event, i)
             if type_event in ['arrival', 'idle']:  # arrival of FIL by design
                 if type_event == 'arrival':
-                    arr[i] += 1
                     fil[i] = 1
                     arr_times[i] = event[0]
                 if s < self.env.S:
-                    x = np.where(fil, time - arr_times, 0)
+                    x = time - arr_times
                     fil, heap, kpi, n_admit, s = self.admission(
                         arr, arr_times, dep, fil, heap, i, kpi, n_admit, s,
                         time, x)
             elif type_event == 'departure':
-                dep[i] += 1
                 s -= 1  # ensures that sum(s) < S
                 if sum(fil) > 0:
                     x = np.where(fil, time - arr_times, 0)
