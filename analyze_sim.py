@@ -17,6 +17,8 @@ inst = utils.tools.inst_load(FILEPATH_INSTANCE + instance_names[0])
 methods = inst['method'].values
 env = utils.env.TimeConstraintEDs
 
+# --------------------- Plotting ---------------------
+
 utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instance_names, methods,
                               'g', True)
 utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instance_names, methods,
@@ -33,7 +35,8 @@ start = 0
 # start = round_significance(random.randint(0, len(kpi_df)-size), 2)
 utils.plotting.plot_waiting(inst.loc[row_id], kpi_df, 1000, start)
 
-# K analyses
+# --------------------- K analyses ---------------------
+
 # import matplotlib.pyplot as plt
 # MA = kpi_df['wait'].rolling(window=T).mean().iloc[T::T]
 # plt.scatter(np.arange(len(MA)), MA)
@@ -57,6 +60,8 @@ utils.plotting.plot_waiting(inst.loc[row_id], kpi_df, 1000, start)
 #     g = (inst_row.r[i] - inst_row.c[i] * tail_prob) * inst_row.lab[i]
 
 # Use instance 3 with mu_j = mu for all j and compare with FCFS
+
+# --------------------- Theory vs Sim ---------------------
 
 
 def theory(inst_row, gamma):
@@ -90,17 +95,17 @@ for instance_name in interested:
           f'Theory, g={g:0.4f}, E(W)={exp_wait:0.4f}, '
           f'P(W<t) = {["%.4f" % elem for elem in tail_prob]}')
     for i in range(len(methods)):
-        method, row_id, inst, (arr_times, fil, heap, kpi_df, s, time) = (
-            utils.tools.load_result(i, instance_name))
-        reward_per_class = kpi_df.groupby('class')['reward'].mean()
+        method, row_id, inst, pickle = utils.tools.load_result(i, instance_name)
+        reward_per_class = pickle['kpi'].groupby('class')['reward'].mean()
         print(instance_name, method)
         print(f'Arrival rates: {sum(inst.lab[0]):0.4f} <> '
-              f'{len(kpi_df)/(kpi_df.time.values[-1]):0.4f} in {time:0.2f} '
-              f'({kpi_df.time.values[-1]:0.2f})\n'
-              f'Sim g: {inst.loc[i].g:0.4f} +/- {inst.loc[i,"ci_g"]:0.4f}'
+              f'{len(pickle["kpi"])/(pickle["kpi"].time.values[-1]):0.4f} in '
+              f'{pickle["time"]:0.2f} '
+              f'({pickle["kpi"].time.values[-1]:0.2f})\n'
+              f'Sim g: {inst.loc[i].g:0.4f} +/- {inst.loc[i,"ci_g"]:0.4f},'
               f' weighted average: '
               f'{sum(reward_per_class * inst.lab[i]):0.4f} \n'
-              f'Sim E(W)={kpi_df["wait"].mean():0.4f}'
+              f'Sim E(W)={pickle["kpi"]["wait"].mean():0.4f}'
               f' Sim P(W < t)={inst.loc[i].perc:0.4f}'
               f' +/- {inst.loc[i,"ci_perc"]:0.4f}')
         print(f'{reward_per_class}')

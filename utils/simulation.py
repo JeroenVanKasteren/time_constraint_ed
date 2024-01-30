@@ -40,9 +40,6 @@ class Simulation:
         self.v = tools.get_v_app(self.env)
         self.arrival_times, self.service_times = \
             tools.generate_times(self.env, self.N)
-        for i in range(self.J):
-            print(self.arrival_times[i])
-            print(self.service_times[i])
 
     def ospi(self, fil, i, x):
         """One-step policy improvement.
@@ -101,8 +98,6 @@ class Simulation:
             n_admit += 1
             s += 1
             fil[pi] = 0
-            print(f'Dep: {time + self.service_times[pi][dep[pi]]:.2f} of {pi} '
-                  f'Arr: {time + self.arrival_times[pi][arr[pi]]:.2f} of {pi}')
             hq.heappush(heap, (time + self.service_times[pi][dep[pi]],
                                pi, 'departure'))
             hq.heappush(heap, (arr_times[pi] + self.arrival_times[pi][arr[pi]],
@@ -130,7 +125,6 @@ class Simulation:
         dep = kwargs.get('dep', np.zeros(self.J, dtype=np.int))
         if len(heap) == 0:
             for i in range(self.J):  # initialize the event list
-                print(f'Arr: {self.arrival_times[i][0]:.2f} of {i} ')
                 hq.heappush(heap, (self.arrival_times[i][0], i, 'arrival'))
                 arr[i] += 1
         while n_admit < self.N:
@@ -138,7 +132,6 @@ class Simulation:
             time = event[0] if event[0] > time else time
             i = event[1]
             type_event = event[2]
-            print(f'fil: {fil}, s: {s}, time: {time:.2f}, event:', type_event, i)
             if type_event in ['arrival', 'idle']:  # arrival of FIL by design
                 if type_event == 'arrival':
                     fil[i] = 1
@@ -155,7 +148,7 @@ class Simulation:
                     fil, heap, kpi, n_admit, s = \
                         self.admission(arr, arr_times, dep, fil, heap, i, kpi,
                                        n_admit, s, time, x)
-            if (n_admit % self.convergence_check) == 0:
+            if (n_admit % self.convergence_check) == 0 and n_admit > 0:
                 time_per = tools.sec_to_time((clock() - self.env.start_time)
                                              / n_admit * 1e4)
                 print(f'Sims done: {n_admit} (N={self.N}). Total time: '

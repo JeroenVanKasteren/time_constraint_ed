@@ -165,7 +165,8 @@ def sec_to_time(time):
     """Convert seconds to minutes and return readable format."""
     time = int(time)
     if time >= 60*60:
-        return f"(HH:MM:SS): {time // (60*60):02d}:{(time // 60) % 60:02d}:{time % 60:02d}"
+        return (f"(HH:MM:SS): {time // (60*60):02d}:{(time // 60) % 60:02d}:"
+                f"{time % 60:02d}")
     else:
         return f"(MM:SS): {time // 60:02d}:{time % 60:02d}"
 
