@@ -29,7 +29,7 @@ method, row_id, inst, pickle = utils.tools.load_result(method, instance_name)
 utils.plotting.plot_convergence(pickle['kpi'], method,
                                 inst.loc[row_id, 'start_K'],
                                 inst.loc[row_id, 'batch_T'],
-                                M = 100)
+                                m=100)
 
 start = 0
 # start = round_significance(random.randint(0, len(kpi_df)-size), 2)

@@ -20,7 +20,8 @@ def conf_int(alpha, data):
 
 def moving_average(kpi_df, k, m, t):
     times = kpi_df['time'].values[k + t - 1::t] - kpi_df['time'].values[k::t]
-    return kpi_df['reward'].values[k:].reshape(-1, m).sum(axis=0) / times
+    return (kpi_df['reward'].values[k:].reshape(-1, m).sum(axis=0) / times,
+            times)
 
 
 def moving_average_admission(kpi_df, k, m):

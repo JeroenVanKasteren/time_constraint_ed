@@ -61,7 +61,7 @@ for instance_name in instance_names:
         ci_perc = tools.conf_int(alpha, MA)
         inst.loc[row_id, ['perc', 'ci_perc']] = MA.mean(), ci_perc
         # per time
-        MA = tools.moving_average(kpi_df, K, M, T)
+        MA, _ = tools.moving_average(kpi_df, K, M, T)
         ci_g = tools.conf_int(alpha, MA)
         inst.loc[row_id, ['g', 'ci_g']] = MA.mean(), ci_g
         pkl.dump(pickle, open(FILEPATH_PICKLES + file, 'wb'))
