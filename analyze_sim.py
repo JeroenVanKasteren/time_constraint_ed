@@ -24,10 +24,12 @@ utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instance_names, methods,
 
 method = 'ospi'  # method = 1
 instance_name = instance_names[0]
-method, row_id, inst, (arr_times, fil, heap, kpi_df, s, time) = (
-    utils.tools.load_result(method, instance_name))
+method, row_id, inst, pickle = utils.tools.load_result(method, instance_name)
 
-utils.plotting.plot_convergence(kpi_df, method)
+utils.plotting.plot_convergence(pickle['kpi'], method,
+                                inst.loc[row_id, 'start_K'],
+                                inst.loc[row_id, 'batch_T'],
+                                M = 100)
 
 start = 0
 # start = round_significance(random.randint(0, len(kpi_df)-size), 2)

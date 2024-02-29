@@ -12,7 +12,7 @@ import os
 import pandas as pd
 from utils import instances_sim
 
-sim_ids = ['12']
+sim_ids = list(map("{:02d}".format, list(range(1, 13))))  # ['12']
 for sim_id in sim_ids:
     FILEPATH_INSTANCE = 'results/instance_sim_' + str(sim_id) + '.csv'
     methods = ['ospi', 'cmu', 'fcfs', 'sdf', 'sdfprior']

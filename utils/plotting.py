@@ -222,9 +222,13 @@ def plot_waiting(inst_row, kpi_df_full, size, start):
     plt.show()
 
 
-def plot_convergence(kpi_df, method):
+def plot_convergence(kpi_df, method, k, t, M=100):
     plt.scatter(kpi_df['time'] / 60, kpi_df['g'])
     plt.xlabel('Running time (hours)')
     plt.ylabel('g')
     plt.title('g vs. time for ' + method)
     plt.show()
+
+    # make a scatter plot with kpi_df['time'] on the x-axis
+    # calculate g by
+    MA = utils.tools.moving_average(kpi_df, k, m, t)

@@ -18,6 +18,15 @@ def conf_int(alpha, data):
     return norm.ppf(1 - alpha / 2) * data.std() / np.sqrt(len(data))
 
 
+def moving_average(kpi_df, k, m, t):
+    times = kpi_df['time'].values[k + t - 1::t] - kpi_df['time'].values[k::t]
+    return kpi_df['reward'].values[k:].reshape(-1, m).sum(axis=0) / times
+
+
+def moving_average_admission(kpi_df, k, m):
+    return kpi_df['reward'].values[k:].reshape(-1, m).mean(axis=0)
+
+
 def def_sizes(dim):
     """Docstring."""
     sizes = np.zeros(len(dim), np.int32)

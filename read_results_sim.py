@@ -27,9 +27,9 @@ instance_names = [f for f in os.listdir(FILEPATH_INSTANCE)
 
 # Debug
 """
-instance_name = instance_names[8]
+instance_name = instance_names[3]
 inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)
-instance_id = instance_name.split('_')[2][:-4]
+inst_id = instance_name[-6:-4]
 methods = inst['method'].values
 row_id = 0
 method = methods[row_id]
@@ -57,12 +57,11 @@ for instance_name in instance_names:
                                                   <= t[i], r[i], r[i] - c[i])
         pickle['kpi'] = kpi_df
         # per admission
-        MA = kpi_df['reward'].values[K:].reshape(-1, M).mean(axis=0)
+        MA = tools.moving_average_admission(kpi_df, K, M)
         ci_perc = tools.conf_int(alpha, MA)
         inst.loc[row_id, ['perc', 'ci_perc']] = MA.mean(), ci_perc
         # per time
-        times = kpi_df['time'].values[K+T-1::T] - kpi_df['time'].values[K::T]
-        MA = kpi_df['reward'].values[K:].reshape(-1, M).sum(axis=0) / times
+        MA = tools.moving_average(kpi_df, K, M, T)
         ci_g = tools.conf_int(alpha, MA)
         inst.loc[row_id, ['g', 'ci_g']] = MA.mean(), ci_g
         pkl.dump(pickle, open(FILEPATH_PICKLES + file, 'wb'))
