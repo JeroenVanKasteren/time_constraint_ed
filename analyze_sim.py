@@ -33,30 +33,10 @@ utils.plotting.plot_convergence(pickle['kpi'], method,
 
 start = 0
 # start = round_significance(random.randint(0, len(kpi_df)-size), 2)
-utils.plotting.plot_waiting(inst.loc[row_id], kpi_df, 1000, start)
-
-# K analyses
-# import matplotlib.pyplot as plt
-# MA = kpi_df['wait'].rolling(window=T).mean().iloc[T::T]
-# plt.scatter(np.arange(len(MA)), MA)
-# plt.show()
-#
-# plt.scatter(np.arange(len(MA)), MA.cumsum()/np.arange(len(MA)))
-# plt.show()
-#
-# plt.scatter(np.arange(len(kpi_df)), kpi_df['g'])
-# plt.show()
+utils.plotting.plot_waiting(inst.loc[row_id], pickle['kpi'], 1000, start)
 
 # Debugging by comparing theoretical results
 # create instance in instance_sim_gen with J=1 and S=5
-
-# def get_g(inst_row, i):
-#     lab = sum(inst_row.lab) if i == None else inst_row.lab[i]
-#     pi_0 = env.get_pi_0(inst_row.gamma, inst_row.S, inst_row.load, lab)
-#     tail_prob = env.get_tail_prob(inst_row.gamma, inst_row.S, inst_row.load,
-#                                   lab, inst_row.mu[i], pi_0,
-#                                   inst_row.t[i])
-#     g = (inst_row.r[i] - inst_row.c[i] * tail_prob) * inst_row.lab[i]
 
 # Use instance 3 with mu_j = mu for all j and compare with FCFS
 
@@ -82,8 +62,8 @@ def theory(inst_row, gamma):
     return g, exp_wait, tail_prob
 
 
-# interested = [instance_names[i - 1] for i in [3, 9, 10, 11, 12]]
-interested = [instance_names[i - 1] for i in [3]]
+interested = [instance_names[i - 1] for i in [3, 9, 10, 11, 12]]
+# interested = [instance_names[i - 1] for i in [3]]
 for instance_name in interested:
     inst = utils.tools.inst_load(FILEPATH_INSTANCE + instance_name)
     g, exp_wait, tail_prob = theory(inst.loc[0], 1e6)
@@ -92,13 +72,15 @@ for instance_name in interested:
           f'Theory, g={g:0.4f}, E(W)={exp_wait:0.4f}, '
           f'P(W<t) = {["%.4f" % elem for elem in tail_prob]}')
     for i in range(len(methods)):
-        method, row_id, inst, (arr_times, fil, heap, kpi_df, s, time) = (
+        method, row_id, inst, pickle = (
             utils.tools.load_result(i, instance_name))
+        kpi_df, time = pickle['kpi'], pickle['time']
+        # (arr_times, fil, heap, kpi_df, s, time)
         reward_per_class = kpi_df.groupby('class')['reward'].mean()
         print(instance_name, method)
         print(f'Arrival rates: {sum(inst.lab[0]):0.4f} <> '
-              f'{len(kpi_df)/(kpi_df.time.values[-1]):0.4f} in {time:0.2f} '
-              f'({kpi_df.time.values[-1]:0.2f})\n'
+              f'{len(kpi_df)/(kpi_df.time.values[-1]):0.4f} after '
+              f'{len(kpi_df)} sims in {time/60:0.2f} hours\n'
               f'Sim g: {inst.loc[i].g:0.4f} +/- {inst.loc[i,"ci_g"]:0.4f}'
               f' weighted average: '
               f'{sum(reward_per_class * inst.lab[i]):0.4f} \n'

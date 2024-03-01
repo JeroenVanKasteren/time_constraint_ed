@@ -199,7 +199,7 @@ def plot_multi_bar(filepath, instance_names, methods, kpi, normalize=False):
         else:
             ax.set_ylabel('Long term average reward')
     ax.set_xticks(x + width, inst_nrs)
-    ax.legend(loc='upper left', ncols=3)
+    ax.legend(loc='lower left', ncols=3)
     ax.set_ylim(min_y, max_y)
     plt.show()
 
@@ -218,17 +218,15 @@ def plot_waiting(inst_row, kpi_df_full, size, start):
     plt.xlabel('Time (hours)')
     plt.ylabel('wait')
     plt.title('Waiting time per class')
-    plt.legend(loc='lower left')
+    plt.legend(loc='upper right')
     plt.show()
 
 
 def plot_convergence(kpi_df, method, k, t, m=100):
     MA, times = utils.tools.moving_average(kpi_df, k, m, t)
-    plt.scatter(times / 60, MA/times, label='Moving Average')
-    plt.scatter(times / 60,
-                MA.cumsum() /
-                (kpi_df['time'].values[k + t - 1::t] -
-                 kpi_df['time'].values[k]),
+    plt.scatter(times.cumsum() / 60, MA/times, label='Moving Average')
+    plt.scatter(times.cumsum() / 60,
+                MA.cumsum() / times.cumsum(),
                 label='g')
     plt.xlabel('Running time (hours)')
     plt.ylabel('g')
