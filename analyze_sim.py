@@ -17,13 +17,15 @@ inst = utils.tools.inst_load(FILEPATH_INSTANCE + instance_names[0])
 methods = inst['method'].values
 env = utils.env.TimeConstraintEDs
 
+# --------------------- Plotting ---------------------
+
 utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instance_names, methods,
                               'g', True)
 utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instance_names, methods,
                               'perc')
 
-method = 'ospi'  # method = 1
-instance_name = instance_names[0]
+method = 'fcfs'  # method = 1
+instance_name = instance_names[10]
 method, row_id, inst, pickle = utils.tools.load_result(method, instance_name)
 
 utils.plotting.plot_convergence(pickle['kpi'], method,
@@ -56,14 +58,13 @@ def theory(inst_row, gamma):
         # identical
         # tail_prob_i = block_prob * np.exp(-(inst_row.S * inst_row.mu[i] - lab)
         #                                   * inst_row.t[i])
-        g += prob_i * inst_row.lab[i] * (inst_row.r[i] -
-                                         inst_row.c[i] * tail_prob_i)
+        g += prob_i * lab * (inst_row.r[i] - inst_row.c[i] * tail_prob_i)
         tail_prob.append(1 - tail_prob_i)
     return g, exp_wait, tail_prob
 
 
-interested = [instance_names[i - 1] for i in [3, 9, 10, 11, 12]]
-# interested = [instance_names[i - 1] for i in [3]]
+# interested = [instance_names[i - 1] for i in [3, 9, 10, 11, 12]]
+interested = [instance_names[i - 1] for i in [3]]
 for instance_name in interested:
     inst = utils.tools.inst_load(FILEPATH_INSTANCE + instance_name)
     g, exp_wait, tail_prob = theory(inst.loc[0], 1e6)
