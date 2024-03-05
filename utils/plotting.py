@@ -199,7 +199,7 @@ def plot_multi_bar(filepath, instance_names, methods, kpi, normalize=False):
         else:
             ax.set_ylabel('Long term average reward')
     ax.set_xticks(x + width, inst_nrs)
-    ax.legend(loc='upper left', ncols=3)
+    ax.legend(loc='lower left', ncols=3)
     ax.set_ylim(min_y, max_y)
     plt.show()
 
@@ -208,23 +208,28 @@ def plot_waiting(inst_row, kpi_df_full, size, start):
     kpi_df = kpi_df_full[start:start + size]
     x = np.arange(inst_row.J)
     ys = [i + x + (i * x) ** 2 for i in range(inst_row.J)]
-    colors = plt.cm.rainbow(np.linspace(0, 1, len(ys)))
+    colors_tmp = plt.cm.rainbow(np.linspace(0, 1, len(ys)))
     for i in range(inst_row.J):
         mask = (kpi_df['class'] == i)
         plt.scatter(kpi_df.loc[mask, 'time']/60,
                     kpi_df.loc[mask, 'wait'],
-                    marker='x', label=i, color=colors[i])
-        plt.axhline(y=inst_row.t[i], color=colors[i], linestyle='-')
+                    marker='x', label=i, color=colors_tmp[i])
+        plt.axhline(y=inst_row.t[i], color=colors_tmp[i], linestyle='-')
     plt.xlabel('Time (hours)')
     plt.ylabel('wait')
     plt.title('Waiting time per class')
-    plt.legend(loc='upper left')
+    plt.legend(loc='upper right')
     plt.show()
 
 
-def plot_convergence(kpi_df, method):
-    plt.scatter(kpi_df['time'] / 60, kpi_df['g'])
+def plot_convergence(kpi_df, method, k, t, m=100):
+    MA, times = utils.tools.moving_average(kpi_df, k, m, t)
+    plt.scatter(times.cumsum() / 60, MA/times, label='Moving Average')
+    plt.scatter(times.cumsum() / 60,
+                MA.cumsum() / times.cumsum(),
+                label='g')
     plt.xlabel('Running time (hours)')
     plt.ylabel('g')
     plt.title('g vs. time for ' + method)
+    plt.legend(loc='upper right')
     plt.show()
