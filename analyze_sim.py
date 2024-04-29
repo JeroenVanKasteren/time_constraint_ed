@@ -63,8 +63,8 @@ def theory(inst_row, gamma):
     return g, exp_wait, tail_prob
 
 
-# interested = [instance_names[i - 1] for i in [3, 9, 10, 11, 12]]
-interested = [instance_names[i - 1] for i in [3]]
+interested = [instance_names[i - 1] for i in [1, 3, 9, 10, 11, 12]]
+# interested = [instance_names[i - 1] for i in [3]]
 for instance_name in interested:
     inst = utils.tools.inst_load(FILEPATH_INSTANCE + instance_name)
     g, exp_wait, tail_prob = theory(inst.loc[0], 1e6)
@@ -89,4 +89,6 @@ for instance_name in interested:
               f' Sim P(W < t)={inst.loc[i].perc:0.4f}'
               f' +/- {inst.loc[i,"ci_perc"]:0.4f}')
         print(f'{reward_per_class}')
-    print('')
+        print('------------\n')
+    print(' --------------------------------------------------------------- \n'
+          ' --------------------------------------------------------------- \n')
