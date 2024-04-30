@@ -9,6 +9,7 @@ import os
 import pandas as pd
 import pickle as pkl
 from scipy.stats import norm
+from scipy.special import factorial as fac
 from sklearn.model_selection import ParameterGrid
 from utils import TimeConstraintEDs as Env
 from utils import OneStepPolicyImprovement as Ospi
@@ -203,3 +204,15 @@ def strip_split(x):
 def update_mean(mean, x, n):
     """Welford's method to update the mean. Can be set to numba function."""
     return mean + (x - mean) / n  # avg_{n-1} = avg_{n-1} + (x_n - avg_{n-1})/n
+
+
+def erlang_c(mu, rho, s, t):
+    lab = s * mu * rho
+    a = s * rho
+
+    j = np.arange(s)  # sum_{j=0}^{s-1}
+    trm = a**s / (fac(s-1) * (s - a))
+
+    pi_0 = 1 / (sum(a**j / fac(j)) + trm)
+    erlang_c = trm / pi_0
+    exp_w_q = erlang_c / (s * mu - lab)
