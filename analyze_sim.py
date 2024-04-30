@@ -89,6 +89,5 @@ for instance_name in interested:
               f' Sim P(W < t)={inst.loc[i].perc:0.4f}'
               f' +/- {inst.loc[i,"ci_perc"]:0.4f}')
         print(f'{reward_per_class}')
-        print('------------\n')
-    print(' --------------------------------------------------------------- \n'
-          ' --------------------------------------------------------------- \n')
+        print('-'*10, '\n')
+    print('-'*120, '\n', '-'*120, '\n')
