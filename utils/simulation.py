@@ -40,9 +40,6 @@ class Simulation:
         self.v = tools.get_v_app(self.env)
         self.arrival_times, self.service_times = \
             tools.generate_times(self.env, self.N)
-        # for i in range(self.J):
-        #     print(self.arrival_times[i])
-        #     print(self.service_times[i])
 
     def ospi(self, fil, i, x):
         """One-step policy improvement.
@@ -92,7 +89,8 @@ class Simulation:
 
     def admission(self, arr, arr_times, dep, fil, heap, i, kpi, n_admit, s,
                   time, x):
-        """Assumes that sum(s)<S.
+        """
+        Assumes that sum(s)<S.
         if pi < J: Take class pi into service, add its departure & new arrival
         """
         pi = self.policy(fil, i, x)
@@ -112,7 +110,7 @@ class Simulation:
         else:  # Idle
             # print(f'Idle: {time + 1/self.env.gamma:.2f}')
             hq.heappush(heap, (time + 1/self.env.gamma, i, 'idle'))
-        return fil, heap, kpi, n_admit, s
+        return arr, dep, fil, heap, kpi, n_admit, s
 
     def simulate_multi_class_system(self, **kwargs):
         """Simulate a multi-class system.
@@ -120,14 +118,14 @@ class Simulation:
         and planned.
         """
         arr_times = kwargs.get('arr_times', np.zeros(self.J))
-        fil = kwargs.get('fil', np.zeros(self.J, dtype=np.int))
+        fil = kwargs.get('fil', np.zeros(self.J, dtype=int))
         heap = kwargs.get('heap', [])  # (time, class, event)
         kpi = kwargs.get('kpi', np.zeros((self.N + 1, 3)))
         n_admit = kwargs.get('n_admit', 0)
         s = kwargs.get('s', 0)
         time = kwargs.get('time', 0.0)
-        arr = kwargs.get('arr', np.zeros(self.J, dtype=np.int))
-        dep = kwargs.get('dep', np.zeros(self.J, dtype=np.int))
+        arr = kwargs.get('arr', np.zeros(self.J, dtype=int))
+        dep = kwargs.get('dep', np.zeros(self.J, dtype=int))
         if len(heap) == 0:
             for i in range(self.J):  # initialize the event list
                 # print(f'Arr: {self.arrival_times[i][0]:.2f} of {i} ')
@@ -145,16 +143,16 @@ class Simulation:
                     arr_times[i] = event[0]
                 if s < self.env.S:
                     x = time - arr_times
-                    fil, heap, kpi, n_admit, s = self.admission(
+                    arr, dep, fil, heap, kpi, n_admit, s = self.admission(
                         arr, arr_times, dep, fil, heap, i, kpi, n_admit, s,
                         time, x)
             elif type_event == 'departure':
                 s -= 1  # ensures that sum(s) < S
                 if sum(fil) > 0:
                     x = np.where(fil, time - arr_times, 0)
-                    fil, heap, kpi, n_admit, s = \
-                        self.admission(arr, arr_times, dep, fil, heap, i, kpi,
-                                       n_admit, s, time, x)
+                    arr, dep, fil, heap, kpi, n_admit, s = self.admission(
+                        arr, arr_times, dep, fil, heap, i, kpi, n_admit, s,
+                        time, x)
             if (n_admit % self.convergence_check) == 0 and n_admit > 0:
                 time_per = tools.sec_to_time((clock() - self.env.start_time)
                                              / n_admit * 1e4)

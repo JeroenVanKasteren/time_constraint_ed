@@ -206,13 +206,31 @@ def update_mean(mean, x, n):
     return mean + (x - mean) / n  # avg_{n-1} = avg_{n-1} + (x_n - avg_{n-1})/n
 
 
-def erlang_c(mu, rho, s, t):
+def get_erlang_c(mu, rho, s, t=0):
+    """
+    Calculates Erlang C statistics
+
+    parameters
+        mu  (float): service rate
+        rho (float): load
+        s   (int): number of servers
+        [t  (int): target t]
+
+    return
+        erlang_c  (float): probability of delay, P(W>0)
+        exp_w     (float): expected waiting time, E(W_q)
+        pi_0      (float): P(x = 0), none idle and no one waiting
+        prob_late (float): P(W>t)
+    """
+
     lab = s * mu * rho
     a = s * rho
 
     j = np.arange(s)  # sum_{j=0}^{s-1}
     trm = a**s / (fac(s-1) * (s - a))
 
-    pi_0 = 1 / (sum(a**j / fac(j)) + trm)
-    erlang_c = trm / pi_0
-    exp_w_q = erlang_c / (s * mu - lab)
+    pi_0 = 1 / (sum(a ** j / fac(j)) + trm)
+    erlang_c = trm * pi_0
+    exp_w = erlang_c / (s * mu - lab)
+    prob_late = erlang_c * np.exp(-(s * mu - lab) * t) if t >= 0 else 0
+    return erlang_c, exp_w, pi_0, prob_late
