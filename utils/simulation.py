@@ -31,7 +31,7 @@ class Simulation:
 
         self.J = self.env.J
         sorted_order = sorted(tuple(zip(self.env.c * self.env.mu,
-                                        self.env.t,
+                                        -self.env.t,
                                         range(self.J))), reverse=True)
         unsorted_order = sorted(zip(sorted_order, range(self.J)),
                                 key=lambda x: x[0][2])
