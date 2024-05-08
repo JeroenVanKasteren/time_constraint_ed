@@ -20,4 +20,4 @@ for instance_name in instance_names:
                          inst_id=instance_name[-6:-4],
                          method=method,
                          N=N)
-        simulation.run(continue_run=continue_run)
+        # simulation.run(continue_run=continue_run)

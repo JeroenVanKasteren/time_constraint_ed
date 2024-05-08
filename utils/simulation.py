@@ -36,6 +36,10 @@ class Simulation:
         unsorted_order = sorted(zip(sorted_order, range(self.J)),
                                 key=lambda x: x[0][2])
         self.cmu_order = [item[1] for item in unsorted_order]
+        # Sort ascending from last to first column (negate for descending order)
+        self.cmu_order = np.lexsort([-np.arange(self.J),
+                                     self.env.t,
+                                     -self.env.c * self.env.mu])  # TODO
         self.eye = np.eye(self.J, dtype=int)
         self.v = tools.get_v_app(self.env)
         self.arrival_times, self.service_times = \
