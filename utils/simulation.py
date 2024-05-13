@@ -30,16 +30,24 @@ class Simulation:
                        max_iter=self.N, sim='yes')
 
         self.J = self.env.J
-        sorted_order = sorted(tuple(zip(self.env.c * self.env.mu,
-                                        -self.env.t,
-                                        range(self.J))), reverse=True)
-        unsorted_order = sorted(zip(sorted_order, range(self.J)),
-                                key=lambda x: x[0][2])
-        self.cmu_order = [item[1] for item in unsorted_order]
+
         # Sort ascending from last to first column (negate for descending order)
-        self.cmu_order = np.lexsort([-np.arange(self.J),
+        if self.method == 'cmu_t_min':
+            self.order = np.lexsort([-np.arange(self.J),
                                      self.env.t,
                                      -self.env.c * self.env.mu])  # TODO
+        elif self.method == 'cmu_t_max':
+        elif self.method == 'lambda_max':
+        elif self.method == 'lambda_min':
+
+            self.env.r = self.env.r * self.env.mu
+        # sorted_order = sorted(tuple(zip(self.env.c * self.env.mu,
+        #                                 -self.env.t,
+        #                                 range(self.J))), reverse=True)
+        # unsorted_order = sorted(zip(sorted_order, range(self.J)),
+        #                         key=lambda x: x[0][2])
+        # self.cmu_order = [item[1] for item in unsorted_order]
+
         self.eye = np.eye(self.J, dtype=int)
         self.v = tools.get_v_app(self.env)
         self.arrival_times, self.service_times = \
@@ -88,8 +96,9 @@ class Simulation:
                                              self.env.t - x, np.nan))
             else:  # FCFS
                 return np.nanargmin(np.where(fil, x, np.nan))
-        elif self.method == 'cmu':
-            return np.nanargmin(np.where(fil, self.cmu_order, np.nan))
+        elif self.method in ['cmu_t_min', 'cmu_t_max',
+                             'lambda_min', 'lambda_max'):
+            return np.nanargmin(np.where(fil, self.order, np.nan))
 
     def admission(self, arr, arr_times, dep, fil, heap, i, kpi, n_admit, s,
                   time, x):
