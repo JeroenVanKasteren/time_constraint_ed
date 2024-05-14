@@ -31,22 +31,21 @@ class Simulation:
 
         self.J = self.env.J
 
-        # Sort ascending from last to first column (negate for descending order)
+        # Sort ascending from last to first entry (negate for descending order)
         if self.method == 'cmu_t_min':
-            self.order = np.lexsort([-np.arange(self.J),
+            self.order = np.lexsort([np.arange(self.J),
                                      self.env.t,
-                                     -self.env.c * self.env.mu])  # TODO
+                                     -self.env.c * self.env.mu])
         elif self.method == 'cmu_t_max':
-        elif self.method == 'lambda_max':
-        elif self.method == 'lambda_min':
-
-            self.env.r = self.env.r * self.env.mu
-        # sorted_order = sorted(tuple(zip(self.env.c * self.env.mu,
-        #                                 -self.env.t,
-        #                                 range(self.J))), reverse=True)
-        # unsorted_order = sorted(zip(sorted_order, range(self.J)),
-        #                         key=lambda x: x[0][2])
-        # self.cmu_order = [item[1] for item in unsorted_order]
+            self.order = np.lexsort([-np.arange(self.J),
+                                     -self.env.t,
+                                     -self.env.c * self.env.mu])
+        elif self.method == 'l_max':
+            self.order = np.lexsort([-np.arange(self.J),
+                                     -self.env.lab])
+        elif self.method == 'l_min':
+            self.order = np.lexsort([np.arange(self.J),
+                                     self.env.lab])
 
         self.eye = np.eye(self.J, dtype=int)
         self.v = tools.get_v_app(self.env)
@@ -96,8 +95,7 @@ class Simulation:
                                              self.env.t - x, np.nan))
             else:  # FCFS
                 return np.nanargmin(np.where(fil, x, np.nan))
-        elif self.method in ['cmu_t_min', 'cmu_t_max',
-                             'lambda_min', 'lambda_max'):
+        elif self.method in ['cmu_t_min', 'cmu_t_max', 'l_max', 'l_min']:
             return np.nanargmin(np.where(fil, self.order, np.nan))
 
     def admission(self, arr, arr_times, dep, fil, heap, i, kpi, n_admit, s,

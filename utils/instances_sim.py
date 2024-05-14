@@ -2,37 +2,32 @@ import numpy as np
 from utils import tools, TimeConstraintEDs as Env
 
 
-def generate_instance(inst, sim_id):
-    if sim_id in [1, 2, 3, 4, 10]:
+def generate_instance(inst, sim_id):  # TODO finish instances
+    inst['gamma'] = 10
+    inst['D'] = 180 * inst['gamma']
+    if sim_id in [1, 2, 3, 4, 5, 6]:
         inst['J'] = 3
         inst['S'] = 5
-        inst['gamma'] = 1
-        inst['D'] = 180
         inst['r'] = [np.array([1, 1, 1]) for _ in range(len(inst))]
         inst['c'] = [np.array([1, 1, 1]) for _ in range(len(inst))]
         inst['imbalance'] = [np.array([18, 94, 172]) / 284 for r in
                              range(len(inst))]
-        if sim_id == 1:
-            inst['load'] = 0.75
-        else:
-            inst['load'] = 0.85
-        if sim_id == 4:
-            inst['t'] = [np.array([2, 2, 2]) / 60 for _ in range(len(inst))]
-        elif sim_id == 10:
+        inst['load'] = 0.75 if sim_id == 1 else 0.85
+        if sim_id in [4, 5, 6]:
             inst['t'] = [np.array([60] * 3) for _ in range(len(inst))]
         else:
             inst['t'] = [np.array([10, 60, 120]) for _ in range(len(inst))]
-        if sim_id in [3, 10]:
+        if sim_id in [3, 5, 6]:
             inst['mu'] = [np.array([1, 1, 1]) / 60 for _ in range(len(inst))]
         else:
             inst['mu'] = [np.array([1 / 2.19, 1 / 2, 1 / 0.51]) / 60 for _ in
                           range(len(inst))]
-    elif sim_id in [5, 6]:
+        if sim_id == 6:
+            inst['imbalance'] = [np.array([1/3] * 3) for _ in range(len(inst))]
+    elif sim_id in [7, 8]:
         inst['J'] = 4
         inst['S'] = 10
         inst['t'] = [np.array([1] * 4) * 60 for _ in range(len(inst))]
-        inst['D'] = 120
-        inst['gamma'] = 1
         inst['c'] = [np.array([1, 1, 0.5, 0.5]) for _ in range(len(inst))]
         inst['r'] = [np.array([1] * 4) for _ in range(len(inst))]
         inst['mu'] = [np.array([1, 2, 1, 2]) / 60 for _ in range(len(inst))]
@@ -46,8 +41,6 @@ def generate_instance(inst, sim_id):
         inst['J'] = 6
         inst['S'] = 10
         inst['t'] = [np.array([1] * 6) * 60 for _ in range(len(inst))]
-        inst['D'] = 120
-        inst['gamma'] = 1
         inst['c'] = [np.array([1, 1, 1, 1, 1, 1]) for _ in range(len(inst))]
         inst['r'] = [np.array([1, 1, 1, 1, 1, 1]) for _ in range(len(inst))]
         inst['mu'] = [np.array([1, 2, 3, 4, 5, 6]) for _ in range(len(inst))]
@@ -61,14 +54,12 @@ def generate_instance(inst, sim_id):
         inst['J'] = 1
         inst['S'] = 5
         inst['t'] = [np.array([1] * 1) * 60 for _ in range(len(inst))]
-        inst['D'] = 180
-        inst['gamma'] = 1
         inst['c'] = [np.array([1]) for _ in range(len(inst))]
         inst['r'] = [np.array([1]) for _ in range(len(inst))]
         inst['mu'] = [np.array([1 / 30]) for _ in range(len(inst))]
         inst['load'] = 0.85
         inst['imbalance'] = [np.array([1]) for _ in range(len(inst))]
-    if sim_id in [11, 12]:
+    if sim_id in [12, 13, 14]:
         if sim_id == 11:
             row = 8
         elif sim_id == 12:

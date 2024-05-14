@@ -12,11 +12,11 @@ import os
 import pandas as pd
 from utils import instances_sim
 
-sim_ids = list(map("{:02d}".format, list(range(1, 14))))  # ['12']  # TODO
+sim_ids = list(map("{:02d}".format, list(range(1, 15))))
 for sim_id in sim_ids:
     FILEPATH_INSTANCE = 'results/instance_sim_' + str(sim_id) + '.csv'
     methods = ['ospi',  'cmu_t_min', 'cmu_t_max', 'fcfs', 'sdf', 'sdfprior',
-               'lambda_max', 'lambda_min']
+               'l_max', 'l_min']
     input_columns = ['J', 'S', 'gamma', 'D', 't', 'c', 'r', 'mu', 'lab', 'load',
                      'imbalance']
     instance_columns = [*input_columns, 'N', 'start_K', 'batch_T',
