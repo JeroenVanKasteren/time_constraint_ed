@@ -56,7 +56,7 @@ class Simulation:
         """One-step policy improvement.
         Var i indicates which class just arrived, i = J if no class arrived.
         """
-        x = np.minimum(np.round(x / self.env.gamma, 0),
+        x = np.minimum(np.round(x * self.env.gamma, 0),
                        self.env.D - 1).astype(int)
         pi = self.J
         x_next = x if i == self.J else x + np.eye(self.J, dtype=int)[i]
