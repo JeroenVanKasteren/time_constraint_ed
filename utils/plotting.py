@@ -156,7 +156,8 @@ def plot_v(env, V, zero_state, **kwargs):
     plt.show()
 
 
-def plot_multi_bar(filepath, instance_names, methods, kpi, normalize=False):
+def plot_multi_bar(filepath, instance_names, methods, kpi, normalize=False,
+                   width=0.1):
     # https://matplotlib.org/stable/gallery/lines_bars_and_markers/barchart.html#sphx-glr-gallery-lines-bars-and-markers-barchart-py
     performances = {method: [[], []] for method in methods}
     min_y, max_y = 0, 0
@@ -181,7 +182,6 @@ def plot_multi_bar(filepath, instance_names, methods, kpi, normalize=False):
         min_y, max_y = (utils.tools.round_significance(min_y * 1.1),
                         utils.tools.round_significance(max_y * 1.1))
     x = np.arange(len(instance_names))  # the label locations
-    width = 0.15  # the width of the bars
     multiplier = 0
     fig, ax = plt.subplots(layout='constrained')
     for method, [value, conf_int] in performances.items():

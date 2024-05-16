@@ -18,24 +18,34 @@ methods = inst['method'].values
 env = utils.env.TimeConstraintEDs
 
 # --------------------- Plotting ---------------------
-
-utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instance_names, methods,
+instances = [instance_names[i - 1] for i in range(1, 7)]
+utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instances, methods,
                               'g', True)
-utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instance_names, methods,
+utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instances, methods,
+                              'perc')
+instances = [instance_names[i - 1] for i in range(7, 12)]
+utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instances, methods,
+                              'g', True)
+utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instances, methods,
+                              'perc')
+instances = [instance_names[i - 1] for i in range(12, 15)]
+utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instances, methods,
+                              'g', True)
+utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instances, methods,
                               'perc')
 
-method = 'fcfs'  # method = 1
-instance_name = instance_names[10]
-method, row_id, inst, pickle = utils.tools.load_result(method, instance_name)
+# method = 'fcfs'  # method = 1
+# instance_name = instance_names[10]
+# method, row_id, inst, pickle = utils.tools.load_result(method, instance_name)
+#
+# utils.plotting.plot_convergence(pickle['kpi'], method,
+#                                 inst.loc[row_id, 'start_K'],
+#                                 inst.loc[row_id, 'batch_T'],
+#                                 m=100)
 
-utils.plotting.plot_convergence(pickle['kpi'], method,
-                                inst.loc[row_id, 'start_K'],
-                                inst.loc[row_id, 'batch_T'],
-                                m=100)
-
-start = 0
+# start = 0
 # start = round_significance(random.randint(0, len(kpi_df)-size), 2)
-utils.plotting.plot_waiting(inst.loc[row_id], pickle['kpi'], 1000, start)
+# utils.plotting.plot_waiting(inst.loc[row_id], pickle['kpi'], 1000, start)
 
 # Debugging by comparing theoretical results
 # create instance in instance_sim_gen with J=1 and S=5
@@ -45,8 +55,8 @@ utils.plotting.plot_waiting(inst.loc[row_id], pickle['kpi'], 1000, start)
 
 def theory(inst_row, gamma):
     """
-    Calculates statistics
-    (Checked with Erlang C calculator)
+    Calculates statistics of
+    (Checked with Erlang C calculator, M/M/s)
 
     parameters
         inst_row: one row of instance dataframe
@@ -76,9 +86,9 @@ def theory(inst_row, gamma):
     return exp_wait, g, success_prob
 
 
-interested = [instance_names[i - 1] for i in [1, 3, 9, 10, 11, 12]]
+# interested = [instance_names[i - 1] for i in [1, 3, 9, 10, 11, 12]]
 # interested = [instance_names[i - 1] for i in [9]]
-for instance_name in interested:
+for instance_name in instance_names:
     inst = utils.tools.inst_load(FILEPATH_INSTANCE + instance_name)
     exp_wait, g, success_prob = theory(inst.loc[0], 1e6)
     print(f'inst: {instance_name} \n'
