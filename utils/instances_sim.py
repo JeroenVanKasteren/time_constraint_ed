@@ -19,7 +19,7 @@ def generate_instance(inst, sim_id):
         inst['c'] = [np.array([1] * 3) for _ in range(len(inst))]
         inst['imbalance'] = [np.array([18, 94, 172]) / 284 for r in
                              range(len(inst))]
-        inst['load'] = 0.75 if sim_id == 1 else 0.85
+        inst['load'] = 0.85 if sim_id == 1 else 0.95
         if sim_id in [4, 5, 6]:
             inst['t'] = [np.array([60] * 3) for _ in range(len(inst))]
         else:
@@ -33,14 +33,14 @@ def generate_instance(inst, sim_id):
             inst['imbalance'] = [np.array([1/3] * 3) for _ in range(len(inst))]
     elif sim_id in [7, 8]:
         inst['J'] = 4
-        inst['S'] = 10
+        inst['S'] = 5
         inst['t'] = [np.array([60] * 4) for _ in range(len(inst))]
         inst['c'] = [np.array([1, 1, 0.5, 0.5]) for _ in range(len(inst))]
         inst['r'] = [np.array([1] * 4) for _ in range(len(inst))]
         inst['mu'] = [np.array([1, 2, 1, 2]) / 60 for _ in range(len(inst))]
         inst['imbalance'] = [np.array([1/4, 1/4, 3/4, 3/4]) / 2
                              for _ in range(len(inst))]
-        inst['load'] = 0.8 if sim_id == 7 else 0.9  # if sim_id == 8
+        inst['load'] = 0.9 if sim_id == 7 else 0.95  # if sim_id == 8
     elif sim_id in [9, 10]:
         inst['J'] = 6
         inst['S'] = 10
@@ -50,11 +50,7 @@ def generate_instance(inst, sim_id):
         inst['mu'] = [np.arange(1, 7) for _ in range(len(inst))]
         inst['imbalance'] = [np.arange(1, 7) / 21 for r in
                              range(len(inst))]
-        inst['load'] = 0.8 if sim_id == 9 else 0.9  # if sim_id == 10
-        if sim_id == 7:
-            inst['load'] = 0.8
-        else:
-            inst['load'] = 0.9
+        inst['load'] = 0.9 if sim_id == 9 else 0.95  # if sim_id == 10
     elif sim_id == 11:
         inst['J'] = 1
         inst['S'] = 5

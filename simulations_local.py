@@ -8,10 +8,10 @@ FILEPATH_RESULT = 'results/simulation_pickles/result_'
 instance_names = [f for f in os.listdir(FILEPATH_INSTANCE)
                   if f.startswith('instance_sim_')]
 continue_run = False
-N = int(1e5)
+N = int(2e5)
 
 # inst_to_sim = [instance_names[i - 1] for i in [3, 9, 10, 11, 12]]
-# inst_to_sim = [instance_names[i - 1] for i in [1]]
+# inst_to_sim = [instance_names[i - 1] for i in [11]]
 for instance_name in instance_names:
     inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)
     methods = inst['method'].values

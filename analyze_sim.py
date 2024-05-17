@@ -6,6 +6,8 @@ Load and visualize results of simulation.
 
 import os
 import utils
+from utils import TimeConstraintEDs as Env, PolicyIteration, \
+    ValueIteration, OneStepPolicyImprovement, plot_pi, plot_v
 
 FILEPATH_INSTANCE = 'results/'
 FILEPATH_READ = 'results/read/'
@@ -20,17 +22,17 @@ env = utils.env.TimeConstraintEDs
 # --------------------- Plotting ---------------------
 instances = [instance_names[i - 1] for i in range(1, 7)]
 utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instances, methods,
-                              'g', True)
+                              'g', False)
 utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instances, methods,
                               'perc')
 instances = [instance_names[i - 1] for i in range(7, 12)]
 utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instances, methods,
-                              'g', True)
+                              'g', False)
 utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instances, methods,
                               'perc')
 instances = [instance_names[i - 1] for i in range(12, 15)]
 utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instances, methods,
-                              'g', True)
+                              'g', False)
 utils.plotting.plot_multi_bar(FILEPATH_INSTANCE, instances, methods,
                               'perc')
 
@@ -114,3 +116,6 @@ for instance_name in instance_names:
         print(f'{reward_per_class}')
         print('-'*10, '\n')
     print('-'*120, '\n', '-'*120, '\n')
+
+
+
