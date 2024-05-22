@@ -5,6 +5,7 @@ Load and visualize results of simulation.
 """
 
 import os
+import pandas as pd
 import utils
 from utils import TimeConstraintEDs as Env, PolicyIteration, \
     ValueIteration, OneStepPolicyImprovement, plot_pi, plot_v
@@ -12,6 +13,8 @@ from utils import TimeConstraintEDs as Env, PolicyIteration, \
 FILEPATH_INSTANCE = 'results/'
 FILEPATH_READ = 'results/read/'
 FILEPATH_PICKLES = 'results/simulation_pickles/'
+INSTANCE_ID = '01'
+FILEPATH_INSTANCE = 'results/instances_' + INSTANCE_ID + '.csv'
 
 instance_names = [f for f in os.listdir(FILEPATH_INSTANCE)
                   if f.startswith('instance_sim_')]
@@ -117,5 +120,5 @@ for instance_name in instance_names:
         print('-'*10, '\n')
     print('-'*120, '\n', '-'*120, '\n')
 
-
-
+inst = utils.tools.inst_load(FILEPATH_INSTANCE)
+inst_conv = inst[pd.notnull(inst['ospi_g']) & pd.notnull(inst['vi_g'])]

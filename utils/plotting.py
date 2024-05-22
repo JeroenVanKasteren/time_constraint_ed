@@ -13,7 +13,7 @@ import utils
 from matplotlib import colors
 
 
-def plot_pi(env, PI_learner, Pi, zero_state, **kwargs):
+def plot_pi(env, Pi, zero_state, **kwargs):
     if zero_state:
         state = np.zeros(len(env.dim_i), 'int').astype(object)
         state[0] = 1 if 'smu' in kwargs else 0
@@ -80,8 +80,8 @@ def plot_pi(env, PI_learner, Pi, zero_state, **kwargs):
     patches = [mpatches.Patch(edgecolor='black', facecolor=v, label=k)
                for k, v in dic.items()]
 
-    bounds = [PI_learner.NOT_EVALUATED, PI_learner.SERVERS_FULL,
-              PI_learner.KEEP_IDLE, PI_learner.NONE_WAITING]
+    bounds = [env.NOT_EVALUATED, env.SERVERS_FULL,
+              env.KEEP_IDLE, env.NONE_WAITING]
     bounds.extend(np.arange(env.J + 1) + 1)
     norm = colors.BoundaryNorm(bounds, cmap.N)
 
