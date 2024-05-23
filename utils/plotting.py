@@ -14,10 +14,37 @@ from matplotlib import colors
 
 
 def plot_pi(env, Pi, zero_state, **kwargs):
+    """
+    Plot policy Pi.
+
+    :param env: Environment object to extract dimension
+    :type env: utils.env.TimeConstraintEDs
+    :param Pi: Numpy matrix, Policy to plot
+    :type Pi: numpy.ndarray
+    :param zero_state: Boolean, if True, plot x_i = 0 and s_i = 0
+    :type zero_state: bool
+    :key smu: bool, take policy after a departure if True
+    :key state: Numpy array, state to plot (array([0,0,0,0]).astype(object))
+    :key i: int, queue i to plot
+    :key j: int, queue j to plot
+    :key learner: String, name of the learner
+    :key name: String, name of the plot
+    :return: -
+
+    If zero_state is True, take the state x_i = 0 and s_i = 0.
+    If zero_state is False, take the given state.
+    If zero_state is False and state is not given, take a random state.
+
+    If smu is given, plot the policy after a departure.
+    If i is given and j is not, take x_i and s_i as axis.
+    If i and j are given or only 2 queues (J=2), take x_i and x_j as axis.
+    Otherwise, choose 2 random queues.
+    """
+
     if zero_state:
         state = np.zeros(len(env.dim_i), 'int').astype(object)
-        state[0] = 1 if 'smu' in kwargs else 0
-    elif 'state' in kwargs:  # state = array([0,0,0,0]).astype(object)
+        state[0] = env.J + 1 if 'smu' in kwargs else 0
+    elif 'state' in kwargs:
         state = kwargs.get('state')
     else:  # Select a random valid states
         x, s = (np.random.randint(len(env.x_states)),
@@ -25,7 +52,7 @@ def plot_pi(env, Pi, zero_state, **kwargs):
         state = np.concatenate(([0],
                                 env.x_states[x],
                                 env.s_states[s])).astype(object)
-        state[0] = 1 if 'smu' in kwargs else 0
+        state[0] = env.J + 1 if 'smu' in kwargs else 0
 
     states = state.copy()
     print_states = state.astype('str')
@@ -47,8 +74,7 @@ def plot_pi(env, Pi, zero_state, **kwargs):
         y_ticks = np.arange(0, Pi_i.shape[0], max(1, np.ceil(Pi_i.shape[0]/10)))
     else:
         if ('i' in kwargs) & ('j' in kwargs):
-            i = kwargs.get('i')
-            j = kwargs.get('j')
+            i, j = kwargs.get('i'),  kwargs.get('j')
         elif env.J == 2:
             i, j = [0, 1]
         else:
