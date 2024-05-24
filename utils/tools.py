@@ -35,6 +35,25 @@ class DotDict(dict):
     __delattr__ = dict.__delitem__
 
 
+def fixed_order(env, method):
+    """
+    Return order of method
+
+    :param: env: dictenvironment
+    :param method: method to sort by (cmu_t_min, cmu_t_max, l_min, l_max)
+    :type method: str
+    """
+    # lexsort: Sort ascending from last to first entry (negate for descending)
+    if method == 'cmu_t_min':
+        return np.lexsort([np.arange(env.J), env.t, -env.c * env.mu])
+    elif method == 'cmu_t_max':
+        return np.lexsort([-np.arange(env.J), -env.t, -env.c * env.mu])
+    elif method == 'l_max':
+        return np.lexsort([-np.arange(env.J), -env.lab])
+    elif method == 'l_min':
+        return np.lexsort([np.arange(env.J), env.lab])
+
+
 def generate_times(env, n):
     """Generate exponential arrival and service times."""
     arrival_times = nb.typed.List[np.float32]()  # +1, last arrival

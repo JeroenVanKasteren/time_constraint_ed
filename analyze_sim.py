@@ -4,23 +4,23 @@ Load and visualize results of simulation.
 @author: Jeroen van Kasteren (jeroen.van.kasteren@vu.nl)
 """
 
+import numpy as np
 import os
 import pandas as pd
-from utils import plotting, tools, TimeConstraintEDs as Env, PolicyIteration, \
-    ValueIteration, OneStepPolicyImprovement
+from utils import plotting, tools, TimeConstraintEDs as Env, PolicyIteration
 
 FILEPATH_INSTANCE = 'results/'
 FILEPATH_READ = 'results/read/'
 FILEPATH_PICKLES = 'results/simulation_pickles/'
 FILEPATH_V = 'results/value_functions/'
-INSTANCE_ID = '01'
-FILEPATH_INSTANCE = 'results/instances_' + INSTANCE_ID + '.csv'
+INSTANCES_ID = '01'
+FILEPATH_INSTANCES = 'results/instances_' + INSTANCES_ID + '.csv'
 
 instance_names = [f for f in os.listdir(FILEPATH_INSTANCE)
                   if f.startswith('instance_sim_')]
 inst = tools.inst_load(FILEPATH_INSTANCE + instance_names[0])
 methods = inst['method'].values
-env = env.TimeConstraintEDs
+env = Env.TimeConstraintEDs
 
 # --------------------- Plotting ---------------------
 instances = [instance_names[i - 1] for i in range(1, 7)]
@@ -88,7 +88,7 @@ def theory(inst_row, gamma):
 # interested = [instance_names[i - 1] for i in [1, 3, 9, 10, 11, 12]]
 # interested = [instance_names[i - 1] for i in [9]]
 for instance_name in instance_names:
-    inst = utils.tools.inst_load(FILEPATH_INSTANCE + instance_name)
+    inst = tools.inst_load(FILEPATH_INSTANCE + instance_name)
     exp_wait, g, success_prob = theory(inst.loc[0], 1e6)
     print(f'inst: {instance_name} \n'
           f'upper bound of g: {sum(inst.r[0] * inst.lab[0]):0.4f} \n'
@@ -96,7 +96,7 @@ for instance_name in instance_names:
           f'P(W<t) = {["%.4f" % elem for elem in success_prob]}')
     for i in range(len(methods)):
         method, row_id, inst, pickle = (
-            utils.tools.load_result(i, instance_name))
+            tools.load_result(i, instance_name))
         kpi_df, time, arr, dep = (pickle['kpi'], pickle['time'],
                                        pickle['arr'], pickle['dep'])
         reward_per_class = kpi_df.groupby('class')['reward'].mean()
@@ -114,6 +114,35 @@ for instance_name in instance_names:
         print('-'*10, '\n')
     print('-'*120, '\n', '-'*120, '\n')
 
-inst = tools.inst_load(FILEPATH_INSTANCE)
-pi_learner = PolicyIteration()
-inst_conv = inst[pd.notnull(inst['ospi_g']) & pd.notnull(inst['vi_g'])]
+for inst_id in [8, 57, 93]:
+    for method in ['vi', 'ospi']:
+        pass
+        pi_file = ('pi_' + INSTANCES_ID + '_' + "{:02d}".format(inst_id) +
+                   '_' + method + '.npz')
+        Pi = np.load(FILEPATH_V + pi_file)['arr_0']
+#
+# pi_learner = PolicyIteration()
+# inst_conv = inst[pd.notnull(inst['ospi_g']) & pd.notnull(inst['vi_g'])]
+#
+# np.savez(FILEPATH_V + 'pi_' + INSTANCES_ID + '_' +  + '_'
+#              + args.method + '.npz', learner.Pi)
+#
+# if pi_file in os.listdir(FILEPATH_V):
+#     print('Loading Pi from file')
+#
+#
+#     if sim_id in [12, 13, 14]:
+#         row = [8, 57, 93][[12, 13, 14].index(sim_id)]
+#         inst_vi = tools.inst_load('results/instances_01.csv')
+#         for c_name in ['J', 'S', 'D', 'gamma', 'load']:
+#             inst[c_name] = inst_vi.loc[row][c_name]
+#         for c_name in ['t', 'c', 'r', 'mu', 'lab']:
+#             inst[c_name] = [inst_vi.loc[row][c_name] for _ in range(len(inst))]
+#     else:
+#         env = Env(J=inst['J'][0], S=inst['S'][0], D=inst['D'][0],
+#                   gamma=inst['gamma'][0],
+#                   t=inst['t'][0], c=inst['c'][0], r=inst['r'][0],
+#                   mu=inst['mu'][0],
+#                   load=inst['load'][0], imbalance=inst['imbalance'][0],
+#                   sim=True)
+#         inst['lab'] = [env.lab for _ in range(len(inst))]

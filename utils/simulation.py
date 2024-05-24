@@ -28,24 +28,8 @@ class Simulation:
                        seed=int(kwargs.get('inst_id')),
                        max_time=kwargs.get('time', '0-00:10:00'),
                        max_iter=self.N, sim='yes')
-
         self.J = self.env.J
-
-        # Sort ascending from last to first entry (negate for descending order)
-        if self.method == 'cmu_t_min':
-            self.order = np.lexsort([np.arange(self.J),
-                                     self.env.t,
-                                     -self.env.c * self.env.mu])
-        elif self.method == 'cmu_t_max':
-            self.order = np.lexsort([-np.arange(self.J),
-                                     -self.env.t,
-                                     -self.env.c * self.env.mu])
-        elif self.method == 'l_max':
-            self.order = np.lexsort([-np.arange(self.J),
-                                     -self.env.lab])
-        elif self.method == 'l_min':
-            self.order = np.lexsort([np.arange(self.J),
-                                     self.env.lab])
+        self.order = tools.fixed_order(self.env, self.method)
 
         self.eye = np.eye(self.J, dtype=int)
         self.v = tools.get_v_app(self.env)
