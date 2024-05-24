@@ -25,11 +25,13 @@ class PolicyIteration:
     DICT_TYPE_I2 = tp.DictType(tp.unicode_type, tp.i4[:, :])  # int 2D vector
     DICT_TYPE_F1 = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.name = 'Policy Iteration'
-        self.g = 0
+        self.g = kwargs.get('g', 0)
         self.iter = 0
         self.stable = False
+        if 'Pi' in kwargs:
+            self.Pi = kwargs.get('Pi')
 
     @staticmethod
     def init_pi(env, method):

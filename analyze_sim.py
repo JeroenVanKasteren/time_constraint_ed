@@ -114,14 +114,24 @@ for instance_name in instance_names:
         print('-'*10, '\n')
     print('-'*120, '\n', '-'*120, '\n')
 
-for inst_id in [8, 57, 93]:
-    for method in ['vi', 'ospi']:
-        pass
-        pi_file = ('pi_' + INSTANCES_ID + '_' + "{:02d}".format(inst_id) +
-                   '_' + method + '.npz')
-        Pi = np.load(FILEPATH_V + pi_file)['arr_0']
-#
-# pi_learner = PolicyIteration()
+# for solve_id, inst_id in ([8, 57, 93], [12-1, 13-1, 14-1]):
+solve_id = 8
+inst_id = 12 - 1
+inst = tools.inst_load(FILEPATH_INSTANCE + instance_names[inst_id])
+method = 'ospi'
+# for method in ['vi', 'ospi']:
+pi_file = ('pi_' + INSTANCES_ID + '_' + str(solve_id) + '_' +
+           method + '.npz')
+Pi = np.load(FILEPATH_V + pi_file)['arr_0']
+
+inst = inst.iloc[0]
+env = Env(J=inst.J, S=inst.S, D=inst.D,
+               gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
+               mu=inst.mu, lab=inst.lab)
+pi_learner = PolicyIteration(Pi=Pi)
+tools.summarize_policy(env, pi_learner)
+plotting.plot_pi(env, Pi, False)
+
 # inst_conv = inst[pd.notnull(inst['ospi_g']) & pd.notnull(inst['vi_g'])]
 #
 # np.savez(FILEPATH_V + 'pi_' + INSTANCES_ID + '_' +  + '_'
