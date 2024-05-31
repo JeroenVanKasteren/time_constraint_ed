@@ -65,8 +65,8 @@ def plot_pi(env, Pi, zero_state, **kwargs):
         print_states[1 + i + env.J] = ':'
         max_ticks = 5
         title = 'Policy, queue: ' + str(i + 1) + ', ' + str(print_states)
-        if 'learner' in kwargs:
-            title = kwargs.get('learner') + ', ' + title
+        if 'name' in kwargs:
+            title = kwargs.get('name') + ', ' + title
         x_label = 'Servers occupied by queue ' + str(i + 1)
         y_label = 'Waiting time state FIL queue ' + str(i + 1)
         x_ticks = np.arange(0, Pi_i.shape[1], max(1, np.ceil(Pi_i.shape[1]

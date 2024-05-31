@@ -6,7 +6,6 @@ Load and visualize results of simulation.
 
 import numpy as np
 import os
-import pandas as pd
 from utils import plotting, tools, TimeConstraintEDs as Env, PolicyIteration
 
 FILEPATH_INSTANCE = 'results/'
@@ -20,7 +19,6 @@ instance_names = [f for f in os.listdir(FILEPATH_INSTANCE)
                   if f.startswith('instance_sim_')]
 inst = tools.inst_load(FILEPATH_INSTANCE + instance_names[0])
 methods = inst['method'].values
-env = Env.TimeConstraintEDs
 
 # --------------------- Plotting ---------------------
 instances = [instance_names[i - 1] for i in range(1, 7)]
@@ -68,13 +66,13 @@ def theory(inst_row, gamma):
     """
     g = 0
     lab = sum(inst_row.lab)
-    pi_0 = env.get_pi_0(gamma, inst_row.S, inst_row.load, lab)
+    pi_0 = Env.get_pi_0(gamma, inst_row.S, inst_row.load, lab)
     block_prob = pi_0 / (1 - inst_row.load)
     exp_wait = block_prob / (inst_row.S * inst_row.mu[0] - lab)
     success_prob = []
     for i in range(inst_row.J):
         prob_i = inst_row.lab[i] / lab
-        tail_prob_i = env.get_tail_prob(gamma, inst_row.S, inst_row.load, lab,
+        tail_prob_i = Env.get_tail_prob(gamma, inst_row.S, inst_row.load, lab,
                                         inst_row.mu[i], pi_0,
                                         inst_row.t[i]*gamma)
         # identical
@@ -94,43 +92,45 @@ for instance_name in instance_names:
           f'upper bound of g: {sum(inst.r[0] * inst.lab[0]):0.4f} \n'
           f'Theory, g={g:0.4f}, E(W)={exp_wait:0.4f}, '
           f'P(W<t) = {["%.4f" % elem for elem in success_prob]}')
-    for i in range(len(methods)):
-        method, row_id, inst, pickle = (
-            tools.load_result(i, instance_name))
-        kpi_df, time, arr, dep = (pickle['kpi'], pickle['time'],
-                                       pickle['arr'], pickle['dep'])
-        reward_per_class = kpi_df.groupby('class')['reward'].mean()
-        print(instance_name, method)
-        print(f'Arrival rates: {sum(inst.lab[0]):0.4f} <> '
-              f'{len(kpi_df)/(kpi_df.time.values[-1]):0.4f} after '
-              f'{len(kpi_df)} sims in {time/60:0.2f} hours\n'
-              f'Sim g: {inst.loc[i].g:0.4f} +/- {inst.loc[i,"ci_g"]:0.4f}'
-              f' weighted average: '
-              f'{sum(reward_per_class * inst.lab[i]):0.4f} \n'
-              f'Sim E(W)={kpi_df["wait"].mean():0.4f}'
-              f' Sim P(W < t)={inst.loc[i].perc:0.4f}'
-              f' +/- {inst.loc[i,"ci_perc"]:0.4f}')
-        print(f'{reward_per_class}')
-        print('-'*10, '\n')
-    print('-'*120, '\n', '-'*120, '\n')
+    # for i in range(len(methods)):
+    #     method, row_id, inst, pickle = (
+    #         tools.load_result(i, instance_name))
+    #     kpi_df, time, arr, dep = (pickle['kpi'], pickle['time'],
+    #                                    pickle['arr'], pickle['dep'])
+    #     reward_per_class = kpi_df.groupby('class')['reward'].mean()
+    #     print(instance_name, method)
+    #     print(f'Arrival rates: {sum(inst.lab[0]):0.4f} <> '
+    #           f'{len(kpi_df)/(kpi_df.time.values[-1]):0.4f} after '
+    #           f'{len(kpi_df)} sims in {time/60:0.2f} hours\n'
+    #           f'Sim g: {inst.loc[i].g:0.4f} +/- {inst.loc[i,"ci_g"]:0.4f}'
+    #           f' weighted average: '
+    #           f'{sum(reward_per_class * inst.lab[i]):0.4f} \n'
+    #           f'Sim E(W)={kpi_df["wait"].mean():0.4f}'
+    #           f' Sim P(W < t)={inst.loc[i].perc:0.4f}'
+    #           f' +/- {inst.loc[i,"ci_perc"]:0.4f}')
+    #     print(f'{reward_per_class}')
+    #     print('-'*10, '\n')
+    # print('-'*120, '\n', '-'*120, '\n')
 
-# for solve_id, inst_id in ([8, 57, 93], [12-1, 13-1, 14-1]):
-solve_id = 8
-inst_id = 12 - 1
-inst = tools.inst_load(FILEPATH_INSTANCE + instance_names[inst_id])
-method = 'ospi'
-# for method in ['vi', 'ospi']:
-pi_file = ('pi_' + INSTANCES_ID + '_' + str(solve_id) + '_' +
-           method + '.npz')
-Pi = np.load(FILEPATH_V + pi_file)['arr_0']
+for solve_id, inst_id in zip([8, 57, 93], [12-1, 13-1, 14-1]):
+    print(solve_id, inst_id)
+    inst = tools.inst_load(FILEPATH_INSTANCE + instance_names[inst_id])
+    inst = inst.iloc[0]
+    env = Env(J=inst.J, S=inst.S, D=inst.D,
+              gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
+              mu=inst.mu, lab=inst.lab)
+    for method in ['vi', 'ospi']:
+        pi_file = ('pi_' + INSTANCES_ID + '_' + str(solve_id) + '_' +
+                   method + '.npz')
+        Pi = np.load(FILEPATH_V + pi_file)['arr_0']
 
-inst = inst.iloc[0]
-env = Env(J=inst.J, S=inst.S, D=inst.D,
-               gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
-               mu=inst.mu, lab=inst.lab)
-pi_learner = PolicyIteration(Pi=Pi)
-tools.summarize_policy(env, pi_learner)
-plotting.plot_pi(env, Pi, False)
+        pi_learner = PolicyIteration(Pi=Pi)
+        tools.summarize_policy(env, pi_learner)
+        state = np.concatenate(([3],
+                                [0]*inst.J,
+                                [0, int(inst.S/2)])).astype(object)
+        name = method + '_' + str(solve_id) + '_' + str(inst_id + 1)
+        plotting.plot_pi(env, Pi, False, state=state, name=name)
 
 # inst_conv = inst[pd.notnull(inst['ospi_g']) & pd.notnull(inst['vi_g'])]
 #
@@ -139,7 +139,6 @@ plotting.plot_pi(env, Pi, False)
 #
 # if pi_file in os.listdir(FILEPATH_V):
 #     print('Loading Pi from file')
-#
 #
 #     if sim_id in [12, 13, 14]:
 #         row = [8, 57, 93][[12, 13, 14].index(sim_id)]

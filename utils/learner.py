@@ -308,7 +308,7 @@ class ValueIteration:
         self.V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
         self.V_t = np.zeros(env.dim, dtype=np.float32)
         self.W = np.zeros(env.dim_i, dtype=np.float32)
-        self.Pi = pi_learner.init_pi(env, 'sdf')
+        self.Pi = None
         self.g = 0
         self.iter = 0
         self.converged = False
@@ -369,6 +369,7 @@ class ValueIteration:
     def get_policy(s, env):
         """Determine policy via Policy Improvement."""
         s.W = s.pi_learner.init_w(env, s.V, s.W)
+        s.Pi = s.pi_learner.init_pi(env, 'sdf')
         s.V = s.V.reshape(env.size)
         s.W = s.W.reshape(env.size_i)
         s.Pi = s.Pi.reshape(env.size_i)
@@ -389,7 +390,7 @@ class OneStepPolicyImprovement:
         self.V_app = self.get_v_app(env)
         if pi_learner is not None:
             self.pi_learner = pi_learner
-            self.Pi = pi_learner.init_pi(env, 'sdf')
+            self.Pi = None
             self.V = np.zeros(env.dim, dtype=np.float32)
             self.g = 0
             self.iter = 0
@@ -444,6 +445,8 @@ class OneStepPolicyImprovement:
         """One Step of Policy Improvement."""
         W = np.zeros(env.dim_i, dtype=np.float32)
         W = s.pi_learner.init_w(env, s.V_app, W)
+        s.Pi = s.pi_learner.init_pi(env, 'sdf')
+
         s.V_app = s.V_app.reshape(env.size)
         W = W.reshape(env.size_i)
         s.Pi = s.Pi.reshape(env.size_i)

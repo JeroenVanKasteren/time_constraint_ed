@@ -47,7 +47,7 @@ plt.ylabel('Running time (sec.)')
 plt.title('Running time vs. Load')
 plt.show()
 
-plt.scatter(inst_conv['opt_gap']/(60*60), inst_conv['size'])
+plt.scatter(inst_conv['ospi_opt_gap']/(60*60), inst_conv['size'])
 plt.xlabel('Opt_gap')
 plt.ylabel('State space size')
 plt.title('Opt gap vs. State space size')
@@ -73,8 +73,8 @@ plt.show()
 
 inst['solved'] = pd.notnull(inst['ospi_opt_gap'])
 inst.boxplot(column='size', by='solved')
-plt.ylabel('Optimality Gap')
-plt.title('Size vs. Optimality Gap')
+plt.ylabel('Size')
+plt.title('Size per solved')
 plt.show()
 
 inst_unsolved = inst[pd.isnull(inst['ospi_g']) | pd.isnull(inst['vi_g'])]

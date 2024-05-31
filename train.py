@@ -23,14 +23,13 @@ FILEPATH_V = 'results/value_functions/'
 MAX_TARGET_PROB = 0.9
 
 # Debug
-# args = {'instance': '02', 'method': 'sdf', 'time': '0-00:05:00',
-#         'job_id': 1, 'array_id': 2, 'x': 0}
-# args = tools.DotDict(args)
+args = {'instance': '01', 'method': 'vi', 'time': '0-00:05:00',
+        'job_id': 1, 'array_id': 4, 'x': 0}
+args = tools.DotDict(args)
 
 
 def main(raw_args=None):
     args = tools.load_args(raw_args)
-    # seed = args.job_id * args.array_id
 
     inst = pd.read_csv(FILEPATH_INSTANCE + args.instance + '.csv')
     cols = ['t', 'c', 'r', 'lab', 'mu']
@@ -62,6 +61,9 @@ def main(raw_args=None):
             print('Loading V from file')
             learner.V = np.load(FILEPATH_V + v_file)['arr_0']
         learner.value_iteration(env)
+        pi_file = ('pi_' + args.instance + '_' + str(inst[0]) + '_vi.npz')
+        if pi_file not in os.listdir(FILEPATH_V):
+            learner.get_policy(env)
     elif args.method == 'ospi':
         learner = OneStepPolicyImprovement(env, pi_learner)
         pi_file = ('pi_' + args.instance + '_' + str(inst[0]) + '_ospi.npz')
@@ -77,12 +79,16 @@ def main(raw_args=None):
             learner.get_g(env, learner.V)
         else:
             learner.get_g(env, learner.V_app)
-    elif args.method == 'sdf':
+    elif args.method in ['sdf', 'fcfs']:
         learner = OneStepPolicyImprovement(env, pi_learner)
-        v_file = ('v_' + args.instance + '_' + str(inst[0]) + '_sdf.npz')
+        learner.Pi = pi_learner.init_pi(env, args.method)
+        v_file = ('v_' + args.instance + '_' + str(inst[0]) + '_' +
+                  args.method + '.npz')
         if v_file in os.listdir(FILEPATH_V):
             print('Loading V from file')
             learner.V = np.load(FILEPATH_V + v_file)['arr_0']
+        else:
+            learner.V = np.zeros(env.dim, dtype=np.float32)
         learner.get_g(env, learner.V)
     else:  # args.method == 'pi':
         learner = pi_learner
@@ -115,10 +121,12 @@ def main(raw_args=None):
                     '_' + args.method + '_job_' + str(args.job_id) + '_' +
                     str(args.array_id) + '.csv')
 
-    np.savez(FILEPATH_V + 'v_' + args.instance + '_' + str(inst[0]) + '_'
-             + args.method + '.npz', learner.V)
-    np.savez(FILEPATH_V + 'pi_' + args.instance + '_' + str(inst[0]) + '_'
-             + args.method + '.npz', learner.Pi)
+    if learner.V is not None:
+        np.savez(FILEPATH_V + 'v_' + args.instance + '_' + str(inst[0]) + '_'
+                 + args.method + '.npz', learner.V)
+    if learner.Pi is not None:
+        np.savez(FILEPATH_V + 'pi_' + args.instance + '_' + str(inst[0]) + '_'
+                 + args.method + '.npz', learner.Pi)
 
 
 if __name__ == '__main__':
