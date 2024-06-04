@@ -131,27 +131,3 @@ for solve_id, inst_id in zip([8, 57, 93], [12-1, 13-1, 14-1]):
                                 [0, int(inst.S/2)])).astype(object)
         name = method + '_' + str(solve_id) + '_' + str(inst_id + 1)
         plotting.plot_pi(env, Pi, False, state=state, name=name)
-
-# inst_conv = inst[pd.notnull(inst['ospi_g']) & pd.notnull(inst['vi_g'])]
-#
-# np.savez(FILEPATH_V + 'pi_' + INSTANCES_ID + '_' +  + '_'
-#              + args.method + '.npz', learner.Pi)
-#
-# if pi_file in os.listdir(FILEPATH_V):
-#     print('Loading Pi from file')
-#
-#     if sim_id in [12, 13, 14]:
-#         row = [8, 57, 93][[12, 13, 14].index(sim_id)]
-#         inst_vi = tools.inst_load('results/instances_01.csv')
-#         for c_name in ['J', 'S', 'D', 'gamma', 'load']:
-#             inst[c_name] = inst_vi.loc[row][c_name]
-#         for c_name in ['t', 'c', 'r', 'mu', 'lab']:
-#             inst[c_name] = [inst_vi.loc[row][c_name] for _ in range(len(inst))]
-#     else:
-#         env = Env(J=inst['J'][0], S=inst['S'][0], D=inst['D'][0],
-#                   gamma=inst['gamma'][0],
-#                   t=inst['t'][0], c=inst['c'][0], r=inst['r'][0],
-#                   mu=inst['mu'][0],
-#                   load=inst['load'][0], imbalance=inst['imbalance'][0],
-#                   sim=True)
-#         inst['lab'] = [env.lab for _ in range(len(inst))]

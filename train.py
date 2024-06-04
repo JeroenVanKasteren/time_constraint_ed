@@ -23,9 +23,9 @@ FILEPATH_V = 'results/value_functions/'
 MAX_TARGET_PROB = 0.9
 
 # Debug
-args = {'instance': '01', 'method': 'vi', 'time': '0-00:05:00',
-        'job_id': 1, 'array_id': 4, 'x': 0}
-args = tools.DotDict(args)
+# args = {'instance': '01', 'method': 'vi', 'time': '0-00:05:00',
+#         'job_id': 1, 'array_id': 4, 'x': 0}
+# args = tools.DotDict(args)
 
 
 def main(raw_args=None):

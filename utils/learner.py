@@ -234,7 +234,7 @@ class PolicyIteration:
                                               + i_not_admitted
                                               + sizes_s_n[j])
                                 value += p_xy[j, x[j], y] * V[next_state]
-                            if value > w:
+                            if value >= w:
                                 Pi[state] = j + 1
                                 w = value
                     if pi != Pi[state]:

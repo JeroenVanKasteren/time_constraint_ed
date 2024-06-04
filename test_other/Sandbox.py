@@ -5,9 +5,8 @@ Sandbox
 import numpy as np
 import os
 import pandas as pd
-from time import perf_counter as clock
 from utils import tools, TimeConstraintEDs as Env, PolicyIteration, \
-    ValueIteration, OneStepPolicyImprovement
+    ValueIteration
 
 FILEPATH_INSTANCE = 'results/instances_'
 FILEPATH_RESULT = 'results/result_'
@@ -15,12 +14,14 @@ FILEPATH_V = 'results/value_functions/'
 MAX_TARGET_PROB = 0.9
 os.chdir("..")
 
-for i in range(93, 108):
-    i = 93 + 1
-    args = {'instance': '01', 'method': 'vi', 'time': '0-00:05:00',
-            'job_id': 1, 'array_id': i, 'x': 0}
-    args = tools.DotDict(args)
+# for i in range(108):
+# args = {'instance': '01', 'method': 'vi', 'time': '0-00:05:00',
+#         'job_id': 1, 'array_id': i, 'x': 0}
+# args = tools.DotDict(args)
 
+
+def main(raw_args=None):
+    args = tools.load_args(raw_args)
     inst = pd.read_csv(FILEPATH_INSTANCE + args.instance + '.csv')
     cols = ['t', 'c', 'r', 'lab', 'mu']
     inst.loc[:, cols] = inst.loc[:, cols].applymap(tools.strip_split)
@@ -55,3 +56,7 @@ for i in range(93, 108):
             if learner.Pi is not None:
                 np.savez(FILEPATH_V + 'pi_' + args.instance + '_' +
                          str(inst[0]) + '_' + args.method + '.npz', learner.Pi)
+
+
+if __name__ == '__main__':
+    main()
