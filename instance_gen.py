@@ -15,7 +15,7 @@ FILEPATH_INSTANCE = 'results/instances_02.csv'
 instance_columns = ['J', 'S', 'D', 'size', 'size_i',
                     'gamma', 'e', 't', 'c', 'r', 'P',
                     'lab', 'mu', 'load', 'target_prob']
-methods = ['vi', 'ospi', 'sdf']
+methods = ['vi', 'ospi', 'sdf', 'fcfs', 'pi']
 
 columns = ['_job_id', '_attempts', '_time', '_iter', '_g_tmp', '_g']
 heuristic_columns = ['_opt_gap_tmp', '_opt_gap']
