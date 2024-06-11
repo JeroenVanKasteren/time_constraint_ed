@@ -27,18 +27,40 @@ for method in methods:
 J = 2
 MU_1_GRID = [1/3]
 
-param_grid = {'S': [2, 5, 10],
+# Instance 1
+# param_grid = {'S': [2, 5, 10],
+#               'gamma': [15],
+#               'mu_1': MU_1_GRID,
+#               'mu_2': np.array([1, 1.5, 2]) * MU_1_GRID,
+#               'load': [0.5, 0.6, 0.7, 0.8],  # 0.9?
+#               'imbalance': [1 / 3, 1, 3]}
+
+# Instance 2
+param_grid = {'S': [2, 5],
+              'gamma': [10, 20],
               'mu_1': MU_1_GRID,
-              'mu_2': np.array([1, 1.5, 2]) * MU_1_GRID,
-              'load': [0.5, 0.6, 0.7, 0.8],  # 0.9?
-              'imbalance': [1 / 3, 1, 3]}
+              'mu_2': np.array([1, 2]) * MU_1_GRID,
+              'load': [0.7, 0.9],
+              'imbalance': [1/3, 1, 3]}
+
+# Instance 3
+# param_grid = {'S': [2],
+#               'gamma': [10],
+#               'mu_1': MU_1_GRID,
+#               'mu_2': np.array([1, 2]) * MU_1_GRID,
+#               'load': [0.7, 0.9],
+#               'imbalance': [1/3, 1, 3]}
+
+# state space (J * D^J * S^J)
+# (2 + 1) * (20*5)**2 * 5**2  # D = gamma * gamma_multi
+# (3 + 1) * (10*4)**3 * 2**3
 # Idea for J > 2
 # mu = ['mu_']*J
 # for i in range(J):
 #     mu[i] += str(i+1)
 
 grid = tools.get_instance_grid(J=2,
-                               gamma=15,
+                               gamma_multi=5,  # remove if formula determines
                                e=1e-5,
                                P=1e3,
                                t=np.array([1] * J),

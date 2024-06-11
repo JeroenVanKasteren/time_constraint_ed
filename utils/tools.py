@@ -96,12 +96,12 @@ def get_erlang_c(mu, rho, s, t=0):
     return erlang_c, exp_w, pi_0, prob_late
 
 
-def get_instance_grid(J, gamma, e, P, t, c, r, param_grid, max_target_prob):
+def get_instance_grid(J, e, P, t, c, r, param_grid, max_target_prob,
+                      gamma_multi=0):
     grid = pd.DataFrame(ParameterGrid(param_grid))
     print("Length of grid:", len(grid))
 
     grid['J'] = J
-    grid['gamma'] = gamma
     grid['e'] = e
     grid['P'] = P
 
@@ -116,10 +116,17 @@ def get_instance_grid(J, gamma, e, P, t, c, r, param_grid, max_target_prob):
     grid['r'] = [[] for r in range(len(grid))]
 
     for i, inst in grid.iterrows():
-        env = Env(J=J, S=inst.S, gamma=gamma, P=P, e=e, t=t, c=c, r=r,
-                  mu=np.array([inst.mu_1, inst.mu_2]),
-                  load=inst.load,
-                  imbalance=np.array([inst.imbalance, 1]))
+        if gamma_multi == 0:
+            env = Env(J=J, S=inst.S, gamma=inst.gamma, P=P, e=e, t=t, c=c, r=r,
+                      mu=np.array([inst.mu_1, inst.mu_2]),
+                      load=inst.load,
+                      imbalance=np.array([inst.imbalance, 1]))
+        else:
+            env = Env(J=J, S=inst.S, gamma=inst.gamma, P=P, e=e, t=t, c=c, r=r,
+                      mu=np.array([inst.mu_1, inst.mu_2]),
+                      load=inst.load,
+                      imbalance=np.array([inst.imbalance, 1]),
+                      D=int(inst.gamma*gamma_multi))
         grid.loc[i, 'target_prob'] = env.target_prob
         grid.loc[i, 'D'] = env.D
         grid.loc[i, 'size'] = env.size
