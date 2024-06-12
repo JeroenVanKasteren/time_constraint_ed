@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name "time_constraint_ED_sim"
-#SBATCH --cpus-per-task 8
+#SBATCH --job-name "ED_sim"
+#SBATCH --cpus-per-task 16
 #SBATCH --time 0-00:05:00
 #SBATCH --array 1-5
 #SBATCH --output results/read/prints_%A_%a.out

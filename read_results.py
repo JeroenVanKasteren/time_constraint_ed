@@ -34,13 +34,13 @@ for file in os.listdir(FILEPATH_RESULT):
         print('Instance', INSTANCE_ID + '_' + str(index),
               'already solved. Redundant job with id:',
               result.loc[method + '_job_id'][0])
-    if(pd.notnull(inst.loc[index, method + '_g_tmp']) &
+    if (pd.notnull(inst.loc[index, method + '_g_tmp']) &
             pd.notnull(inst.loc[index, 'vi_g_tmp'])):
         inst.loc[index, method + '_opt_gap_tmp'] = \
             (abs(float(inst.loc[index, method + '_g_tmp'])
                  - float(inst.loc[index, 'vi_g_tmp']))
              / float(inst.loc[index, 'vi_g_tmp']))
-    if(pd.notnull(inst.loc[index, method + '_g']) &
+    if (pd.notnull(inst.loc[index, method + '_g']) &
             pd.notnull(inst.loc[index, 'vi_g'])):
         inst.loc[index, method + '_opt_gap'] = \
             (abs(float(inst.loc[index, method + '_g'])

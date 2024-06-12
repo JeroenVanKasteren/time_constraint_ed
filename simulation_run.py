@@ -13,7 +13,6 @@ python
 Sims done: 100000 sims. (N=100000, n_left=100000) Total time: (MM:SS): 00:24,
 time per 10,000 iterations: (MM:SS): 00:02
 Numba
-
 """
 
 import heapq as hq
@@ -31,7 +30,7 @@ FILEPATH_PICKLES = 'results/simulation_pickles/'
 FILEPATH_RESULT = 'results/simulation_pickles/result_'
 
 # Debug
-# """
+"""
 args = {'job_id': 1,
         'array_id': 1,
         'time': '0-00:10:00',
@@ -39,10 +38,11 @@ args = {'job_id': 1,
         'method': 'not specified',
         'x': 1e5}
 args = tools.DotDict(args)
-# """
-# args = tools.load_args()
+"""
+args = tools.load_args()
 
-inst_nr = int(args.instance) + int((args.array_id - 1)/5)
+nr_methods = 8
+inst_nr = int(args.instance) + int((args.array_id - 1)/nr_methods)
 if inst_nr < 10:
     instance = '0' + str(inst_nr)
 else:
@@ -50,14 +50,14 @@ else:
 
 inst = tools.inst_load(FILEPATH_INSTANCE + instance + '.csv')
 if args.method not in inst['method'].values:
-    args.method = inst['method'][(args.array_id - 1) % 5]
+    args.method = inst['method'][(args.array_id - 1) % nr_methods]
 method = inst['method']
 
 # global constants
 N = int(args.x) if args.x > 0 else int(1e4)  # arrivals to simulate
 
 # Moreover, sum up N when doing multiple runs (continuing runs).
-convergence_check = 1e4
+print_modulo = 1e4
 J, S, gamma, D, t, c, r, mu, lab, load, imbalance = (inst.J,
                                                      inst.S,
                                                      inst.gamma,
@@ -193,7 +193,7 @@ def simulate_multi_class_system(arr_times=np.zeros(J, dtype=np.float32),
                 fil, heap, kpi, n_admit, s = admission(arr, arr_times, dep, fil,
                                                        heap, i, kpi, n_admit, s,
                                                        time, x)
-        if (n_admit % convergence_check) == 0:
+        if (n_admit % print_modulo) == 0:
             print(f'Sims done: {n_admit} (N={N}). Total time: '
                   f'{tools.sec_to_time(clock() - start_time)}, '
                   f'time per 10,000 iterations: '

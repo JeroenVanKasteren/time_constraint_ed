@@ -241,7 +241,7 @@ class PolicyIteration:
                         stable = stable + 1  # binary operation allows reduction
         return Pi, stable == 0
 
-    def policy_evaluation(self, env, V, W, Pi, g, name, iter=0):
+    def policy_evaluation(self, env, V, W, Pi, g, name, n_iter=0):
         """Policy Evaluation."""
         inner_iter = 0
         stopped = False
@@ -256,7 +256,7 @@ class PolicyIteration:
             W = W.reshape(env.dim_i)
             V_t = self.get_v(env, V, W)
             if inner_iter % env.convergence_check == 0:
-                converged, stopped, g = self.convergence(env, V_t, V, iter,
+                converged, stopped, g = self.convergence(env, V_t, V, n_iter,
                                                          name, j=inner_iter)
             V = V_t - V_t[tuple([0] * (env.J * 2))]  # Rescale and Save V_t
             if inner_iter > env.max_iter:
