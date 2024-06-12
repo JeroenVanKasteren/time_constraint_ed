@@ -62,7 +62,7 @@ def main(raw_args=None):
             learner.V = np.load(FILEPATH_V + v_file)['arr_0']
         learner.value_iteration(env)
         pi_file = ('pi_' + args.instance + '_' + str(inst[0]) + '_vi.npz')
-        if pi_file not in os.listdir(FILEPATH_V):
+        if learner.converged and (pi_file not in os.listdir(FILEPATH_V)):
             learner.get_policy(env)
     elif args.method == 'ospi':
         learner = OneStepPolicyImprovement(env, pi_learner)

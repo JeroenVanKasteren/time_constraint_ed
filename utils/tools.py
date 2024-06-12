@@ -115,18 +115,15 @@ def get_instance_grid(J, e, P, t, c, r, param_grid, max_target_prob,
     grid['c'] = [[] for r in range(len(grid))]
     grid['r'] = [[] for r in range(len(grid))]
 
+    mu = ['mu_'] * J
+    for i in range(J):
+        mu[i] += str(i + 1)
+
     for i, inst in grid.iterrows():
-        if gamma_multi == 0:
-            env = Env(J=J, S=inst.S, gamma=inst.gamma, P=P, e=e, t=t, c=c, r=r,
-                      mu=np.array([inst.mu_1, inst.mu_2]),
-                      load=inst.load,
-                      imbalance=np.array([inst.imbalance, 1]))
-        else:
-            env = Env(J=J, S=inst.S, gamma=inst.gamma, P=P, e=e, t=t, c=c, r=r,
-                      mu=np.array([inst.mu_1, inst.mu_2]),
-                      load=inst.load,
-                      imbalance=np.array([inst.imbalance, 1]),
-                      D=int(inst.gamma*gamma_multi))
+        D = 0 if gamma_multi == 0 else int(inst.gamma * gamma_multi)
+        env = Env(J=J, S=inst.S, gamma=inst.gamma, P=P, e=e, t=t, c=c, r=r, D=D,
+                  mu=inst[mu].values, load=inst.load,
+                  imbalance=np.array(inst.imbalance))
         grid.loc[i, 'target_prob'] = env.target_prob
         grid.loc[i, 'D'] = env.D
         grid.loc[i, 'size'] = env.size

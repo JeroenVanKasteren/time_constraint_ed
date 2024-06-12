@@ -122,6 +122,7 @@ class TimeConstraintEDs:
 
         if 'D' in kwargs:
             s.D: int = kwargs.get('D')
+            s.D = s.get_D() if s.D < 1 else s.D
         else:
             s.D: int = s.get_D()
         s.cap_prob_i = s.get_tail_prob(s.gamma, s.s_star, s.rho,

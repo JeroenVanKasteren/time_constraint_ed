@@ -11,7 +11,7 @@ import numpy as np
 import os
 from utils import tools
 
-FILEPATH_INSTANCE = 'results/instances_02.csv'
+FILEPATH_INSTANCE = 'results/instances_03.csv'
 instance_columns = ['J', 'S', 'D', 'size', 'size_i',
                     'gamma', 'e', 't', 'c', 'r', 'P',
                     'lab', 'mu', 'load', 'target_prob']
@@ -24,7 +24,7 @@ for method in methods:
     if method != 'vi':
         instance_columns.extend([method + s for s in heuristic_columns])
 
-J = 2
+J = 3
 MU_1_GRID = [1/3]
 
 # Instance 1
@@ -35,33 +35,30 @@ MU_1_GRID = [1/3]
 #               'load': [0.5, 0.6, 0.7, 0.8],  # 0.9?
 #               'imbalance': [1 / 3, 1, 3]}
 
-# Instance 2
-param_grid = {'S': [2, 5],
-              'gamma': [10, 20],
-              'mu_1': MU_1_GRID,
-              'mu_2': np.array([1, 2]) * MU_1_GRID,
-              'load': [0.7, 0.9],
-              'imbalance': [1/3, 1, 3]}
-
-# Instance 3
-# param_grid = {'S': [2],
-#               'gamma': [10],
+# Instance 2  # gamma multi = 8
+# param_grid = {'S': [2, 5],
+#               'gamma': [10, 20],
 #               'mu_1': MU_1_GRID,
 #               'mu_2': np.array([1, 2]) * MU_1_GRID,
 #               'load': [0.7, 0.9],
-#               'imbalance': [1/3, 1, 3]}
+#               'imbalance': [[1/3, 1], [1, 1], [3, 1]]}
+
+# Instance 3,  # gamma multi = 4, J = 3
+param_grid = {'S': [2, 3],
+              'gamma': [10],
+              'mu_1': MU_1_GRID,
+              'mu_2': np.array([1.5]) * MU_1_GRID,
+              'mu_3': np.array([2]) * MU_1_GRID,
+              'load': [0.7, 0.9],
+              'imbalance': [[1/3, 2/3, 1], [1, 1, 1]]}
 
 # state space (J * D^J * S^J)
-# (2 + 1) * (20*5)**2 * 5**2  # D = gamma * gamma_multi
+# (2 + 1) * (20*8)**2 * 5**2  # D = gamma * gamma_multi
 # (3 + 1) * (10*4)**3 * 2**3
-# Idea for J > 2
-# mu = ['mu_']*J
-# for i in range(J):
-#     mu[i] += str(i+1)
 
-grid = tools.get_instance_grid(J=2,
-                               gamma_multi=5,  # remove if formula determines
-                               e=1e-5,
+grid = tools.get_instance_grid(J=J,
+                               gamma_multi=4,  # remove/0 if formula determines
+                               e=1e-4,
                                P=1e3,
                                t=np.array([1] * J),
                                c=np.array([1] * J),
@@ -69,7 +66,7 @@ grid = tools.get_instance_grid(J=2,
                                param_grid=param_grid,
                                max_target_prob=0.9)
 
-# Derive solved from value for g.
+# Derive solved from g value.
 for method in methods:
     grid[method + '_job_id'] = ''
     grid[method + '_attempts'] = 0
