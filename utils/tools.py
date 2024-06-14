@@ -241,10 +241,10 @@ def solved_and_left(inst):
     for method in methods:
         print('Solved ' + method + ': ' + str(inst[method + '_g'].count()) +
               ', left: ' +
-              str(len(inst) - inst[method + '_g'].count()))
+              str(len(inst) - inst[method + '_g'].count()), flush=True)
         if method != 'vi':
             print('Solved both for ' + method + ': ' +
-                  str(inst[method + '_opt_gap'].count()))
+                  str(inst[method + '_opt_gap'].count()), flush=True)
 
 
 def strip_split(x):

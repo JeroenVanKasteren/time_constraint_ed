@@ -38,7 +38,7 @@ def main(raw_args=None):
 
     if args.array_id - 1 + args.x >= len(inst):
         print('No more instances to solve within', args.time,
-              'index:', args.array_id - 1 + args.x)
+              'index:', args.array_id - 1 + args.x, flush=True)
         exit(0)
     inst = inst.iloc[args.array_id - 1 + args.x]
 
@@ -58,7 +58,7 @@ def main(raw_args=None):
         learner = ValueIteration(env, pi_learner)
         v_file = ('v_' + args.instance + '_' + str(inst[0]) + '_vi.npz')
         if v_file in os.listdir(FILEPATH_V):
-            print('Loading V from file')
+            print('Loading V from file', flush=True)
             learner.V = np.load(FILEPATH_V + v_file)['arr_0']
         learner.value_iteration(env)
         pi_file = ('pi_' + args.instance + '_' + str(inst[0]) + '_vi.npz')
@@ -68,13 +68,13 @@ def main(raw_args=None):
         learner = OneStepPolicyImprovement(env, pi_learner)
         pi_file = ('pi_' + args.instance + '_' + str(inst[0]) + '_ospi.npz')
         if pi_file in os.listdir(FILEPATH_V):
-            print('Loading Pi from file')
+            print('Loading Pi from file', flush=True)
             learner.Pi = np.load(FILEPATH_V + pi_file)['arr_0']
         else:
             learner.one_step_policy_improvement(env)
         v_file = ('v_' + args.instance + '_' + str(inst[0]) + '_ospi.npz')
         if v_file in os.listdir(FILEPATH_V):
-            print('Loading V from file')
+            print('Loading V from file', flush=True)
             learner.V = np.load(FILEPATH_V + v_file)['arr_0']
             learner.get_g(env, learner.V)
         else:
@@ -85,7 +85,7 @@ def main(raw_args=None):
         v_file = ('v_' + args.instance + '_' + str(inst[0]) + '_' +
                   args.method + '.npz')
         if v_file in os.listdir(FILEPATH_V):
-            print('Loading V from file')
+            print('Loading V from file', flush=True)
             learner.V = np.load(FILEPATH_V + v_file)['arr_0']
         else:
             learner.V = np.zeros(env.dim, dtype=np.float32)
@@ -97,7 +97,7 @@ def main(raw_args=None):
         g_file = ('g_' + args.instance + '_' + str(inst[0]) + '_pi.npz')
         if ((pi_file in os.listdir(FILEPATH_V)) &
                 (v_file in os.listdir(FILEPATH_V))):
-            print('Loading pi & v from file')
+            print('Loading pi & v from file', flush=True)
             Pi = np.load(FILEPATH_V + pi_file)['arr_0']
             V = np.load(FILEPATH_V + v_file)['arr_0']
             g_mem = np.load(FILEPATH_V + g_file)['arr_0']

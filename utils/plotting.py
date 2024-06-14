@@ -259,3 +259,21 @@ def plot_convergence(kpi_df, method, k, t, m=100):
     plt.title('g vs. time for ' + method)
     plt.legend(loc='upper right')
     plt.show()
+
+
+# def fil_plot():
+#     arrivals = kpi[ kpi['event'] = arrival]
+#     time = time of service initiation (end of waiting)
+#     arrivals['arrival_time'] = time - waiting time
+#     end point (blue)
+#     x = time
+#     y = waiting time
+#
+#     time_last = time of service initiation of last arrival
+#     diff = time_last - arrival time
+#     diff > 0: current arrival has waited
+#     diff < 0: current arrival did not wait
+#
+#     Start point
+#     x = where(diff > 0, time_last, arrival_time)
+#     y = where(diff < 0, diff, 0)

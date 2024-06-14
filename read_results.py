@@ -15,6 +15,7 @@ FILEPATH_RESULT = 'results/'
 
 inst = pd.read_csv(FILEPATH_INSTANCE)
 tools.remove_empty_files(FILEPATH_READ)
+tools.remove_empty_files(FILEPATH_RESULT)
 
 # Process all unread result files
 for file in os.listdir(FILEPATH_RESULT):
@@ -33,7 +34,7 @@ for file in os.listdir(FILEPATH_RESULT):
     else:
         print('Instance', INSTANCE_ID + '_' + str(index),
               'already solved. Redundant job with id:',
-              result.loc[method + '_job_id'][0])
+              result.loc[method + '_job_id'][0], flush=True)
     if (pd.notnull(inst.loc[index, method + '_g_tmp']) &
             pd.notnull(inst.loc[index, 'vi_g_tmp'])):
         inst.loc[index, method + '_opt_gap_tmp'] = \
