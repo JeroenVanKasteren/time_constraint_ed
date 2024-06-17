@@ -22,17 +22,13 @@ inst_tmp = inst[pd.notnull(inst['ospi_g_tmp']) & pd.notnull(inst['vi_g_tmp'])]
 
 tools.solved_and_left(inst)
 
-plt.hist(inst_conv['ospi_opt_gap'])
-plt.show()
-
+# plt.hist(inst_conv['ospi_opt_gap'])
 inst_conv.boxplot(column='ospi_opt_gap', by='gamma')
 plt.ylabel('Opt_gap')
 plt.title('Optimality Gap versus queues')
 plt.show()
 # https://matplotlib.org/stable/gallery/statistics/boxplot_demo.html
-
-plt.violinplot(inst_conv['ospi_opt_gap'], showmedians=True)
-plt.show()
+# plt.violinplot(inst_conv['ospi_opt_gap'], showmedians=True)
 
 plt.scatter(inst_conv['vi_time']/(60*60), inst_conv['ospi_opt_gap'])
 plt.scatter(inst_conv['ospi_time']/(60*60), inst_conv['ospi_opt_gap'])
@@ -44,7 +40,7 @@ plt.show()
 
 inst_conv.boxplot(column=['vi_time', 'ospi_time'], by='load')
 plt.ylabel('Running time (sec.)')
-plt.title('Running time vs. Load')
+plt.suptitle('Running time (sec.) vs. Load')
 plt.show()
 
 plt.scatter(inst_conv['ospi_opt_gap']/(60*60), inst_conv['size'])
