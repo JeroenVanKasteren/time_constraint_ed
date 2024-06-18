@@ -112,8 +112,10 @@ for instance_name in instance_names:
     #     print('-'*10, '\n')
     # print('-'*120, '\n', '-'*120, '\n')
 
+cap_d = 100
+solve_id, inst_id = 57, 13-1
 for solve_id, inst_id in zip([8, 57, 93], [12-1, 13-1, 14-1]):
-    print(solve_id, inst_id)
+    print(f'solve_id: {solve_id}, inst_id: {inst_id}')
     inst = tools.inst_load(FILEPATH_INSTANCE + instance_names[inst_id])
     inst = inst.iloc[0]
     env = Env(J=inst.J, S=inst.S, D=inst.D,
@@ -125,9 +127,17 @@ for solve_id, inst_id in zip([8, 57, 93], [12-1, 13-1, 14-1]):
         Pi = np.load(FILEPATH_V + pi_file)['arr_0']
 
         pi_learner = PolicyIteration(Pi=Pi)
-        tools.summarize_policy(env, pi_learner)
-        state = np.concatenate(([3],
+        tools.summarize_policy(env, pi_learner, print_per_time=False)
+        state = np.concatenate(([0],
                                 [0]*inst.J,
                                 [0, int(inst.S/2)])).astype(object)
         name = method + '_' + str(solve_id) + '_' + str(inst_id + 1)
         plotting.plot_pi(env, Pi, False, state=state, name=name)
+
+        v_file = ('v_' + INSTANCES_ID + '_' + str(solve_id) + '_' +
+                  method + '.npz')
+        v = np.load(FILEPATH_V + v_file)['arr_0']
+        state = np.concatenate(([0] * inst.J,
+                                [0, int(inst.S / 2)])).astype(object)
+        name = method + '_' + str(solve_id) + '_' + str(inst_id + 1)
+        plotting.plot_v(env, v, False, state=state, name=name)

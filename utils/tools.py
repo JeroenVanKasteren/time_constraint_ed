@@ -259,7 +259,7 @@ def update_mean(mean, x, n):
     return mean + (x - mean) / n  # avg_{n-1} = avg_{n-1} + (x_n - avg_{n-1})/n
 
 
-def summarize_policy(env, learner):
+def summarize_policy(env, learner, print_per_time=True):
     unique, counts = np.unique(learner.Pi, return_counts=True)
     counts = counts / sum(counts)
     policy = pd.DataFrame(np.asarray((unique, counts)).T, columns=['Policy',
@@ -276,6 +276,9 @@ def summarize_policy(env, learner):
     feature_list.extend(['Keep_Idle', 'None_Waiting', 'Servers_Full',
                          'Invalid_State'])
     counts = pd.DataFrame(0, index=np.arange(env.D), columns=feature_list)
+    if not print_per_time:
+        return
+
     for x in range(env.D):
         states = [slice(None)] * (1 + env.J * 2)
         states[1] = x

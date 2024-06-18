@@ -33,7 +33,7 @@ MU_1_GRID = [1/3]
 #               'mu_1': MU_1_GRID,
 #               'mu_2': np.array([1, 1.5, 2]) * MU_1_GRID,
 #               'load': [0.5, 0.6, 0.7, 0.8],  # 0.9?
-#               'imbalance': [1 / 3, 1, 3]}
+#               'imbalance': [[1/3, 1], [1, 1], [3, 1]]}
 
 # Instance 2  # gamma multi = 8
 # param_grid = {'S': [2, 5],

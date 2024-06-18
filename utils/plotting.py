@@ -13,6 +13,14 @@ import utils
 from matplotlib import colors
 
 
+def choosing_classes(env, **kwargs):
+    if ('i' in kwargs) & ('j' in kwargs):
+        return kwargs.get('i'), kwargs.get('j')
+    elif env.J == 2:
+        return [0, 1]
+    else:
+        return np.sort(np.random.choice(env.J, 2, replace=False))
+
 def plot_pi(env, Pi, zero_state, **kwargs):
     """
     Plot policy Pi.
@@ -29,6 +37,8 @@ def plot_pi(env, Pi, zero_state, **kwargs):
     :key j: int, queue j to plot
     :key learner: String, name of the learner
     :key name: String, name of the plot
+    :key t: Numpy array, target per class
+    :key d_cap: int, time cap for plot
     :return: -
 
     If zero_state is True, take the state x_i = 0 and s_i = 0.
@@ -36,7 +46,7 @@ def plot_pi(env, Pi, zero_state, **kwargs):
     If zero_state is False and state is not given, take a random state.
 
     If smu is given, plot the policy after a departure.
-    If i is given and j is not, take x_i and s_i as axis.
+    If i given and j not, take x_i and s_i as axis.
     If i and j are given or only 2 queues (J=2), take x_i and x_j as axis.
     Otherwise, choose 2 random queues.
     """
@@ -56,44 +66,38 @@ def plot_pi(env, Pi, zero_state, **kwargs):
 
     states = state.copy()
     print_states = state.astype('str')
+    d_cap = kwargs.get('d_cap', 0)
+    t = kwargs.get('t', [0])
     if ('i' in kwargs) & ('j' not in kwargs):
         i = kwargs.get('i')
-        states[1 + i] = slice(None)  # x_i
         states[1 + i + env.J] = slice(None)  # s_i
-        Pi_i = Pi[tuple(states)]
-        print_states[1 + i] = ':'
         print_states[1 + i + env.J] = ':'
         max_ticks = 5
         title = 'Policy, queue: ' + str(i + 1) + ', ' + str(print_states)
-        if 'name' in kwargs:
-            title = kwargs.get('name') + ', ' + title
         x_label = 'Servers occupied by queue ' + str(i + 1)
-        y_label = 'Waiting time state FIL queue ' + str(i + 1)
-        x_ticks = np.arange(0, Pi_i.shape[1], max(1, np.ceil(Pi_i.shape[1]
-                                                            / max_ticks)))
-        y_ticks = np.arange(0, Pi_i.shape[0], max(1, np.ceil(Pi_i.shape[0]/10)))
+        if 't' in kwargs:
+            t_x, t_y = [0, t[i]], [t[i], t[i]]
     else:
-        if ('i' in kwargs) & ('j' in kwargs):
-            i, j = kwargs.get('i'),  kwargs.get('j')
-        elif env.J == 2:
-            i, j = [0, 1]
-        else:
-            i, j = np.sort(np.random.choice(env.J, 2, replace=False))
-        states[1 + i] = slice(None)  # x_i
-        states[1 + j] = slice(None)  # x_j
-        Pi_i = Pi[tuple(states)]
-        print_states[1 + i] = ':'
+        i, j = choosing_classes(env, **kwargs)
+        states[1 + j] = slice(d_cap) if 'D' in kwargs else slice(None)  # x_j
         print_states[1 + j] = ':'
         max_ticks = 10
         title = 'Policy, ' + str(print_states)
         x_label = 'Waiting time state FIL queue ' + str(j + 1)
-        y_label = 'Waiting time state FIL queue ' + str(i + 1)
-        x_ticks = np.arange(0, Pi_i.shape[1], max(1, np.ceil(Pi_i.shape[1]/10)))
-        y_ticks = np.arange(0, Pi_i.shape[0], max(1, np.ceil(Pi_i.shape[0]/10)))
+        if 't' in kwargs:
+            t_x, t_y = [0, t[i], t[i]], [t[i], t[i], 0]
+    print_states[1 + i] = ':'
+    y_label = 'Waiting time state FIL queue ' + str(i + 1)
+    states[1 + i] = slice(d_cap) if 'D' in kwargs else slice(None)  # x_i
+    pi_i = Pi[tuple(states)]
+    x_ticks = np.arange(0, pi_i.shape[1], max(1, np.ceil(pi_i.shape[1]
+                                                         / max_ticks)))
+    y_ticks = np.arange(0, pi_i.shape[0], max(1, np.ceil(pi_i.shape[0]
+                                                         / max_ticks)))
     if 'name' in kwargs:
         title = kwargs.get('name') + ', ' + title
     cols = ['black', 'grey', 'lightyellow', 'lightgrey']
-    queues = ['darkblue', 'indigo', 'darkmagenta', 'mediumvioletred', 'crimson']
+    queues = ['blue', 'crimson', 'darkgreen', 'gold', 'teal']
     cols.extend(queues[0:env.J])
     cmap = colors.ListedColormap(cols)  # Color list
     dic = {}
@@ -111,7 +115,10 @@ def plot_pi(env, Pi, zero_state, **kwargs):
     bounds.extend(np.arange(env.J + 1) + 1)
     norm = colors.BoundaryNorm(bounds, cmap.N)
 
-    plt.imshow(Pi_i, origin='lower', cmap=cmap, norm=norm)
+    plt.imshow(pi_i, origin='lower', cmap=cmap, norm=norm)
+    if 't' in kwargs:
+        plt.lines.line2D(xdata=t_x, ydata=t_y, linewidth=0.5,
+                         linestyle='-.', color='red')
     plt.legend(handles=patches, loc=2, bbox_to_anchor=(1.01, 1))
     plt.title(title)
     plt.xlabel(x_label)
@@ -119,8 +126,8 @@ def plot_pi(env, Pi, zero_state, **kwargs):
     ax = plt.gca()
     ax.set_xticks(x_ticks)
     ax.set_yticks(y_ticks)
-    ax.set_xticks(np.arange(Pi_i.shape[1] + 1) - 0.5, minor=True)
-    ax.set_yticks(np.arange(Pi_i.shape[0] + 1) - 0.5, minor=True)
+    ax.set_xticks(np.arange(pi_i.shape[1] + 1) - 0.5, minor=True)
+    ax.set_yticks(np.arange(pi_i.shape[0] + 1) - 0.5, minor=True)
     ax.set_xticklabels(x_ticks)
     ax.set_yticklabels(y_ticks)
     ax.grid(which='minor', color='black', linestyle='-', linewidth=0.25)
@@ -136,27 +143,19 @@ def plot_v(env, V, zero_state, **kwargs):
         state = np.concatenate(
             (env.x_states[np.random.randint(len(env.x_states))],
              env.S_states[np.random.randint(len(env.S_states))])).astype(object)
+
     states = state.copy()
     print_states = state.astype('str')
     if ('i' in kwargs) & ('j' not in kwargs):
         i = kwargs.get('i')
-        states[i] = slice(None)  # x_i
         states[i + env.J] = slice(None)  # s_i
-        print_states[i] = ':'
         print_states[i + env.J] = ':'
         max_ticks = 5
         title = 'V(x), queue: ' + str(i + 1) + ', ' + str(print_states)
         x_label = 'Servers occupied by queue ' + str(i + 1)
         y_label = 'Waiting time state FIL queue ' + str(i + 1)
     else:
-        if ('i' in kwargs) & ('j' in kwargs):
-            i = kwargs.get('i')
-            j = kwargs.get('j')
-        elif env.J == 2:
-            i, j = [0, 1]
-        else:
-            i, j = np.sort(np.random.choice(env.J, 2, replace=False))
-        states[i] = slice(None)  # x_i
+        i, j = choosing_classes(env, **kwargs)
         states[j] = slice(None)  # x_j
         print_states[i] = ':'
         print_states[j] = ':'
@@ -166,7 +165,10 @@ def plot_v(env, V, zero_state, **kwargs):
         y_label = 'Waiting time state FIL queue ' + str(i + 1)
     if 'name' in kwargs:
         title = kwargs.get('name') + ', ' + title
+    states[i] = slice(None)  # x_i
+    print_states[i] = ':'
     V_i = V[tuple(states)]
+
     plt.imshow(V_i, origin='lower')
     plt.colorbar()
     plt.title(title)
