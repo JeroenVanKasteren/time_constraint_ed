@@ -214,6 +214,13 @@ def moving_average_admission(kpi_df, k, m):
     return kpi_df['reward'].values[k:].reshape(-1, m).mean(axis=0)
 
 
+def opt_gap(g_method, g_opt):
+    if pd.notnull(g_opt) and pd.notnull(g_method):
+        return abs(float(g_method) - float(g_opt)) / float(g_opt)
+    else:
+        return float('NaN')
+
+
 def remove_empty_files(directory):
     for file in os.listdir(directory):
         if os.path.getsize(os.path.join(directory, file)) == 0:

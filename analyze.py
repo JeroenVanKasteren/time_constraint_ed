@@ -5,11 +5,13 @@ Load and visualize results.
 """
 
 import matplotlib.pyplot as plt
+import os
 import pandas as pd
 from utils import tools
 
 INSTANCE_ID = '02'
 FILEPATH_INSTANCE = 'results/instances_' + INSTANCE_ID + '.csv'
+FILEPATH_V = 'results/value_functions/'
 
 inst = tools.inst_load(FILEPATH_INSTANCE)
 tools.solved_and_left(inst)
@@ -20,6 +22,7 @@ methods = [column.split('_')[0] for column in inst.columns
 opt_m = 'vi'
 inst[opt_m + '_time'] = inst[opt_m + '_time'].map(
     lambda x: x if pd.isnull(x) else tools.get_time(x))
+
 for method in methods:
     if method == opt_m:
         continue
@@ -95,3 +98,25 @@ for method in methods:
     plt.bar(unique_loads, solved, width=0.05)
     plt.bar(unique_loads, unsolved, width=0.05, bottom=solved)
     plt.show()
+
+# OPT_METHOD = 'vi'
+
+for file in os.listdir(FILEPATH_V):
+    if not (file.startswith('g_' + INSTANCE_ID) or file.endswith('_pi.npz')):
+        continue
+    print(file)
+    # g_mem is just a list
+    # pi_file = ('pi_' + args.instance + '_' + str(inst[0]) + '_pi.npz')
+    # v_file = ('v_' + args.instance + '_' + str(inst[0]) + '_pi.npz')
+    # g_file = ('g_' + args.instance + '_' + str(inst[0]) + '_pi.npz')
+    # if ((pi_file in os.listdir(FILEPATH_V)) &
+    #         (v_file in os.listdir(FILEPATH_V))):
+    #     print('Loading pi & v from file', flush=True)
+    #     Pi = np.load(FILEPATH_V + pi_file)['arr_0']
+    #     V = np.load(FILEPATH_V + v_file)['arr_0']
+    #     g_mem = np.load(FILEPATH_V + g_file)['arr_0']
+    #     g_mem = learner.policy_iteration(env, g_mem=g_mem, Pi=Pi, V=V)
+    # else:
+    #     g_mem = learner.policy_iteration(env)
+    # np.savez(FILEPATH_V + 'g_' + args.instance + '_' + str(inst[0]) + '_'
+    #          + args.method + '.npz', g_mem)
