@@ -8,6 +8,7 @@ https://moonbooks.org/Articles/How-to-change-imshow-axis-values-labels-in-matplo
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+from matplotlib.lines import Line2D as lines
 import numpy as np
 import utils
 from matplotlib import colors
@@ -117,8 +118,8 @@ def plot_pi(env, Pi, zero_state, **kwargs):
 
     plt.imshow(pi_i, origin='lower', cmap=cmap, norm=norm)
     if 't' in kwargs:
-        plt.lines.line2D(xdata=t_x, ydata=t_y, linewidth=0.5,
-                         linestyle='-.', color='red')
+        lines(xdata=t_x, ydata=t_y, linewidth=0.5,
+              linestyle='-.', color='green')
     plt.legend(handles=patches, loc=2, bbox_to_anchor=(1.01, 1))
     plt.title(title)
     plt.xlabel(x_label)
@@ -130,6 +131,11 @@ def plot_pi(env, Pi, zero_state, **kwargs):
     ax.set_yticks(np.arange(pi_i.shape[0] + 1) - 0.5, minor=True)
     ax.set_xticklabels(x_ticks)
     ax.set_yticklabels(y_ticks)
+    if 'cap_d' in kwargs:
+        cap_d = kwargs.get('cap_d')
+        ax.set_ylim(0, cap_d)
+        if not (('i' in kwargs) & ('j' not in kwargs)):
+            ax.set_xlim(0, cap_d)
     ax.grid(which='minor', color='black', linestyle='-', linewidth=0.25)
     plt.show()
 
@@ -146,6 +152,7 @@ def plot_v(env, V, zero_state, **kwargs):
 
     states = state.copy()
     print_states = state.astype('str')
+    t = kwargs.get('t', [0])
     if ('i' in kwargs) & ('j' not in kwargs):
         i = kwargs.get('i')
         states[i + env.J] = slice(None)  # s_i
@@ -154,6 +161,8 @@ def plot_v(env, V, zero_state, **kwargs):
         title = 'V(x), queue: ' + str(i + 1) + ', ' + str(print_states)
         x_label = 'Servers occupied by queue ' + str(i + 1)
         y_label = 'Waiting time state FIL queue ' + str(i + 1)
+        if 't' in kwargs:
+            t_x, t_y = [0, t[i]], [t[i], t[i]]
     else:
         i, j = choosing_classes(env, **kwargs)
         states[j] = slice(None)  # x_j
@@ -163,6 +172,8 @@ def plot_v(env, V, zero_state, **kwargs):
         title = 'V(x), ' + str(print_states)
         x_label = 'Waiting time state FIL queue ' + str(j + 1)
         y_label = 'Waiting time state FIL queue ' + str(i + 1)
+        if 't' in kwargs:
+            t_x, t_y = [0, t[i], t[i]], [t[i], t[i], 0]
     if 'name' in kwargs:
         title = kwargs.get('name') + ', ' + title
     states[i] = slice(None)  # x_i
@@ -170,6 +181,9 @@ def plot_v(env, V, zero_state, **kwargs):
     V_i = V[tuple(states)]
 
     plt.imshow(V_i, origin='lower')
+    if 't' in kwargs:
+        lines(xdata=t_x, ydata=t_y, linewidth=0.5,
+              linestyle='-.', color='green')
     plt.colorbar()
     plt.title(title)
     plt.xlabel(x_label)
