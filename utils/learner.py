@@ -18,6 +18,9 @@ from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy.integrate import quad_vec
 from time import perf_counter as clock
 
+# self.order = tools.fixed_order(self.env, self.method)
+# elif self.method in ['cmu_t_min', 'cmu_t_max', 'l_max', 'l_min']:
+# return np.nanargmin(np.where(fil, self.order, np.nan))
 
 class PolicyIteration:
     """Policy Iteration."""
@@ -34,7 +37,7 @@ class PolicyIteration:
             self.Pi = kwargs.get('Pi')
 
     @staticmethod
-    def init_pi(env, method):
+    def init_pi(env, method='sdf', order=None):
         """
         Take the longest waiting queue into service (or last queue if tied).
         Take arrivals into service when empty.
@@ -48,15 +51,19 @@ class PolicyIteration:
             for i in range(env.J):
                 states_ = states.copy()
                 for x in range(1, env.D + 1):
+                    if x == 0:
+                        states_[0] = i
                     states_[1 + i] = x  # x_i = x
                     for j in range(env.J):
                         if j != i:
                             if method == 'fcfs':
                                 x_max = x
-                            else:  # method == 'sdf':
+                            elif method == 'sdf':
                                 x_max = min(env.D,
                                             max(0, env.gamma * env.t[j] -
                                                 (env.gamma * env.t[i] - x)))
+                            else:  # order
+                                x_max = env.D if order[i] < order[j] else 0
                             states_[1 + j] = slice(0, int(x_max + 1))
                     Pi[tuple(states_)] = i + 1
                 states_ = np.append([0] * (1 + env.J), s)
@@ -271,7 +278,7 @@ class PolicyIteration:
             s.Pi = kwargs.get('Pi')
         else:
             s.V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
-            s.Pi = s.init_pi(env, 'sdf')
+            s.Pi = s.init_pi(env)
         s.W = np.zeros(env.dim_i, dtype=np.float32)
 
         s.Pi = s.Pi.reshape(env.size_i)
@@ -369,7 +376,7 @@ class ValueIteration:
     def get_policy(s, env):
         """Determine policy via Policy Improvement."""
         s.W = s.pi_learner.init_w(env, s.V, s.W)
-        s.Pi = s.pi_learner.init_pi(env, 'sdf')
+        s.Pi = s.pi_learner.init_pi(env)
         s.V = s.V.reshape(env.size)
         s.W = s.W.reshape(env.size_i)
         s.Pi = s.Pi.reshape(env.size_i)
@@ -445,7 +452,7 @@ class OneStepPolicyImprovement:
         """One Step of Policy Improvement."""
         W = np.zeros(env.dim_i, dtype=np.float32)
         W = s.pi_learner.init_w(env, s.V_app, W)
-        s.Pi = s.pi_learner.init_pi(env, 'sdf')
+        s.Pi = s.pi_learner.init_pi(env)
 
         s.V_app = s.V_app.reshape(env.size)
         W = W.reshape(env.size_i)

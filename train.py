@@ -79,9 +79,11 @@ def main(raw_args=None):
             learner.get_g(env, learner.V)
         else:
             learner.get_g(env, learner.V_app)
-    elif args.method in ['sdf', 'fcfs']:
+    elif args.method in ['sdf', 'fcfs',
+                         'cmu_t_min', 'cmu_t_max', 'l_max', 'l_min']:
         learner = OneStepPolicyImprovement(env, pi_learner)
-        learner.Pi = pi_learner.init_pi(env, args.method)
+        order = tools.fixed_order(env, args.method)  # None for not fixed order
+        learner.Pi = pi_learner.init_pi(env, args.method, order)
         v_file = ('v_' + args.instance + '_' + str(inst[0]) + '_' +
                   args.method + '.npz')
         if v_file in os.listdir(FILEPATH_V):

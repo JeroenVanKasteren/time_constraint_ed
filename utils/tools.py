@@ -37,7 +37,7 @@ class DotDict(dict):
 
 def fixed_order(env, method):
     """
-    Return order of method
+    Return order of method. (If unimplemented method, returns None by default.)
 
     :param: env: dictenvironment
     :param method: method to sort by (cmu_t_min, cmu_t_max, l_min, l_max)
