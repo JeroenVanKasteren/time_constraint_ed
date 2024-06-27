@@ -50,25 +50,22 @@ class PolicyIteration:
                 continue
             for i in range(env.J):
                 states_ = states.copy()
-                for x in range(1, env.D + 1):
+                for x in range(0, env.D + 1):
                     if x == 0:
                         states_[0] = i
                     states_[1 + i] = x  # x_i = x
                     for j in range(env.J):
                         if j != i:
-                            if method == 'fcfs':
-                                x_max = x
-                            elif method == 'sdf':
+                            if method == 'sdf':
                                 x_max = min(env.D,
                                             max(0, env.gamma * env.t[j] -
                                                 (env.gamma * env.t[i] - x)))
-                            else:  # order
+                            elif order is not None:
                                 x_max = env.D if order[i] < order[j] else 0
+                            else:  # FCFS
+                                x_max = x
                             states_[1 + j] = slice(0, int(x_max + 1))
                     Pi[tuple(states_)] = i + 1
-                states_ = np.append([0] * (1 + env.J), s)
-                states_[0] = i
-                Pi[tuple(states_)] = i + 1  # Admit arrival (of i)
             states = np.concatenate(([env.J], [0] * env.J, s), axis=0)
             Pi[tuple(states)] = env.NONE_WAITING  # x_i = 0 All i
         return Pi

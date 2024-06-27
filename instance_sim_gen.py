@@ -12,24 +12,32 @@ import os
 import pandas as pd
 from utils import instances_sim
 
-sim_ids = list(map("{:02d}".format, list(range(1, 15))))
-for sim_id in sim_ids:
-    FILEPATH_INSTANCE = 'results/instance_sim_' + str(sim_id) + '.csv'
-    methods = ['ospi',  'cmu_t_min', 'cmu_t_max', 'fcfs', 'sdf', 'sdfprior',
-               'l_max', 'l_min']
-    input_columns = ['J', 'S', 'gamma', 'D', 't', 'c', 'r', 'mu', 'lab', 'load',
-                     'imbalance']
-    instance_columns = [*input_columns, 'N', 'start_K', 'batch_T',
-                        'method', 'g', 'conf_int']
+FILEPATH_INSTANCE = 'results/sim_instances_01.csv'
 
-    inst = pd.DataFrame(0, index=np.arange(len(methods)),
-                        columns=instance_columns)
-    inst = instances_sim.generate_instance(inst, int(sim_id))
-    inst['method'] = methods
-    inst = inst[instance_columns]
+# sim_ids = list(map("{:02d}".format, list(range(1, 15))))
+# for sim_id in sim_ids:
+#     FILEPATH_INSTANCE = 'results/instance_sim_' + str(sim_id) + '.csv'
+methods = ['ospi',  'cmu_t_min', 'cmu_t_max', 'fcfs', 'sdf', 'sdfprior',
+           'l_max', 'l_min']
+instance_columns = ['J', 'S', 'gamma', 'D',
+                    'mu', 'lab', 'load', 'imbalance'
+                    't', 'c', 'r',
+                    'e', 'P',
+                    'max_t_prob', 'N', 'start_K', 'batch_T']
 
-    if os.path.isfile(FILEPATH_INSTANCE):
-        print('Error: file with this instance already exists, name: ',
-              FILEPATH_INSTANCE)
-    else:
-        inst.to_csv(FILEPATH_INSTANCE)
+method_columns = ['_job_id', '_attempts', '_time', '_iter',
+                  '_g', '_g_ci', '_perc', '_perc_ci']
+for method in methods:
+    instance_columns.extend([method + s for s in method_columns])
+
+inst = pd.DataFrame(0, index=np.arange(len(methods)),
+                    columns=instance_columns)
+inst = instances_sim.generate_instance(inst, int(sim_id))
+inst['method'] = methods
+inst = inst[instance_columns]
+
+if os.path.isfile(FILEPATH_INSTANCE):
+    print('Error: file with this instance already exists, name: ',
+          FILEPATH_INSTANCE)
+else:
+    inst.to_csv(FILEPATH_INSTANCE)

@@ -11,53 +11,81 @@ import numpy as np
 import os
 from utils import tools
 
-FILEPATH_INSTANCE = 'results/instances_03.csv'
-instance_columns = ['J', 'S', 'D', 'size', 'size_i',
-                    'gamma', 'e', 't', 'c', 'r', 'P',
-                    'lab', 'mu', 'load', 'target_prob']
-methods = ['vi', 'ospi', 'sdf', 'fcfs', 'pi']
+solve = True  # False for sim, True for solve
+ID = 'J2'
+FILEPATH_INSTANCE = 'results/instances_' + ID + '.csv'
 
-columns = ['_job_id', '_attempts', '_time', '_iter', '_g_tmp', '_g']
-heuristic_columns = ['_opt_gap_tmp', '_opt_gap']
+if not solve:
+    FILEPATH_INSTANCE += '_sim'
+
+instance_columns = ['J', 'S', 'gamma', 'D',
+                    'mu', 'lab', 'load', 'imbalance'
+                    't', 'c', 'r',
+                    'max_t_prob']
+if solve:
+    methods = ['vi', 'ospi', 'sdf', 'fcfs', 'pi']
+    instance_columns.extend(['e', 'P', 'size', 'size_i'])
+    method_columns = ['_job_id', '_attempts', '_time', '_iter', '_g_tmp', '_g']
+    heuristic_columns = ['_opt_gap_tmp', '_opt_gap']
+else:
+    methods = ['ospi', 'cmu_t_min', 'cmu_t_max', 'fcfs', 'sdf', 'sdfprior',
+               'l_max', 'l_min']
+    instance_columns.append(['N', 'start_K', 'batch_T'])
+    method_columns = ['_job_id', '_attempts', '_time', '_iter',
+                      '_g', '_g_ci', '_perc', '_perc_ci']
+
 for method in methods:
-    instance_columns.extend([method + s for s in columns])
-    if method != 'vi':
+    instance_columns.extend([method + s for s in method_columns])
+    if solve and method != 'vi':
         instance_columns.extend([method + s for s in heuristic_columns])
 
-J = 3
-MU_1_GRID = [1/3]
-
-# Instance 1
-# param_grid = {'S': [2, 5, 10],
-#               'gamma': [15],
-#               'mu_1': MU_1_GRID,
-#               'mu_2': np.array([1, 1.5, 2]) * MU_1_GRID,
-#               'load': [0.5, 0.6, 0.7, 0.8],  # 0.9?
-#               'imbalance': [[1/3, 1], [1, 1], [3, 1]]}
-
-# Instance 2  # gamma multi = 8
-# param_grid = {'S': [2, 5],
-#               'gamma': [10, 20],
-#               'mu_1': MU_1_GRID,
-#               'mu_2': np.array([1, 2]) * MU_1_GRID,
-#               'load': [0.7, 0.9],
-#               'imbalance': [[1/3, 1], [1, 1], [3, 1]]}
-
-# Instance 3,  # gamma multi = 4, J = 3
-param_grid = {'S': [2, 3],
-              'gamma': [10],
-              'mu_1': MU_1_GRID,
-              'mu_2': np.array([1.5]) * MU_1_GRID,
-              'mu_3': np.array([2]) * MU_1_GRID,
-              'load': [0.7, 0.9],
-              'imbalance': [[1/3, 2/3, 1], [1, 1, 1]]}
+mu = 1/3
+if ID == 'J2':
+    J = 2
+    param_grid = {'S': [2, 5],
+                  'D': [0],  # =gamma_multi if > 0
+                  'gamma': [15],
+                  'mu': [[mu, mu], [mu, 1.5*mu], [mu, 2*mu]],
+                  'load': [0.6, 0.8, 0.9],
+                  'imbalance': [[1/3, 1], [1, 1], [3, 1]]}
+elif ID == 'J3_D4':  # Instance 3
+    J = 3
+    param_grid = {'S': [2, 3],
+                  'D': [4],
+                  'gamma': [10],
+                  'mu': [[mu, 1.5*mu, 2*mu]],
+                  'load': [0.7, 0.9],
+                  'imbalance': [[1/3, 2/3, 1], [1, 1, 1]]}
+elif ID == 'J3':
+    J = 3
+    param_grid = {'S': [2, 3],
+                  'D': [0],
+                  'gamma': [10],
+                  'mu': [[mu, 1.5 * mu, 2 * mu]],
+                  'load': [0.7, 0.9],
+                  'imbalance': [[1 / 3, 2 / 3, 1], [1, 1, 1]]}
+elif ID == 'J2_gam':  # Instance 2  # gamma multi = 8
+    J = 2
+    param_grid = {'S': [2, 4],
+                  'gamma': [10, 15, 20, 25],
+                  'mu': [[mu, mu], [mu, 2*mu]],
+                  'load': [0.7, 0.9],
+                  'imbalance': [[1/3, 1], [1, 1], [3, 1]]}
+elif ID == 'J1_D':
+    J = 1
+    param_grid = {'S': [2, 4],
+                  'D': [0, 5, 10],
+                  'gamma': [15],
+                  'mu': [[mu], [2*mu]],
+                  'load': [0.7, 0.9],
+                  'imbalance': [[1]]}
 
 # state space (J * D^J * S^J)
 # (2 + 1) * (20*8)**2 * 5**2  # D = gamma * gamma_multi
 # (3 + 1) * (10*4)**3 * 2**3
 
 grid = tools.get_instance_grid(J=J,
-                               gamma_multi=4,  # remove/0 if formula determines
+                               gamma_multi=gamma_multi,  # 0 for D-formula
                                e=1e-4,
                                P=1e3,
                                t=np.array([1] * J),
