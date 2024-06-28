@@ -10,7 +10,10 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.lines import Line2D as lines
 import numpy as np
+import pandas as pd
+from sklearn.model_selection import ParameterGrid
 import utils
+from utils import TimeConstraintEDs as Env
 from matplotlib import colors
 
 
@@ -277,19 +280,15 @@ def plot_convergence(kpi_df, method, k, t, m=100):
     plt.show()
 
 
-# def fil_plot():
-#     arrivals = kpi[ kpi['event'] = arrival]
-#     time = time of service initiation (end of waiting)
-#     arrivals['arrival_time'] = time - waiting time
-#     end point (blue)
-#     x = time
-#     y = waiting time
+# param_grid = {'J': [1],
+#               'S': [2, 6],
+#               'D': [0, 5, 10, 15],
+#               'gamma': [10, 15, 20, 25],
+#               't': [1],
+#               'mu': [[0.2], [0.5]],
+#               'load': [0.7, 0.9],
+#               'imbalance': [1]}
 #
-#     time_last = time of service initiation of last arrival
-#     diff = time_last - arrival time
-#     diff > 0: current arrival has waited
-#     diff < 0: current arrival did not wait
+# def plot_sizes(param_grid):
 #
-#     Start point
-#     x = where(diff > 0, time_last, arrival_time)
-#     y = where(diff < 0, diff, 0)
+#

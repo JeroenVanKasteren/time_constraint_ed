@@ -96,11 +96,10 @@ def get_erlang_c(mu, rho, s, t=0):
     return erlang_c, exp_w, pi_0, prob_late
 
 
-def get_instance_grid(J, e, P, t, c, r, param_grid, max_target_prob):
+def get_instance_grid(param_grid, J, t, c, r, e=1e-4, P=1e3):
     grid = pd.DataFrame(ParameterGrid(param_grid))
     print("Length of grid:", len(grid))
 
-    grid['J'] = J
     grid['e'] = e
     grid['P'] = P
 
@@ -115,10 +114,11 @@ def get_instance_grid(J, e, P, t, c, r, param_grid, max_target_prob):
 
     for i, inst in grid.iterrows():
         D = 0 if inst.D == 0 else int(inst.gamma * inst.D)
-        env = Env(J=J, S=inst.S, gamma=inst.gamma, P=P, e=e, t=t, c=c, r=r, D=D,
+        env = Env(J=J, S=inst.S, gamma=inst.gamma, t=t, D=D,
                   mu=inst.mu, load=inst.load,
                   imbalance=np.array(inst.imbalance))
-        grid.loc[i, 'target_prob'] = env.target_prob
+        grid.loc[i, 't_prob'] = env.target_prob
+        grid.loc[i, 'cap_prob'] = env.cap_prob
         grid.loc[i, 'D'] = env.D
         grid.loc[i, 'size'] = env.size
         grid.loc[i, 'size_i'] = env.size_i
@@ -128,10 +128,6 @@ def get_instance_grid(J, e, P, t, c, r, param_grid, max_target_prob):
             grid.loc[i, 't'].append(env.t[j])
             grid.loc[i, 'c'].append(env.c[j])
             grid.loc[i, 'r'].append(env.r[j])
-    print('Removed instances due to target_prob > ', max_target_prob, ':',
-          grid[grid['target_prob'] > max_target_prob])
-    grid = grid[grid['target_prob'] < max_target_prob]
-    # TODO Remove instances with size > 2e6
     return grid
 
 

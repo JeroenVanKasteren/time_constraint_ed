@@ -94,7 +94,7 @@ class TimeConstraintEDs:
                                      s.rng.uniform(s.imbalance_MIN,
                                                    s.imbalance_MAX, s.J))
             s.load = kwargs.get('load', s.rng.uniform(s.load_MIN, s.load_MAX))
-            lab = mu * s.S * s.load * s.imbalance / sum(s.imbalance)
+            lab = s.get_lambda(s.mu, s.S, s.load, s.imbalance)
         t = array(kwargs.get('t', s.rng.choice(s.TARGET, s.J)), float)
         s.gamma = float(kwargs.get('gamma'))
 
@@ -216,6 +216,10 @@ class TimeConstraintEDs:
                   f'V: {size(np.zeros(s.dim, dtype=np.float32)) /10**9:.4f}'
                   f' GB.\n')
         assert s.load < 1, 'rho < 1 does not hold'
+
+    @staticmethod
+    def get_lambda(mu, s, load, imbalance):
+        return mu * s * load * imbalance / sum(imbalance)
 
     def get_D(self):
         lab = sum(self.lab)

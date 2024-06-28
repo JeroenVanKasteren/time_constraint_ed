@@ -14,6 +14,10 @@ from utils import tools
 solve = True  # False for sim, True for solve
 ID = 'J2'
 FILEPATH_INSTANCE = 'results/instances_' + ID + '.csv'
+max_target_prob = 0.9
+remove_max_t_prob = True
+max_size = 2e6
+remove_max_size = True
 
 if not solve:
     FILEPATH_INSTANCE += '_sim'
@@ -39,60 +43,55 @@ for method in methods:
     if solve and method != 'vi':
         instance_columns.extend([method + s for s in heuristic_columns])
 
-mu = 1/3
 if ID == 'J2':
     J = 2
+    mu = 1 / 3
     param_grid = {'S': [2, 5],
                   'D': [0],  # =gamma_multi if > 0
                   'gamma': [15],
                   'mu': [[mu, mu], [mu, 1.5*mu], [mu, 2*mu]],
                   'load': [0.6, 0.8, 0.9],
                   'imbalance': [[1/3, 1], [1, 1], [3, 1]]}
-elif ID == 'J3_D4':  # Instance 3
+elif ID == 'J3':  # Instance 3
     J = 3
+    mu = 1 / 3
     param_grid = {'S': [2, 3],
-                  'D': [4],
+                  'D': [0, 4],
                   'gamma': [10],
                   'mu': [[mu, 1.5*mu, 2*mu]],
                   'load': [0.7, 0.9],
                   'imbalance': [[1/3, 2/3, 1], [1, 1, 1]]}
-elif ID == 'J3':
-    J = 3
-    param_grid = {'S': [2, 3],
-                  'D': [0],
-                  'gamma': [10],
-                  'mu': [[mu, 1.5 * mu, 2 * mu]],
-                  'load': [0.7, 0.9],
-                  'imbalance': [[1 / 3, 2 / 3, 1], [1, 1, 1]]}
-elif ID == 'J2_gam':  # Instance 2  # gamma multi = 8
+elif ID == 'J2_D_gam':  # Instance 2  # gamma multi = 8
     J = 2
-    param_grid = {'S': [2, 4],
+    mu = 1 / 3
+    param_grid = {'S': [2, 3],
+                  'D': [0, 5, 10, 15],
                   'gamma': [10, 15, 20, 25],
                   'mu': [[mu, mu], [mu, 2*mu]],
                   'load': [0.7, 0.9],
                   'imbalance': [[1/3, 1], [1, 1], [3, 1]]}
 elif ID == 'J1_D':
     J = 1
-    param_grid = {'S': [2, 4],
-                  'D': [0, 5, 10],
-                  'gamma': [15],
+    mu = 1 / 3
+    param_grid = {'S': [2, 5],
+                  'D': [0, 5, 10, 15, 20],
+                  'gamma': [10, 15, 20, 25],
                   'mu': [[mu], [2*mu]],
                   'load': [0.7, 0.9],
-                  'imbalance': [[1]]}
+                  'imbalance': [1]}
 
 # state space (J * D^J * S^J)
-# (2 + 1) * (20*8)**2 * 5**2  # D = gamma * gamma_multi
-# (3 + 1) * (10*4)**3 * 2**3
+# J = 1; D = 25*20; S = 5  # D = gamma * gamma_multi
+# print(f'{(J + 1) * D**J * S**J / 1e6} x e6')
 
-grid = tools.get_instance_grid(J=J,
-                               gamma_multi=gamma_multi,  # 0 for D-formula
-                               e=1e-4,
-                               P=1e3,
+grid = tools.get_instance_grid(param_grid, J,
                                t=np.array([1] * J),
                                c=np.array([1] * J),
-                               r=np.array([1] * J),
-                               param_grid=param_grid,
-                               max_target_prob=0.9)
+                               r=np.array([1] * J))
+print('Removed instances due to target_prob > ', max_target_prob, ':',
+          grid[grid['target_prob'] > max_target_prob])
+grid = grid[grid['target_prob'] < max_target_prob]
+# TODO Remove instances with size > 2e6
 
 # Derive solved from g value.
 for method in methods:
