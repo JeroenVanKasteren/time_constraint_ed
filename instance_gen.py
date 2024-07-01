@@ -10,10 +10,13 @@ Created on 31-5-2023.
 import numpy as np
 import os
 from utils import tools
+from utils import instances_sim
+import pandas as pd
 
-solve = True  # False for sim, True for solve
-ID = 'J2'
 FILEPATH_INSTANCE = 'results/instances_' + ID + '.csv'
+solve = True  # False for sim, True for solve
+ID = 'J2'  # 'J2', 'J3', 'J2_D_gam', 'J1_D', 'sim'
+sim_ids = 11  # only for ID = 'sim'
 max_target_prob = 0.9
 remove_max_t_prob = True
 max_size = 2e6
@@ -37,6 +40,7 @@ else:
     instance_columns.append(['N', 'start_K', 'batch_T'])
     method_columns = ['_job_id', '_attempts', '_time', '_iter',
                       '_g', '_g_ci', '_perc', '_perc_ci']
+    heuristic_columns = []
 
 for method in methods:
     instance_columns.extend([method + s for s in method_columns])
@@ -79,19 +83,34 @@ elif ID == 'J1_D':
                   'mu': [[mu], [2*mu]],
                   'load': [0.7, 0.9],
                   'imbalance': [1]}
+elif ID == 'sim':
+    # initialize grid TODO
+    for sim_id in range(1, sim_ids + 1):
+        inst = pd.DataFrame(0, index=np.arange(len(methods)),
+                            columns=instance_columns)
+        inst = instances_sim.generate_instance(inst, int(sim_id))
+        # concat grids TODO
+else:
+    print('Error: ID not recognized')
+    exit(0)
 
 # state space (J * D^J * S^J)
 # J = 1; D = 25*20; S = 5  # D = gamma * gamma_multi
 # print(f'{(J + 1) * D**J * S**J / 1e6} x e6')
 
-grid = tools.get_instance_grid(param_grid, J,
-                               t=np.array([1] * J),
-                               c=np.array([1] * J),
-                               r=np.array([1] * J))
-print('Removed instances due to target_prob > ', max_target_prob, ':',
-          grid[grid['target_prob'] > max_target_prob])
-grid = grid[grid['target_prob'] < max_target_prob]
-# TODO Remove instances with size > 2e6
+if ID != 'sim':
+    grid = tools.get_instance_grid(param_grid, J)
+
+print('Instances where target_prob > ', max_target_prob, ':',
+      grid[grid['target_prob'] > max_target_prob])
+if remove_max_t_prob:
+    grid = grid[grid['target_prob'] < max_target_prob]
+    print('removed')
+print('Instances where size > ', max_size, ':',
+      grid[grid['target_prob'] > max_size])
+if remove_max_size:
+    grid = grid[grid['size'] < max_size]
+    print('removed')
 
 # Derive solved from g value.
 for method in methods:

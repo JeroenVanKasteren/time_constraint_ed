@@ -96,7 +96,10 @@ def get_erlang_c(mu, rho, s, t=0):
     return erlang_c, exp_w, pi_0, prob_late
 
 
-def get_instance_grid(param_grid, J, t, c, r, e=1e-4, P=1e3):
+def get_instance_grid(param_grid, J, e=1e-4, P=1e3, **kwargs):
+    t = kwargs.get('t', np.array([1] * J))
+    c = kwargs.get('c', np.array([1] * J))
+    r = kwargs.get('r', np.array([1] * J))
     grid = pd.DataFrame(ParameterGrid(param_grid))
     print("Length of grid:", len(grid))
 
