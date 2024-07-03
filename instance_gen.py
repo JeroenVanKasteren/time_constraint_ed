@@ -13,9 +13,9 @@ from utils import tools
 from utils import instances_sim
 import pandas as pd
 
+ID = 'J2'  # 'J2', 'J3', 'J2_D_gam', 'J1_D', 'sim'
 FILEPATH_INSTANCE = 'results/instances_' + ID + '.csv'
 solve = True  # False for sim, True for solve
-ID = 'J2'  # 'J2', 'J3', 'J2_D_gam', 'J1_D', 'sim'
 sim_ids = 11  # only for ID = 'sim'
 max_target_prob = 0.9
 remove_max_t_prob = True
@@ -85,9 +85,10 @@ elif ID == 'J1_D':
                   'imbalance': [1]}
 elif ID == 'sim':
     # initialize grid TODO
+    grid = pd.DataFrame(columns=instance_columns)
     for sim_id in range(1, sim_ids + 1):
-        inst = pd.DataFrame(0, index=np.arange(len(methods)),
-                            columns=instance_columns)
+        ...
+        # newDF = newDF.append(oldDF, ignore_index=True)
         inst = instances_sim.generate_instance(inst, int(sim_id))
         # concat grids TODO
 else:
