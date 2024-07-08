@@ -6,14 +6,12 @@ https://stackoverflow.com/questions/25482876/how-to-add-legend-to-imshow-in-matp
 https://moonbooks.org/Articles/How-to-change-imshow-axis-values-labels-in-matplotlib-/
 """
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.lines import Line2D as lines
 import numpy as np
-import pandas as pd
-from sklearn.model_selection import ParameterGrid
 import utils
-from utils import TimeConstraintEDs as Env
 from matplotlib import colors
 
 
@@ -24,6 +22,7 @@ def choosing_classes(env, **kwargs):
         return [0, 1]
     else:
         return np.sort(np.random.choice(env.J, 2, replace=False))
+
 
 def plot_pi(env, Pi, zero_state, **kwargs):
     """
@@ -280,15 +279,13 @@ def plot_convergence(kpi_df, method, k, t, m=100):
     plt.show()
 
 
-# param_grid = {'J': [1],
-#               'S': [2, 6],
-#               'D': [0, 5, 10, 15],
-#               'gamma': [10, 15, 20, 25],
-#               't': [1],
-#               'mu': [[0.2], [0.5]],
-#               'load': [0.7, 0.9],
-#               'imbalance': [1]}
-#
-# def plot_sizes(param_grid):
-#
-#
+def xyc_plot(x, y, c, title, x_lab, y_lab, c_lab, c_rot=270, c_map='coolwarm'):
+    fig, ax = plt.subplots()
+    sc = ax.scatter(x, y, c=c, cmap=mpl.colormaps[c_map])
+    cbar = fig.colorbar(sc, ax=ax)
+    cbar.ax.get_yaxis().labelpad = 15
+    cbar.ax.set_ylabel(c_lab, rotation=c_rot)
+    ax.set_xlabel(x_lab)
+    ax.set_ylabel(y_lab)
+    ax.title.set_text(title)
+    plt.show()

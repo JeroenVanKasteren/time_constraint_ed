@@ -13,9 +13,9 @@ from utils import tools
 from utils import instances_sim
 import pandas as pd
 
-ID = 'J2'  # 'J2', 'J3', 'J2_D_gam', 'J1_D', 'sim'
+ID = 'sim'  # 'J2', 'J3', 'J2_D_gam', 'J1_D', 'sim'
 FILEPATH_INSTANCE = 'results/instances_' + ID + '.csv'
-solve = True  # False for sim, True for solve
+solve = False  # False for sim, True for solve
 sim_ids = 11  # only for ID = 'sim'
 max_target_prob = 0.9
 remove_max_t_prob = True
@@ -37,7 +37,7 @@ if solve:
 else:
     methods = ['ospi', 'cmu_t_min', 'cmu_t_max', 'fcfs', 'sdf', 'sdfprior',
                'l_max', 'l_min']
-    instance_columns.append(['N', 'start_K', 'batch_T'])
+    instance_columns.extend(['N', 'start_K', 'batch_T'])
     method_columns = ['_job_id', '_attempts', '_time', '_iter',
                       '_g', '_g_ci', '_perc', '_perc_ci']
     heuristic_columns = []
@@ -50,7 +50,8 @@ for method in methods:
 if ID == 'J2':
     J = 2
     mu = 1 / 3
-    param_grid = {'S': [2, 5],
+    param_grid = {'J': J,
+                  'S': [2, 5],
                   'D': [0],  # =gamma_multi if > 0
                   'gamma': [15],
                   'mu': [[mu, mu], [mu, 1.5*mu], [mu, 2*mu]],
@@ -59,7 +60,8 @@ if ID == 'J2':
 elif ID == 'J3':  # Instance 3
     J = 3
     mu = 1 / 3
-    param_grid = {'S': [2, 3],
+    param_grid = {'J': J,
+                  'S': [2, 3],
                   'D': [0, 4],
                   'gamma': [10],
                   'mu': [[mu, 1.5*mu, 2*mu]],
@@ -68,7 +70,8 @@ elif ID == 'J3':  # Instance 3
 elif ID == 'J2_D_gam':  # Instance 2  # gamma multi = 8
     J = 2
     mu = 1 / 3
-    param_grid = {'S': [2, 3],
+    param_grid = {'J': J,
+                  'S': [2, 3],
                   'D': [0, 5, 10, 15],
                   'gamma': [10, 15, 20, 25],
                   'mu': [[mu, mu], [mu, 2*mu]],
@@ -77,20 +80,16 @@ elif ID == 'J2_D_gam':  # Instance 2  # gamma multi = 8
 elif ID == 'J1_D':
     J = 1
     mu = 1 / 3
-    param_grid = {'S': [2, 5],
+    param_grid = {'J': J,
+                  'S': [2, 5],
                   'D': [0, 5, 10, 15, 20],
                   'gamma': [10, 15, 20, 25],
                   'mu': [[mu], [2*mu]],
                   'load': [0.7, 0.9],
                   'imbalance': [1]}
 elif ID == 'sim':
-    # initialize grid TODO
-    grid = pd.DataFrame(columns=instance_columns)
     for sim_id in range(1, sim_ids + 1):
-        ...
-        # newDF = newDF.append(oldDF, ignore_index=True)
-        inst = instances_sim.generate_instance(inst, int(sim_id))
-        # concat grids TODO
+        param_grid = instances_sim.generate_instance(sim_id)
 else:
     print('Error: ID not recognized')
     exit(0)

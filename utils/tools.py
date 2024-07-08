@@ -97,27 +97,32 @@ def get_erlang_c(mu, rho, s, t=0):
 
 
 def get_instance_grid(param_grid, J, e=1e-4, P=1e3, **kwargs):
-    t = kwargs.get('t', np.array([1] * J))
-    c = kwargs.get('c', np.array([1] * J))
-    r = kwargs.get('r', np.array([1] * J))
+    if 't' not in param_grid:
+        t = kwargs.get('t', np.array([1] * J))
+    if 'c' not in param_grid:
+        c = kwargs.get('c', np.array([1] * J))
+    if 'r' not in param_grid:
+        r = kwargs.get('r', np.array([1] * J))
     grid = pd.DataFrame(ParameterGrid(param_grid))
     print("Length of grid:", len(grid))
 
+    grid['J'] = J
     grid['e'] = e
     grid['P'] = P
 
     grid['target_prob'] = 0
     grid['size'] = 0
     grid['size_i'] = 0
-    grid['mu'] = [[] for r in range(len(grid))]
-    grid['lab'] = [[] for r in range(len(grid))]
-    grid['t'] = [[] for r in range(len(grid))]
-    grid['c'] = [[] for r in range(len(grid))]
-    grid['r'] = [[] for r in range(len(grid))]
+    grid['mu'] = [[] for _ in range(len(grid))]
+    grid['lab'] = [[] for _ in range(len(grid))]
+    grid['t'] = [[] for _ in range(len(grid))]
+    grid['c'] = [[] for _ in range(len(grid))]
+    grid['r'] = [[] for _ in range(len(grid))]
 
     for i, inst in grid.iterrows():
         D = 0 if inst.D == 0 else int(inst.gamma * inst.D)
         env = Env(J=J, S=inst.S, gamma=inst.gamma, t=t, D=D,
+                  c=c, r=r,
                   mu=inst.mu, load=inst.load,
                   imbalance=np.array(inst.imbalance))
         grid.loc[i, 't_prob'] = env.target_prob

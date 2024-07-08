@@ -1,0 +1,9 @@
+### Example user template template
+### Example user template
+
+# IntelliJ project files
+.idea
+*.iml
+\results\read
+\results\simulation_pickles
+\results\value_functions
