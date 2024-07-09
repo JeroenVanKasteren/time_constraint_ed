@@ -19,8 +19,6 @@ def generate_instance(sim_id):
             grid['t'] = np.array([60] * 3)
         else:
             grid['t'] = np.array([10, 60, 120])
-        grid['c'] = np.array([1] * J)
-        grid['r'] = np.array([1] * J)
         if sim_id in [3, 5, 6]:
             grid['mu'] = np.array([1] * 3) / 60
         else:
@@ -32,7 +30,6 @@ def generate_instance(sim_id):
         grid['S'] = 5
         grid['t'] = np.array([60] * 4)
         grid['c'] = np.array([1, 1, 0.5, 0.5])
-        grid['r'] = np.array([1] * 4)
         grid['mu'] = np.array([1, 2, 1, 2]) / 60
         grid['imbalance'] = np.array([1/4, 1/4, 3/4, 3/4]) / 2
         grid['load'] = 0.9 if sim_id == 7 else 0.95  # if sim_id == 8
@@ -40,8 +37,6 @@ def generate_instance(sim_id):
         J = 6
         grid['S'] = 10
         grid['t'] = np.array([60] * 6)
-        grid['c'] = np.array([1] * 6)
-        grid['r'] = np.array([1] * 6)
         grid['mu'] = np.arange(1, 7)
         grid['imbalance'] = np.arange(1, 7) / 21
         grid['load'] = 0.9 if sim_id == 9 else 0.95  # if sim_id == 10
@@ -49,17 +44,10 @@ def generate_instance(sim_id):
         J = 1
         grid['S'] = 5
         grid['t'] = np.array([60])
-        grid['c'] = np.array([1])
-        grid['r'] = np.array([1])
         grid['mu'] = np.array([1/30])
         grid['load'] = 0.85
         grid['imbalance'] = np.array([1])
-    env = Env(J=grid['J'], S=grid['S'], D=grid['D'],
-              gamma=grid['gamma'],
-              t=grid['t'], c=grid['c'], r=grid['r'],
-              mu=grid['mu'],
-              load=grid['load'], imbalance=grid['imbalance'],
-              sim=True)
     grid['J'] = J
-    grid['lab'] = env.lab
-    return J, grid
+    grid['lab'] = Env.get_lambda(grid['mu'], grid['S'],
+                                 grid['load'], grid['imbalance'])
+    return grid

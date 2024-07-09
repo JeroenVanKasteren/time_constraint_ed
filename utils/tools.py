@@ -96,41 +96,41 @@ def get_erlang_c(mu, rho, s, t=0):
     return erlang_c, exp_w, pi_0, prob_late
 
 
-def get_instance_grid(param_grid, J, e=1e-4, P=1e3, **kwargs):
-    if 't' not in param_grid:
-        t = kwargs.get('t', np.array([1] * J))
-    if 'c' not in param_grid:
-        c = kwargs.get('c', np.array([1] * J))
-    if 'r' not in param_grid:
-        r = kwargs.get('r', np.array([1] * J))
+def get_instance_grid(param_grid, sim=False):
+    """
+    Create a grid of instances based on the parameters in param_grid.
+
+    :param param_grid: dict with env params, should contain J and gamma
+    :param sim: if True, do not generate sizes
+    :return: grid: DataFrame with all instances
+    """
     grid = pd.DataFrame(ParameterGrid(param_grid))
+    grid_copy = grid.copy(deep=True)
     print("Length of grid:", len(grid))
 
-    grid['J'] = J
-    grid['e'] = e
-    grid['P'] = P
-
     grid['target_prob'] = 0
-    grid['size'] = 0
-    grid['size_i'] = 0
+    if not sim:
+        grid['size'] = 0
+        grid['size_i'] = 0
     grid['mu'] = [[] for _ in range(len(grid))]
     grid['lab'] = [[] for _ in range(len(grid))]
     grid['t'] = [[] for _ in range(len(grid))]
     grid['c'] = [[] for _ in range(len(grid))]
     grid['r'] = [[] for _ in range(len(grid))]
 
-    for i, inst in grid.iterrows():
-        D = 0 if inst.D == 0 else int(inst.gamma * inst.D)
-        env = Env(J=J, S=inst.S, gamma=inst.gamma, t=t, D=D,
-                  c=c, r=r,
-                  mu=inst.mu, load=inst.load,
-                  imbalance=np.array(inst.imbalance))
+    for i, inst in grid_copy.iterrows():
+        inst_dict = inst.to_dict()
+        if 'D' in inst_dict:
+            if inst_dict['D'] < 0:
+                inst_dict['D'] = int(inst.gamma * -inst.D)
+        env = Env(sim=sim, **inst_dict)
         grid.loc[i, 't_prob'] = env.target_prob
         grid.loc[i, 'cap_prob'] = env.cap_prob
         grid.loc[i, 'D'] = env.D
-        grid.loc[i, 'size'] = env.size
-        grid.loc[i, 'size_i'] = env.size_i
-        for j in range(J):
+        if not sim:
+            grid.loc[i, 'size'] = env.size
+            grid.loc[i, 'size_i'] = env.size_i
+        for j in range(inst.J):
             grid.loc[i, 'mu'].append(env.mu[j])
             grid.loc[i, 'lab'].append(env.lab[j])
             grid.loc[i, 't'].append(env.t[j])

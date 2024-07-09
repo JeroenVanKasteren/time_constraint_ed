@@ -94,7 +94,7 @@ class TimeConstraintEDs:
                                      s.rng.uniform(s.imbalance_MIN,
                                                    s.imbalance_MAX, s.J))
             s.load = kwargs.get('load', s.rng.uniform(s.load_MIN, s.load_MAX))
-            lab = s.get_lambda(s.mu, s.S, s.load, s.imbalance)
+            lab = s.get_lambda(mu, s.S, s.load, s.imbalance)
         t = array(kwargs.get('t', s.rng.choice(s.TARGET, s.J)), float)
         s.gamma = float(kwargs.get('gamma'))
 

@@ -16,7 +16,7 @@ import pandas as pd
 ID = 'sim'  # 'J2', 'J3', 'J2_D_gam', 'J1_D', 'sim'
 FILEPATH_INSTANCE = 'results/instances_' + ID + '.csv'
 solve = False  # False for sim, True for solve
-sim_ids = 11  # only for ID = 'sim'
+sim_ids = range(1, 11 + 1)  # only for ID = 'sim'
 max_target_prob = 0.9
 remove_max_t_prob = True
 max_size = 2e6
@@ -47,59 +47,77 @@ for method in methods:
     if solve and method != 'vi':
         instance_columns.extend([method + s for s in heuristic_columns])
 
+# state space (J * D^J * S^J)
+# J = 1; D = 25*20; S = 5  # D = gamma * gamma_multi
+# print(f'{(J + 1) * D**J * S**J / 1e6} x e6')
 if ID == 'J2':
-    J = 2
     mu = 1 / 3
-    param_grid = {'J': J,
+    param_grid = {'J': [2],
                   'S': [2, 5],
-                  'D': [0],  # =gamma_multi if > 0
+                  'D': [0],  # D=y*y_multi if < 0, formula if 0, value if > 0
                   'gamma': [15],
                   'mu': [[mu, mu], [mu, 1.5*mu], [mu, 2*mu]],
                   'load': [0.6, 0.8, 0.9],
                   'imbalance': [[1/3, 1], [1, 1], [3, 1]]}
 elif ID == 'J3':  # Instance 3
-    J = 3
     mu = 1 / 3
-    param_grid = {'J': J,
+    param_grid = {'J': [3],
                   'S': [2, 3],
-                  'D': [0, 4],
+                  'D': [0, -4],
                   'gamma': [10],
                   'mu': [[mu, 1.5*mu, 2*mu]],
                   'load': [0.7, 0.9],
                   'imbalance': [[1/3, 2/3, 1], [1, 1, 1]]}
 elif ID == 'J2_D_gam':  # Instance 2  # gamma multi = 8
-    J = 2
     mu = 1 / 3
-    param_grid = {'J': J,
+    param_grid = {'J': [2],
                   'S': [2, 3],
-                  'D': [0, 5, 10, 15],
+                  'D': [0, -5, -10, -15],
                   'gamma': [10, 15, 20, 25],
                   'mu': [[mu, mu], [mu, 2*mu]],
                   'load': [0.7, 0.9],
                   'imbalance': [[1/3, 1], [1, 1], [3, 1]]}
 elif ID == 'J1_D':
-    J = 1
     mu = 1 / 3
-    param_grid = {'J': J,
+    param_grid = {'J': [1],
                   'S': [2, 5],
-                  'D': [0, 5, 10, 15, 20],
+                  'D': [0, -5, -10, -15, -20],
                   'gamma': [10, 15, 20, 25],
                   'mu': [[mu], [2*mu]],
                   'load': [0.7, 0.9],
                   'imbalance': [1]}
 elif ID == 'sim':
-    for sim_id in range(1, sim_ids + 1):
+    grid = pd.DataFrame()
+    for sim_id in sim_ids:
         param_grid = instances_sim.generate_instance(sim_id)
+        for key, value in param_grid.items():
+            param_grid[key] = [value]  # put in lists for ParameterGrid
+        row = tools.get_instance_grid(param_grid, sim=True)
+        grid = pd.concat([grid, row], ignore_index=True)
+elif ID == 'plot_1':
+    mu = 1 / 3
+    param_grid = {'J': [2],
+                  'S': list(range(2, 10)),
+                  'D': [0],
+                  'gamma': [10, 15, 20, 25],
+                  'mu': [[mu, mu], [mu, 2*mu]],
+                  'load': [0.6, 0.7, 0.8, 0.9, 0.95],
+                  'imbalance': [[1/3, 1], [1, 1], [3, 1]]}
+    # Boxplot of D/gamma for different gamma and J
+    param_grid = {'J': [3],
+                  'S': list(range(2, 10)),
+                  'D': [0],
+                  'gamma': [10, 15, 20, 25],
+                  'mu': [[mu, mu, mu], [mu, 1.5*mu, 2*mu]],
+                  'load': [0.6, 0.7, 0.8, 0.9, 0.95],
+                  'imbalance': [[1/3, 2/3, 1], [1, 1, 1], [1, 2/3, 1/3]]}
+    grid = tools.get_instance_grid(param_grid)
 else:
     print('Error: ID not recognized')
     exit(0)
 
-# state space (J * D^J * S^J)
-# J = 1; D = 25*20; S = 5  # D = gamma * gamma_multi
-# print(f'{(J + 1) * D**J * S**J / 1e6} x e6')
-
 if ID != 'sim':
-    grid = tools.get_instance_grid(param_grid, J)
+    grid = tools.get_instance_grid(param_grid)
 
 print('Instances where target_prob > ', max_target_prob, ':',
       grid[grid['target_prob'] > max_target_prob])
