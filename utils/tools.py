@@ -169,7 +169,7 @@ def get_v_app(env):
 def inst_load(filepath):
     cols = ['t', 'c', 'r', 'lab', 'mu']
     inst = pd.read_csv(filepath)
-    inst.loc[:, cols] = inst.loc[:, cols].applymap(strip_split)
+    inst.loc[:, cols] = inst.loc[:, cols].map(strip_split)
     return inst
 
 

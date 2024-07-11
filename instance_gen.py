@@ -94,33 +94,6 @@ elif ID == 'sim':
             param_grid[key] = [value]  # put in lists for ParameterGrid
         row = tools.get_instance_grid(param_grid, sim=True)
         grid = pd.concat([grid, row], ignore_index=True)
-elif ID == 'plot_J1':  # Boxplot of D/gamma for different gamma and J
-    mu = 1 / 3
-    param_grid = {'J': [2],
-                  'S': list(range(2, 10)),
-                  'D': [0],
-                  'gamma': [10, 15, 20, 25],
-                  'mu': [[mu, mu], [mu, 2 * mu]],
-                  'load': [0.6, 0.7, 0.8, 0.9, 0.95],
-                  'imbalance': [[1 / 3, 1], [1, 1], [3, 1]]}
-elif ID == 'plot_J2':
-    mu = 1 / 3
-    param_grid = {'J': [2],
-                  'S': list(range(2, 10)),
-                  'D': [0],
-                  'gamma': [10, 15, 20, 25],
-                  'mu': [[mu, mu], [mu, 2*mu]],
-                  'load': [0.6, 0.7, 0.8, 0.9, 0.95],
-                  'imbalance': [[1/3, 1], [1, 1], [3, 1]]}
-elif ID == 'plot_J3':
-    param_grid = {'J': [3],
-                  'S': list(range(2, 10)),
-                  'D': [0],
-                  'gamma': [10, 15, 20, 25],
-                  'mu': [[mu, mu, mu], [mu, 1.5*mu, 2*mu]],
-                  'load': [0.6, 0.7, 0.8, 0.9, 0.95],
-                  'imbalance': [[1/3, 2/3, 1], [1, 1, 1], [1, 2/3, 1/3]]}
-    grid = tools.get_instance_grid(param_grid)
 else:
     print('Error: ID not recognized')
     exit(0)
