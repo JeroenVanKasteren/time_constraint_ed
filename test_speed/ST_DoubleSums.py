@@ -200,19 +200,19 @@ i = 10**3
 j = i
 print('Test 3.1, set above diagonal to zero, tril_indices')
 M = np.arange(i*j).reshape(i, j) + 1
-%timeit M[np.triu_indices(M.shape[0], 1)] = 0
+# %timeit M[np.triu_indices(M.shape[0], 1)] = 0
 
 print('\nTest 3.2, set above diagonal to zero, tri')
 M = np.arange(i*j).reshape(i, j) + 1
-%timeit B = M * np.tri(*M.shape)
+# %timeit B = M * np.tri(*M.shape)
 
 print('\nTest 3.2, set above diagonal to zero, mask')
 M = np.arange(i*j).reshape(i, j) + 1
-%timeit M[np.arange(M.shape[0])[:, None] < np.arange(M.shape[1])] = 0
+# %timeit M[np.arange(M.shape[0])[:, None] < np.arange(M.shape[1])] = 0
 
 print('\nTest 3.3, set above diagonal to zero, mask and np.where')
 M = np.arange(i*j).reshape(i, j) + 1
-%timeit B = np.where(np.arange(M.shape[0])[:, None] < np.arange(M.shape[1]), 0, M)
+# %timeit B = np.where(np.arange(M.shape[0])[:, None] < np.arange(M.shape[1]), 0, M)
 
 # ------------------------------ 4 -------------------------------- #
 N = 1000

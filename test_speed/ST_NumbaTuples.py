@@ -32,10 +32,10 @@ state = arange(length)*2 + 1
 nb_tuple = create_tuple_creator(n=length)
 
 print('Test 1 tuple()')
-%timeit tuple(state)
+# %timeit tuple(state)
 
 print('Test 2 nb_tuple()')
-%timeit nb_tuple(state)
+# %timeit nb_tuple(state)
 
 # Prove it works in numba
 length = 5

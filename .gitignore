@@ -4,6 +4,6 @@
 # IntelliJ project files
 .idea
 *.iml
-\results\read
-\results\simulation_pickles
-\results\value_functions
+/results/read/
+/results/simulation_pickles/
+/results/value_functions/

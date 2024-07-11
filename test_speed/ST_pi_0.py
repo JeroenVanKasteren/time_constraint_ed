@@ -138,11 +138,11 @@ J = 10
 s_star = binomial(10, 0.5, J)
 
 print('Test 2.1 factor all')
-%timeit fac(tile(arange(max(s_star)-1+1), (J, 1)))
+# %timeit fac(tile(arange(max(s_star)-1+1), (J, 1)))
 
 print('\nTest 2.2 factor one')
-%timeit tile(fac(arange(max(s_star)-1+1)), (J, 1))
+# %timeit tile(fac(arange(max(s_star)-1+1)), (J, 1))
 
 print('\nTest 2.3 factor with matrix already created')
 A = tile(arange(max(s_star)-1+1), (J, 1))
-%timeit fac(A)
+# %timeit fac(A)
