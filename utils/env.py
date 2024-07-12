@@ -85,16 +85,17 @@ class TimeConstraintEDs:
         s.J: int = np.int64(kwargs.get('J'))
         s.S: int = np.int64(kwargs.get('S',
                                        s.rng.integers(s.S_MIN, s.S_MAX + 1)))
-        mu = kwargs.get('mu', s.rng.uniform(s.mu_MIN, s.mu_MAX, s.J))
+        s.mu = array(kwargs.get('mu', s.rng.uniform(s.mu_MIN, s.mu_MAX, s.J)),
+                     float)
         if 'lab' in kwargs:
             lab = kwargs.get('lab')
-            s.load: float = sum(lab / mu) / s.S
+            s.load: float = sum(lab / s.mu) / s.S
         else:
             s.imbalance = kwargs.get('imbalance',
                                      s.rng.uniform(s.imbalance_MIN,
                                                    s.imbalance_MAX, s.J))
             s.load = kwargs.get('load', s.rng.uniform(s.load_MIN, s.load_MAX))
-            lab = s.get_lambda(mu, s.S, s.load, s.imbalance)
+            lab = s.get_lambda(s.mu, s.S, s.load, s.imbalance)
         t = array(kwargs.get('t', s.rng.choice(s.TARGET, s.J)), float)
         s.gamma = float(kwargs.get('gamma'))
 
@@ -104,14 +105,13 @@ class TimeConstraintEDs:
             if s.trace:
                 print('Rounded t down to nearest multiple of 1/gamma.\n')
         s.lab = array(lab, float)
-        s.mu = array(mu, float)
         s.t = array(t, float)
         s.c = array(kwargs.get('c', array([1] * s.J)), float)
         s.r = array(kwargs.get('r', array([1] * s.J)), float)
         s.P: int = int(kwargs.get('P', max(s.c + s.r) * 10))
         s.e = kwargs.get('e', 1e-5)
 
-        s.a = array(lab / mu, float)
+        s.a = array(lab / s.mu, float)
         s.s_star = array(s.server_allocation(), float)
         s.rho = array(s.a / s.s_star, float)
         s.pi_0 = s.get_pi_0(s.gamma, s.s_star, s.rho, s.lab)
@@ -224,8 +224,8 @@ class TimeConstraintEDs:
     def get_D(self):
         lab = sum(self.lab)
         mu = lab / sum(self.lab / self.mu)
-        pi_0 = self.get_pi_0(self.gamma, self.S, self.load, lab)
-        prob_delay = self.get_tail_prob(self.gamma, self.S, self.load,
+        pi_0 = self.get_pi_0(1e3, self.S, self.load, lab)
+        prob_delay = self.get_tail_prob(1e3, self.S, self.load,
                                         lab, mu, pi_0, 0)
         D = int(np.ceil(-np.log(self.ZERO_ONE_PERC / prob_delay) /
                         (self.S * mu - lab) * self.gamma))

@@ -96,12 +96,17 @@ def get_erlang_c(mu, rho, s, t=0):
     return erlang_c, exp_w, pi_0, prob_late
 
 
-def get_instance_grid(param_grid, sim=False):
+def get_instance_grid(param_grid, sim=False, max_t_prob=0.9, max_size=2e6,
+                      del_t_prob=False, del_size=False):
     """
     Create a grid of instances based on the parameters in param_grid.
 
     :param param_grid: dict with env params, should contain J and gamma
     :param sim: if True, do not generate sizes
+    :param max_t_prob: maximum target probability
+    :param max_size: maximum size
+    :param del_t_prob: if True, remove instances with target_prob > max_t_prob
+    :param del_size: if True, remove instances with size > max_size
     :return: grid: DataFrame with all instances
     """
     grid = pd.DataFrame(ParameterGrid(param_grid))
@@ -136,6 +141,17 @@ def get_instance_grid(param_grid, sim=False):
             grid.loc[i, 't'].append(env.t[j])
             grid.loc[i, 'c'].append(env.c[j])
             grid.loc[i, 'r'].append(env.r[j])
+
+    print('Instances where target_prob > ', max_t_prob, ':',
+          grid[grid['target_prob'] >= max_t_prob])
+    if del_t_prob:
+        grid = grid[grid['target_prob'] < max_t_prob]
+        print('removed')
+    print('Instances where size > ', max_size, ':',
+          grid[grid['size'] > max_size])
+    if del_size:
+        grid = grid[grid['size'] <= max_size]
+        print('removed')
     return grid
 
 

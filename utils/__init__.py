@@ -2,9 +2,13 @@ from .env import TimeConstraintEDs
 from .learner import (OneStepPolicyImprovement,
                       PolicyIteration,
                       ValueIteration)
-from .plotting import (plot_pi,
+from .plotting import (choosing_classes,
+                       plot_pi,
                        plot_v,
-                       plot_multi_bar)
+                       plot_multi_bar,
+                       plot_waiting,
+                       plot_convergence,
+                       plot_xyc)
 from .tools import (conf_int,
                     def_sizes,
                     DotDict,
@@ -19,6 +23,7 @@ from .tools import (conf_int,
                     load_args,
                     moving_average,
                     moving_average_admission,
+                    opt_gap,
                     remove_empty_files,
                     round_significance,
                     sec_to_time,

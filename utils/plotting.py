@@ -24,6 +24,19 @@ def choosing_classes(env, **kwargs):
         return np.sort(np.random.choice(env.J, 2, replace=False))
 
 
+def plot_convergence(kpi_df, method, k, t, m=100):
+    MA, times = utils.tools.moving_average(kpi_df, k, m, t)
+    plt.scatter(times.cumsum() / 60, MA/times, label='Moving Average')
+    plt.scatter(times.cumsum() / 60,
+                MA.cumsum() / times.cumsum(),
+                label='g')
+    plt.xlabel('Running time (hours)')
+    plt.ylabel('g')
+    plt.title('g vs. time for ' + method)
+    plt.legend(loc='upper right')
+    plt.show()
+
+
 def plot_pi(env, Pi, zero_state, **kwargs):
     """
     Plot policy Pi.
@@ -142,6 +155,54 @@ def plot_pi(env, Pi, zero_state, **kwargs):
     plt.show()
 
 
+def plot_multi_bar(filepath, instance_names, methods, kpi, normalize=False,
+                   width=0.1):
+    # https://matplotlib.org/stable/gallery/lines_bars_and_markers/barchart.html#sphx-glr-gallery-lines-bars-and-markers-barchart-py
+    performances = {method: [[], []] for method in methods}
+    min_y, max_y = 0, 0
+    inst_nrs = [name.split('_')[2][:-4] for name in instance_names]
+    for instance_name in instance_names:
+        inst = utils.tools.inst_load(filepath + instance_name)
+        optimal = sum(inst.r[0] * inst.lab[0])
+        for row_id, method in enumerate(methods):
+            if normalize:
+                performances[method][0].extend(
+                    [inst.loc[row_id, kpi] / optimal])
+                performances[method][1].extend(
+                    [inst.loc[row_id, 'ci_' + kpi] / optimal])
+            else:
+                performances[method][0].extend([inst.loc[row_id, kpi]])
+                performances[method][1].extend([inst.loc[row_id, 'ci_' + kpi]])
+        min_y = np.min([min_y, np.min(inst[kpi] - inst['ci_' + kpi])])
+        max_y = np.max([max_y, np.max(inst[kpi] + inst['ci_' + kpi])])
+    if normalize:
+        min_y, max_y = 0, 1
+    else:
+        min_y, max_y = (utils.tools.round_significance(min_y * 1.1),
+                        utils.tools.round_significance(max_y * 1.1))
+    x = np.arange(len(instance_names))  # the label locations
+    multiplier = 0
+    fig, ax = plt.subplots(layout='constrained')
+    for method, [value, conf_int] in performances.items():
+        value, conf_int = np.array(value), np.array(conf_int)
+        offset = width * multiplier
+        rects = ax.bar(x + offset, value, width, label=method, yerr=conf_int)
+        ax.bar_label(rects, padding=3, fmt='{0:.3f}', fontsize=6, rotation=90)
+        multiplier += 1
+    ax.set_ylabel('g')
+    if kpi == 'perc':
+        ax.set_ylabel('Percentage of arrivals served on time')
+    else:
+        if normalize:
+            ax.set_ylabel('Optimality gap of g')
+        else:
+            ax.set_ylabel('Long term average reward')
+    ax.set_xticks(x + width, inst_nrs)
+    ax.legend(loc='lower left', ncols=3)
+    ax.set_ylim(min_y, max_y)
+    plt.show()
+
+
 def plot_v(env, V, zero_state, **kwargs):
     if zero_state:
         state = np.zeros(len(env.dim), 'int').astype(object)
@@ -200,54 +261,6 @@ def plot_v(env, V, zero_state, **kwargs):
     plt.show()
 
 
-def plot_multi_bar(filepath, instance_names, methods, kpi, normalize=False,
-                   width=0.1):
-    # https://matplotlib.org/stable/gallery/lines_bars_and_markers/barchart.html#sphx-glr-gallery-lines-bars-and-markers-barchart-py
-    performances = {method: [[], []] for method in methods}
-    min_y, max_y = 0, 0
-    inst_nrs = [name.split('_')[2][:-4] for name in instance_names]
-    for instance_name in instance_names:
-        inst = utils.tools.inst_load(filepath + instance_name)
-        optimal = sum(inst.r[0] * inst.lab[0])
-        for row_id, method in enumerate(methods):
-            if normalize:
-                performances[method][0].extend(
-                    [inst.loc[row_id, kpi] / optimal])
-                performances[method][1].extend(
-                    [inst.loc[row_id, 'ci_' + kpi] / optimal])
-            else:
-                performances[method][0].extend([inst.loc[row_id, kpi]])
-                performances[method][1].extend([inst.loc[row_id, 'ci_' + kpi]])
-        min_y = np.min([min_y, np.min(inst[kpi] - inst['ci_' + kpi])])
-        max_y = np.max([max_y, np.max(inst[kpi] + inst['ci_' + kpi])])
-    if normalize:
-        min_y, max_y = 0, 1
-    else:
-        min_y, max_y = (utils.tools.round_significance(min_y * 1.1),
-                        utils.tools.round_significance(max_y * 1.1))
-    x = np.arange(len(instance_names))  # the label locations
-    multiplier = 0
-    fig, ax = plt.subplots(layout='constrained')
-    for method, [value, conf_int] in performances.items():
-        value, conf_int = np.array(value), np.array(conf_int)
-        offset = width * multiplier
-        rects = ax.bar(x + offset, value, width, label=method, yerr=conf_int)
-        ax.bar_label(rects, padding=3, fmt='{0:.3f}', fontsize=6, rotation=90)
-        multiplier += 1
-    ax.set_ylabel('g')
-    if kpi == 'perc':
-        ax.set_ylabel('Percentage of arrivals served on time')
-    else:
-        if normalize:
-            ax.set_ylabel('Optimality gap of g')
-        else:
-            ax.set_ylabel('Long term average reward')
-    ax.set_xticks(x + width, inst_nrs)
-    ax.legend(loc='lower left', ncols=3)
-    ax.set_ylim(min_y, max_y)
-    plt.show()
-
-
 def plot_waiting(inst_row, kpi_df_full, size, start):
     kpi_df = kpi_df_full[start:start + size]
     x = np.arange(inst_row.J)
@@ -266,22 +279,12 @@ def plot_waiting(inst_row, kpi_df_full, size, start):
     plt.show()
 
 
-def plot_convergence(kpi_df, method, k, t, m=100):
-    MA, times = utils.tools.moving_average(kpi_df, k, m, t)
-    plt.scatter(times.cumsum() / 60, MA/times, label='Moving Average')
-    plt.scatter(times.cumsum() / 60,
-                MA.cumsum() / times.cumsum(),
-                label='g')
-    plt.xlabel('Running time (hours)')
-    plt.ylabel('g')
-    plt.title('g vs. time for ' + method)
-    plt.legend(loc='upper right')
-    plt.show()
-
-
-def xyc_plot(x, y, c, title, x_lab, y_lab, c_lab, c_rot=270, c_map='coolwarm'):
+def plot_xyc(x, y, c, title='', x_lab='x', y_lab='y', c_lab='', c_rot=270,
+             c_map='coolwarm', **kwargs):
     fig, ax = plt.subplots()
-    sc = ax.scatter(x, y, c=c, cmap=mpl.colormaps[c_map])
+    sc = ax.scatter(x, y, c=c, cmap=mpl.colormaps[c_map],
+                    vmin=kwargs.get('vmin', min(c)),
+                    vmax=kwargs.get('vmax', max(c)))
     cbar = fig.colorbar(sc, ax=ax)
     cbar.ax.get_yaxis().labelpad = 15
     cbar.ax.set_ylabel(c_lab, rotation=c_rot)

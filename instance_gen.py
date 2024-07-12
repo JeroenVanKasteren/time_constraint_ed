@@ -13,14 +13,14 @@ from utils import tools
 from utils import instances_sim
 import pandas as pd
 
-ID = 'sim'  # 'J2', 'J3', 'J2_D_gam', 'J1_D', 'sim'
+ID = 'J2'  # 'J2', 'J3', 'J2_D_gam', 'J1_D', 'sim'
 FILEPATH_INSTANCE = 'results/instances_' + ID + '.csv'
 solve = False  # False for sim, True for solve
 sim_ids = range(1, 11 + 1)  # only for ID = 'sim'
-max_target_prob = 0.9
-remove_max_t_prob = True
+max_t_prob = 0.9
+del_t_prob = True
 max_size = 2e6
-remove_max_size = True
+del_size = True
 
 if not solve:
     FILEPATH_INSTANCE += '_sim'
@@ -50,7 +50,7 @@ for method in methods:
 # state space (J * D^J * S^J)
 # J = 1; D = 25*20; S = 5  # D = gamma * gamma_multi
 # print(f'{(J + 1) * D**J * S**J / 1e6} x e6')
-if ID == 'J2':
+if ID == 'J2_old':
     mu = 1 / 3
     param_grid = {'J': [2],
                   'S': [2, 5],
@@ -59,8 +59,17 @@ if ID == 'J2':
                   'mu': [[mu, mu], [mu, 1.5*mu], [mu, 2*mu]],
                   'load': [0.6, 0.8, 0.9],
                   'imbalance': [[1/3, 1], [1, 1], [3, 1]]}
+elif ID == 'J2':
+    mu = 2
+    param_grid = {'J': [2],
+                  'S': [2, 4, 6],
+                  'D': [0],  # D=y*y_multi if < 0, formula if 0, value if > 0
+                  'gamma': [20],
+                  'mu': [[mu, mu], [2*mu, 2*mu], [mu, 2*mu], [2*mu, 4*mu]],
+                  'load': [0.7, 0.8, 0.9],
+                  'imbalance': [[1/3, 1], [1, 1], [3, 1]]}
 elif ID == 'J3':  # Instance 3
-    mu = 1 / 3
+    mu = 3
     param_grid = {'J': [3],
                   'S': [2, 3],
                   'D': [0, -4],
@@ -69,11 +78,11 @@ elif ID == 'J3':  # Instance 3
                   'load': [0.7, 0.9],
                   'imbalance': [[1/3, 2/3, 1], [1, 1, 1]]}
 elif ID == 'J2_D_gam':  # Instance 2  # gamma multi = 8
-    mu = 1 / 3
+    mu = 4
     param_grid = {'J': [2],
-                  'S': [2, 3],
+                  'S': [2, 5],
                   'D': [0, -5, -10, -15],
-                  'gamma': [10, 15, 20, 25],
+                  'gamma': [10, 15, 20],
                   'mu': [[mu, mu], [mu, 2*mu]],
                   'load': [0.7, 0.9],
                   'imbalance': [[1/3, 1], [1, 1], [3, 1]]}
@@ -99,18 +108,10 @@ else:
     exit(0)
 
 if ID != 'sim':
-    grid = tools.get_instance_grid(param_grid)
-
-print('Instances where target_prob > ', max_target_prob, ':',
-      grid[grid['target_prob'] > max_target_prob])
-if remove_max_t_prob:
-    grid = grid[grid['target_prob'] < max_target_prob]
-    print('removed')
-print('Instances where size > ', max_size, ':',
-      grid[grid['target_prob'] > max_size])
-if remove_max_size:
-    grid = grid[grid['size'] < max_size]
-    print('removed')
+    grid = tools.get_instance_grid(param_grid, max_t_prob=max_t_prob,
+                                   max_size=max_size,
+                                   del_t_prob=del_t_prob,
+                                   del_size=del_size)
 
 # Derive solved from g value.
 for method in methods:
