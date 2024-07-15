@@ -2,21 +2,15 @@
 docstring todo...
 """
 
-from utils import plotting, tools, TimeConstraintEDs as Env
+from utils import plotting
 import numpy as np
 from utils import tools
 
 ID = 'test'  # 'plot_J2', 'plot_J3'
-FILEPATH_INSTANCE = 'results/instances_' + ID + '.csv'
 max_t_prob = 0.9
 del_t_prob = True
 max_size = 2e6
 del_size = True
-
-instance_columns = ['J', 'S', 'gamma', 'D',
-                    'mu', 'lab', 'load', 'imbalance'
-                                         't', 'c', 'r',
-                    'max_t_prob']
 
 if ID == 'plot_J1':
     param_grid = {'J': [1],
@@ -57,7 +51,10 @@ else:
     print('Error: ID not recognized')
     exit(0)
 
-grid = tools.get_instance_grid(param_grid)
+grid = tools.get_instance_grid(param_grid, max_t_prob=max_t_prob,
+                               max_size=max_size,
+                               del_t_prob=del_t_prob,
+                               del_size=del_size)
 
 lab = np.array([np.sum(xi) for xi in grid.lab])
 mu = [sum(lab) / sum(np.array(lab) / np.array(mu))
