@@ -13,22 +13,27 @@ from utils import tools
 from utils import instances_sim
 import pandas as pd
 
-ID = 'J2'  # 'J2', 'J3', 'J2_D_gam', 'J1_D', 'sim'
-FILEPATH_INSTANCE = 'results/instances_' + ID + '.csv'
+ID = 'sim'  # 'J2', 'J3', 'J2_D_gam', 'J1', 'sim'
+FILEPATH_INSTANCE = 'results/instances_' + ID
 solve = False  # False for sim, True for solve
-sim_ids = range(1, 11 + 1)  # only for ID = 'sim'
+sim_ids = range(1, 10 + 1)  # only for ID = 'sim'
 max_t_prob = 0.9
 del_t_prob = True
 max_size = 2e6
 del_size = True
+epsilon = 1e-3
+P = 1e3
 
+if ID == 'sim':
+    solve = False
 if not solve:
     FILEPATH_INSTANCE += '_sim'
+FILEPATH_INSTANCE += '.csv'
 
 instance_columns = ['J', 'S', 'gamma', 'D',
-                    'mu', 'lab', 'load', 'imbalance'
+                    'mu', 'lab', 'load', 'imbalance',
                     't', 'c', 'r',
-                    'max_t_prob']
+                    't_prob']
 if solve:
     methods = ['vi', 'ospi', 'sdf', 'fcfs', 'pi']
     instance_columns.extend(['e', 'P', 'size', 'size_i'])
@@ -60,7 +65,7 @@ if ID == 'J2_old':
                   'load': [0.6, 0.8, 0.9],
                   'imbalance': [[1/3, 1], [1, 1], [3, 1]]}
 elif ID == 'J2':
-    mu = 2
+    mu = 3
     param_grid = {'J': [2],
                   'S': [2, 4, 6],
                   'D': [0],  # D=y*y_multi if < 0, formula if 0, value if > 0
@@ -69,7 +74,7 @@ elif ID == 'J2':
                   'load': [0.7, 0.8, 0.9],
                   'imbalance': [[1/3, 1], [1, 1], [3, 1]]}
 elif ID == 'J3':  # Instance 3
-    mu = 3
+    mu = 4
     param_grid = {'J': [3],
                   'S': [2, 3],
                   'D': [0, -4],
@@ -81,20 +86,20 @@ elif ID == 'J2_D_gam':  # Instance 2  # gamma multi = 8
     mu = 4
     param_grid = {'J': [2],
                   'S': [2, 5],
-                  'D': [0, -5, -10, -15],
+                  'D': [0, -5, -10],
                   'gamma': [10, 15, 20],
                   'mu': [[mu, mu], [mu, 2*mu]],
                   'load': [0.7, 0.9],
                   'imbalance': [[1/3, 1], [1, 1], [3, 1]]}
-elif ID == 'J1_D':
-    mu = 1 / 3
+elif ID == 'J1':
+    mu = 2
     param_grid = {'J': [1],
-                  'S': [2, 5],
-                  'D': [0, -5, -10, -15, -20],
+                  'S': [2, 4, 6],
+                  'D': [0],
                   'gamma': [10, 15, 20, 25],
-                  'mu': [[mu], [2*mu]],
-                  'load': [0.7, 0.9],
-                  'imbalance': [1]}
+                  'mu': [[mu], [2*mu], [3*mu]],
+                  'load': [0.7, 0.8, 0.9],
+                  'imbalance': [[1]]}
 elif ID == 'sim':
     grid = pd.DataFrame()
     for sim_id in sim_ids:
@@ -112,18 +117,31 @@ if ID != 'sim':
                                    max_size=max_size,
                                    del_t_prob=del_t_prob,
                                    del_size=del_size)
-
-# Derive solved from g value.
-for method in methods:
-    grid[method + '_job_id'] = ''
-    grid[method + '_attempts'] = 0
-    grid[method + '_time'] = '00:00'
-    grid[method + '_iter'] = 0
-    grid[method + '_g_tmp'] = np.nan
-    grid[method + '_g'] = np.nan
-    if method != 'vi':
-        grid[method + '_opt_gap_tmp'] = np.nan
-        grid[method + '_opt_gap'] = np.nan
+if solve:
+    grid['e'] = epsilon
+    grid['P'] = P
+    # Derive solved from g value.
+    for method in methods:
+        grid[method + '_job_id'] = ''
+        grid[method + '_attempts'] = 0
+        grid[method + '_time'] = '00:00'
+        grid[method + '_iter'] = 0
+        grid[method + '_g_tmp'] = np.nan
+        grid[method + '_g'] = np.nan
+        if method != 'vi':
+            grid[method + '_opt_gap_tmp'] = np.nan
+            grid[method + '_opt_gap'] = np.nan
+else:
+    grid[['N', 'start_K', 'batch_T']] = 0
+    for method in methods:
+        grid[method + '_job_id'] = ''
+        grid[method + '_attempts'] = 0
+        grid[method + '_time'] = '00:00'
+        grid[method + '_iter'] = 0
+        grid[method + '_g'] = np.nan
+        grid[method + '_g_ci'] = np.nan
+        grid[method + '_perc'] = np.nan
+        grid[method + '_perc_ci'] = np.nan
 
 grid = grid[instance_columns]
 

@@ -6,7 +6,7 @@ from utils import plotting, tools, TimeConstraintEDs as Env
 import numpy as np
 from utils import tools
 
-ID = 'plot_J1'  # 'plot_J2', 'plot_J3'
+ID = 'test'  # 'plot_J2', 'plot_J3'
 FILEPATH_INSTANCE = 'results/instances_' + ID + '.csv'
 max_t_prob = 0.9
 del_t_prob = True
@@ -44,6 +44,15 @@ elif ID == 'plot_J3':
                   'load': list(np.arange(70, 90, 5) / 100),
                   'imbalance': [[1 / 3, 2 / 3, 1], [1, 1, 1],
                                 [1, 2 / 3, 1 / 3]]}
+elif ID == 'test':
+    mu = 3
+    # param_grid = {'J': [2],
+    #               'S': [2, 4, 6],
+    #               'D': [0],  # D=y*y_multi if < 0, formula if 0, value if > 0
+    #               'gamma': [20],
+    #               'mu': [[mu, mu], [2*mu, 2*mu], [mu, 2*mu], [2*mu, 4*mu]],
+    #               'load': [0.7, 0.8, 0.9],
+    #               'imbalance': [[1/3, 1], [1, 1], [3, 1]]}
 else:
     print('Error: ID not recognized')
     exit(0)
@@ -60,7 +69,7 @@ grid['smu(1-rho)'] = smu_rho
 x, x_lab = grid.gamma, 'gamma'
 y, y_lab = smu_rho, 'smu(1-rho)'
 cols = ['gamma', 'D', 'size', 'cap_prob', 'smu(1-rho)']
-vmax = {'gamma': None, 'D': None, 'size': 10e6, 'cap_prob': None,
+vmax = {'gamma': None, 'D': None, 'size': None, 'cap_prob': None,
         'smu(1-rho)': None}
 vmin = {'gamma': None, 'D': None, 'size': 0, 'cap_prob': 0, 'smu(1-rho)': None}
 for c_lab in cols:
@@ -68,33 +77,3 @@ for c_lab in cols:
         plotting.plot_xyc(x, y, grid[c_lab], title=ID,
                           x_lab=x_lab, y_lab=y_lab, c_lab=c_lab,
                           vmin=vmin[c_lab], vmax=vmax[c_lab])
-
-inst = grid.iloc[8, :]
-lab = sum(inst.lab)
-mu = lab / np.sum(inst.lab[0] / inst.mu[0])
-pi_0 = Env.get_pi_0(inst.gamma, inst.S, inst.load, lab)
-prob_delay = Env.get_tail_prob(inst.gamma, inst.S, inst.load,
-                               lab, mu, pi_0, 0)
-print(pi_0)
-print(prob_delay)
-print(Env.get_tail_prob(inst.gamma, inst.S, inst.load,
-                        lab, mu, pi_0, 1))
-print(Env.get_tail_prob(inst.gamma, inst.S, inst.load,
-                        lab, mu, pi_0, inst.D))
-print(int(np.ceil(-np.log(0.001 / prob_delay) /
-                  (inst.S * mu - lab) * inst.gamma)))
-
-gamma = 1e3
-pi_0 = Env.get_pi_0(inst.gamma, inst.S, inst.load, lab)
-prob_delay = Env.get_tail_prob(inst.gamma, inst.S, inst.load,
-                               lab, mu, pi_0, 0)
-print(pi_0)
-print(prob_delay)
-print(Env.get_tail_prob(gamma, inst.S, inst.load,
-                        lab, mu, pi_0, 0))
-print(Env.get_tail_prob(gamma, inst.S, inst.load,
-                        lab, mu, pi_0, 1*gamma))
-print(Env.get_tail_prob(gamma, inst.S, inst.load,
-                        lab, mu, pi_0, inst.D*gamma))
-print(np.log(1e-3/prob_delay) /
-      np.log(1 - (inst.S*mu - lab)/(inst.S*mu + gamma)))

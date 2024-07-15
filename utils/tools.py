@@ -147,11 +147,12 @@ def get_instance_grid(param_grid, sim=False, max_t_prob=0.9, max_size=2e6,
     if del_t_prob:
         grid = grid[grid['target_prob'] < max_t_prob]
         print('removed')
-    print('Instances where size > ', max_size, ':',
-          grid[grid['size'] > max_size])
-    if del_size:
-        grid = grid[grid['size'] <= max_size]
-        print('removed')
+    if not sim:
+        print('Instances where size > ', max_size, ':',
+              grid[grid['size'] > max_size])
+        if del_size:
+            grid = grid[grid['size'] <= max_size]
+            print('removed')
     return grid
 
 

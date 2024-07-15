@@ -18,9 +18,6 @@ from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy.integrate import quad_vec
 from time import perf_counter as clock
 
-# self.order = tools.fixed_order(self.env, self.method)
-# elif self.method in ['cmu_t_min', 'cmu_t_max', 'l_max', 'l_min']:
-# return np.nanargmin(np.where(fil, self.order, np.nan))
 
 class PolicyIteration:
     """Policy Iteration."""
@@ -199,7 +196,7 @@ class PolicyIteration:
         return V_t / env.tau
 
     @staticmethod
-    @nb.njit(nb.types.Tuple((nb.i4[:], nb.b1))(
+    @nb.njit(nb.types.Tuple((nb.i4[:], nb.b1, nb.i4))(
         tp.f4[:], tp.f4[:], tp.i4[:], tp.i8, tp.i8, tp.f8, tp.i8,
         DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F1, tp.f8[:, :, :]),
         parallel=True, error_model='numpy')
@@ -243,7 +240,7 @@ class PolicyIteration:
                                 w = value
                     if pi != Pi[state]:
                         stable = stable + 1  # binary operation allows reduction
-        return Pi, stable == 0
+        return Pi, stable == 0, stable
 
     def policy_evaluation(self, env, V, W, Pi, g, name, n_iter=0):
         """Policy Evaluation."""
@@ -268,15 +265,12 @@ class PolicyIteration:
             inner_iter += 1
         return V, g, converged, inner_iter
 
-    def policy_iteration(s, env, g_mem=[], *kwargs):
+    def policy_iteration(s, env, g_mem=[], **kwargs):
         """Docstring."""
-        if ('V' in kwargs) & ('Pi' in kwargs):
-            s.V = kwargs.get('V')
-            s.Pi = kwargs.get('Pi')
-        else:
-            s.V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
-            s.Pi = s.init_pi(env)
+        s.V = kwargs.get('V', np.zeros(env.dim, dtype=np.float32))  # V_{t-1}
+        s.Pi = kwargs.get('Pi', s.init_pi(env))
         s.W = np.zeros(env.dim_i, dtype=np.float32)
+        max_pi_iter = kwargs.get('max_pi_iter', env.max_iter)
 
         s.Pi = s.Pi.reshape(env.size_i)
         while not s.stable:
@@ -286,13 +280,16 @@ class PolicyIteration:
             s.W = s.init_w(env, s.V, s.W)
             s.V = s.V.reshape(env.size)
             s.W = s.W.reshape(env.size_i)
-            s.Pi, s.stable = s.policy_improvement(s.V, s.W, s.Pi, env.J, env.D,
-                                                  env.gamma, env.KEEP_IDLE,
-                                                  env.d_i1, env.d_i2, env.d_f1,
-                                                  env.p_xy)
+            s.Pi, s.stable, changes = s.policy_improvement(s.V, s.W, s.Pi, env.J, env.D,
+                                                           env.gamma, env.KEEP_IDLE,
+                                                           env.d_i1, env.d_i2, env.d_f1,
+                                                           env.p_xy)
             s.V = s.V.reshape(env.dim)
             s.W = s.W.reshape(env.dim_i)
-            if s.iter > env.max_iter:
+            if s.iter > max_pi_iter:
+                print(f'Policy Iteration reached max_iter ({max_pi_iter}),'
+                      f' g ~ {s.g:.4f},'
+                      f' unstable changes ~ {changes}, {changes/env.size_i:.2f}%')
                 break
             s.iter += 1
             g_mem.append(s.g)
@@ -377,10 +374,10 @@ class ValueIteration:
         s.V = s.V.reshape(env.size)
         s.W = s.W.reshape(env.size_i)
         s.Pi = s.Pi.reshape(env.size_i)
-        s.Pi, _ = s.pi_learner.policy_improvement(s.V, s.W, s.Pi, env.J, env.D,
-                                                  env.gamma, env.KEEP_IDLE,
-                                                  env.d_i1, env.d_i2, env.d_f1,
-                                                  env.p_xy)
+        s.Pi, _, _ = s.pi_learner.policy_improvement(s.V, s.W, s.Pi, env.J, env.D,
+                                                     env.gamma, env.KEEP_IDLE,
+                                                     env.d_i1, env.d_i2, env.d_f1,
+                                                     env.p_xy)
         s.V = s.V.reshape(env.dim)
         s.W = s.W.reshape(env.dim_i)
         s.Pi = s.Pi.reshape(env.dim_i)
@@ -454,10 +451,10 @@ class OneStepPolicyImprovement:
         s.V_app = s.V_app.reshape(env.size)
         W = W.reshape(env.size_i)
         s.Pi = s.Pi.reshape(env.size_i)
-        s.Pi, _ = s.pi_learner.policy_improvement(s.V_app, W, s.Pi, env.J,
-                                                  env.D, env.gamma,
-                                                  env.KEEP_IDLE, env.d_i1,
-                                                  env.d_i2, env.d_f1, env.p_xy)
+        s.Pi, _, _ = s.pi_learner.policy_improvement(s.V_app, W, s.Pi, env.J,
+                                                     env.D, env.gamma,
+                                                     env.KEEP_IDLE, env.d_i1,
+                                                     env.d_i2, env.d_f1, env.p_xy)
         s.V_app = s.V_app.reshape(env.dim)
         s.Pi = s.Pi.reshape(env.dim_i)
 

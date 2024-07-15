@@ -224,11 +224,13 @@ class TimeConstraintEDs:
     def get_D(self):
         lab = sum(self.lab)
         mu = lab / sum(self.lab / self.mu)
-        pi_0 = self.get_pi_0(1e3, self.S, self.load, lab)
-        prob_delay = self.get_tail_prob(1e3, self.S, self.load,
+        pi_0 = self.get_pi_0(self.gamma, self.S, self.load, lab)
+        prob_delay = self.get_tail_prob(self.gamma, self.S, self.load,
                                         lab, mu, pi_0, 0)
-        D = int(np.ceil(-np.log(self.ZERO_ONE_PERC / prob_delay) /
-                        (self.S * mu - lab) * self.gamma))
+        D = int(np.ceil(np.log(self.ZERO_ONE_PERC / prob_delay) /
+                        np.log(1 - (self.S * mu - lab) / (self.S * mu + self.gamma))))
+        # D = int(np.ceil(-np.log(self.ZERO_ONE_PERC / prob_delay) /
+        #                 (self.S * mu - lab) * self.gamma))
         return D
 
     @staticmethod
