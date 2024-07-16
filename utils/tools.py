@@ -261,7 +261,7 @@ def sec_to_time(time):
 
 
 def solved_and_left(inst):
-    methods = [column.split('_')[0] for column in inst.columns
+    methods = ['_'.join(column.split('_')[:-2]) for column in inst.columns
                if column.endswith('job_id')]
     for method in methods:
         print('Solved ' + method + ': ' + str(inst[method + '_g'].count()) +

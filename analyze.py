@@ -10,21 +10,21 @@ import pandas as pd
 import numpy as np
 from utils import plotting, tools, TimeConstraintEDs as Env
 
-INSTANCES_ID = '02'
+INSTANCES_ID = 'J2'
 FILEPATH_INSTANCE = 'results/instances_' + INSTANCES_ID + '.csv'
 FILEPATH_V = 'results/value_functions/'
 
 inst = tools.inst_load(FILEPATH_INSTANCE)
 tools.solved_and_left(inst)
 
-methods = [column.split('_')[0] for column in inst.columns
+methods = ['_'.join(column.split('_')[:-2]) for column in inst.columns
            if column.endswith('job_id')]
 
 opt_m = 'vi'
 
 inst[opt_m + '_time'] = inst[opt_m + '_time'].map(
     lambda x: x if pd.isnull(x) else tools.get_time(x))
-
+methods.remove('cmu_t_min')
 for method in methods:
     if method == opt_m or method == 'pi':
         continue
@@ -37,6 +37,15 @@ for method in methods:
                      pd.notnull(inst[opt_m + '_g'])]
     inst_tmp = inst[pd.notnull(inst[method + '_g_tmp']) &
                     pd.notnull(inst[opt_m + '_g_tmp'])]
+
+    method_1 = 'ospi'
+    method_2 = 'sdf'
+    rel_opt_gap = abs(inst[method_1+'_g'] - inst[method_2+'_g']) / inst[opt_m+'_g']
+    rel_opt_gap = rel_opt_gap
+    plt.boxplot(x=rel_opt_gap.values)
+    plt.ylabel('rel. opt_gap')
+    plt.title(method_1 + ' vs ' + method_2 + ' rel to opt')
+    plt.show()
 
     # plt.hist(inst_conv['ospi_opt_gap'])
     inst_conv.boxplot(column=method + '_opt_gap', by='gamma')
@@ -59,11 +68,11 @@ for method in methods:
     # plt.suptitle('Running time (sec.) vs. Load for ' + method + ' vs ' + opt_m)
     # plt.show()
 
-    plt.scatter(inst_conv[method+'_opt_gap']/(60*60), inst_conv['size'])
-    plt.xlabel('Opt_gap')
-    plt.ylabel('State space size')
-    plt.title('Opt gap vs. State space size for '+method)
-    plt.show()
+    # plt.scatter(inst_conv[method+'_opt_gap']/(60*60), inst_conv['size'])
+    # plt.xlabel('Opt_gap')
+    # plt.ylabel('State space size')
+    # plt.title('Opt gap vs. State space size for '+method)
+    # plt.show()
 
     # plt.scatter(inst_conv[opt_m+'_time']/(60*60), inst_conv['size'])
     # plt.scatter(inst_conv[method+'_time']/(60*60), inst_conv['size'])
@@ -76,18 +85,18 @@ for method in methods:
     inst_conv.boxplot(column=method+'_opt_gap', by='load')
     plt.xlabel('load')
     plt.ylabel('Optimality Gap')
-    plt.title('Load vs. Optimality Gap')
+    plt.title('Load vs. Optimality Gap for ' + method)
     plt.show()
 
     inst_conv[inst_conv['J'] == 2].boxplot(column=method+'_opt_gap', by='S')
-    plt.title('Optimality Gap vs servers')
+    plt.title('Optimality Gap vs servers for ' + method)
     plt.show()
 
-    inst['solved'] = pd.notnull(inst[method+'_opt_gap'])
-    inst.boxplot(column='size', by='solved')
-    plt.ylabel('Size')
-    plt.title('Size per solved')
-    plt.show()
+    # inst['solved'] = pd.notnull(inst[method+'_opt_gap'])
+    # inst.boxplot(column='size', by='solved')
+    # plt.ylabel('Size')
+    # plt.title('Size per solved')
+    # plt.show()
 
     inst_unsolved = inst[pd.isnull(inst[method+'_g']) | pd.isnull(inst[opt_m+'_g'])]
     unique_loads = inst['load'].unique()
