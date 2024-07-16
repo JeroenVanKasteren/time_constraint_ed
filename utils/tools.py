@@ -212,12 +212,13 @@ def load_args(raw_args=None):
     parser.add_argument('--instance', default='not_specified')  # User input
     parser.add_argument('--method', default='not_specified')  # User input
     parser.add_argument('--x', default=0)  # User input
-    parser.add_argument('--max_iter', default=np.Inf)  # User input
+    parser.add_argument('--max_iter', default='inf')  # User input
     parser.add_argument('--continue_run', default='True')  # User input
     args = parser.parse_args(raw_args)
     args.job_id = int(args.job_id)
     args.array_id = int(args.array_id)
     args.x = int(float(args.x))
+    args.max_iter = np.inf if args.max_iter == 'inf' else float(args.max_iter)
     return args
 
 
