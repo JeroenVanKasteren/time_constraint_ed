@@ -8,7 +8,7 @@ import pandas as pd
 import os
 from utils import tools
 
-INSTANCE_ID = '03'  # instance set
+INSTANCE_ID = 'J2'  # instance set
 FILEPATH_INSTANCE = 'results/instances_' + INSTANCE_ID + '.csv'
 FILEPATH_READ = 'results/read/'
 FILEPATH_RESULT = 'results/'

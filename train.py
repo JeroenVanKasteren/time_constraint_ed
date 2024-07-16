@@ -23,7 +23,7 @@ FILEPATH_V = 'results/value_functions/'
 MAX_TARGET_PROB = 0.9
 max_pi_iter = 10
 # Debug
-# args = {'instance': 'J2', 'method': 'pi', 'time': '0-00:05:00',
+# args = {'instance': 'J1', 'method': 'vi', 'time': '0-00:05:00',
 #         'job_id': 1, 'array_id': 4, 'x': 0}
 # args = tools.DotDict(args)
 
@@ -55,7 +55,7 @@ def main(raw_args=None):
 
     pi_learner = PolicyIteration()
     if args.method == 'vi':
-        learner = ValueIteration(env)
+        learner = ValueIteration()
 
         v_file = ('v_' + args.instance + '_' + str(inst.iloc[0]) + '_vi.npz')
         if v_file in os.listdir(FILEPATH_V):
@@ -64,13 +64,13 @@ def main(raw_args=None):
         learner.value_iteration(env, pi_learner)
 
         # Get and save policy and save w in pi_learner
-        pi_file = ('pi_' + args.instance + '_' + str(inst.iloc[0]) + '_vi.npz')
+        pi_file = 'pi_' + args.instance + '_' + str(inst.iloc[0]) + '_vi.npz'
         if learner.converged and (pi_file not in os.listdir(FILEPATH_V)):
             pi_learner.one_step_policy_improvement(env, learner.V)
     elif args.method == 'ospi':
-        learner = OneStepPolicyImprovement(env, pi_learner)
+        learner = OneStepPolicyImprovement()
 
-        pi_file = ('pi_' + args.instance + '_' + str(inst.iloc[0]) + '_ospi.npz')
+        pi_file = 'pi_' + args.instance + '_' + str(inst.iloc[0]) + '_ospi.npz'
         if pi_file in os.listdir(FILEPATH_V):
             print('Loading Pi from file', flush=True)
             pi_learner.Pi = np.load(FILEPATH_V + pi_file)['arr_0']
@@ -78,21 +78,20 @@ def main(raw_args=None):
             learner.V_app = learner.get_v_app(env)
             pi_learner.one_step_policy_improvement(env, learner.V_app)
 
-        v_file = ('v_' + args.instance + '_' + str(inst.iloc[0]) + '_ospi.npz')
+        v_file = 'v_' + args.instance + '_' + str(inst.iloc[0]) + '_ospi.npz'
         if v_file in os.listdir(FILEPATH_V):
             print('Loading V from file', flush=True)
             learner.V = np.load(FILEPATH_V + v_file)['arr_0']
-            learner.get_g(env, learner.V)
+            learner.get_g(env, learner.V, pi_learner)
         else:
-            learner.get_g(env, learner.V_app)
-
+            learner.get_g(env, learner.V_app, pi_learner)
     elif args.method in ['sdf', 'fcfs',
                          'cmu_t_min', 'cmu_t_max', 'l_max', 'l_min']:
-        learner = OneStepPolicyImprovement(env)
+        learner = OneStepPolicyImprovement()
         order = tools.fixed_order(env, args.method)  # None for not fixed order
 
-        pi_file = ('v_' + args.instance + '_' + str(inst.iloc[0]) + '_' +
-                  args.method + '.npz')
+        pi_file = ('pi_' + args.instance + '_' + str(inst.iloc[0]) + '_'
+                   + args.method + '.npz')
         if pi_file in os.listdir(FILEPATH_V):
             print('Loading Pi from file', flush=True)
             pi_learner.Pi = np.load(FILEPATH_V + pi_file)['arr_0']
@@ -106,8 +105,7 @@ def main(raw_args=None):
             learner.V = np.load(FILEPATH_V + v_file)['arr_0']
         else:
             learner.V = np.zeros(env.dim, dtype=np.float32)
-        learner.get_g(env, learner.V)
-
+        learner.get_g(env, learner.V, pi_learner)
     elif args.method == 'pi':
         learner = pi_learner
         pi_file = ('pi_' + args.instance + '_' + str(inst.iloc[0]) + '_pi.npz')
@@ -118,7 +116,7 @@ def main(raw_args=None):
             print('Loading pi & v from file', flush=True)
             Pi = np.load(FILEPATH_V + pi_file)['arr_0']
             V = np.load(FILEPATH_V + v_file)['arr_0']
-            g_mem = np.load(FILEPATH_V + g_file)['arr_0']
+            g_mem = list(np.load(FILEPATH_V + g_file)['arr_0'])
             g_mem = learner.policy_iteration(env, g_mem=g_mem, Pi=Pi, V=V,
                                              max_pi_iter=max_pi_iter)
         else:
@@ -129,19 +127,17 @@ def main(raw_args=None):
         print('Method not recognized', flush=True)
         exit(0)
 
-    if args.method != 'pi':
-        if learner.g != 0:
-            inst.at[args.method + '_g_tmp'] = learner.g
-        if learner.converged:
-            inst.at[args.method + '_g'] = learner.g
-
-        inst.at[args.method + '_time'] = \
-            tools.sec_to_time(clock() - env.start_time +
-                              tools.get_time(inst.at[args.method + '_time']))
-        inst.at[args.method + '_iter'] += learner.iter
-        inst.to_csv(FILEPATH_RESULT + args.instance + '_' + str(inst.iloc[0])
-                    + '_' + args.method + '_job_' + str(args.job_id) + '_'
-                    + str(args.array_id) + '.csv')
+    if learner.g != 0:
+        inst.at[args.method + '_g_tmp'] = learner.g
+    if learner.converged:
+        inst.at[args.method + '_g'] = learner.g
+    inst.at[args.method + '_time'] = \
+        tools.sec_to_time(clock() - env.start_time +
+                          tools.get_time(inst.at[args.method + '_time']))
+    inst.at[args.method + '_iter'] += learner.iter
+    inst.to_csv(FILEPATH_RESULT + args.instance + '_' + str(inst.iloc[0])
+                + '_' + args.method + '_job_' + str(args.job_id) + '_'
+                + str(args.array_id) + '.csv')
 
     if learner.V is not None:
         np.savez(FILEPATH_V + 'v_' + args.instance + '_' + str(inst.iloc[0])

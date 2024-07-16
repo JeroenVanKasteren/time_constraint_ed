@@ -29,7 +29,7 @@ class PolicyIteration:
         self.name = 'Policy Iteration'
         self.g = kwargs.get('g', 0)
         self.iter = 0
-        self.stable = False
+        self.converged = False
         if 'Pi' in kwargs:
             self.Pi = kwargs.get('Pi')
         self.V = None
@@ -249,22 +249,22 @@ class PolicyIteration:
 
     def one_step_policy_improvement(s, env, V):
         """One Step of Policy Improvement."""
-        s.W = s.pi_learner.init_w(env, V)
-        s.Pi = s.pi_learner.init_pi(env)
+        s.W = s.init_w(env, V)
+        s.Pi = s.init_pi(env)
 
         V = V.reshape(env.size)
         s.W = s.W.reshape(env.size_i)
         s.Pi = s.Pi.reshape(env.size_i)
-        s.Pi, _, _ = s.pi_learner.policy_improvement(V, s.W, s.Pi, env.J,
-                                                     env.D, env.gamma,
-                                                     env.KEEP_IDLE, env.d_i1,
-                                                     env.d_i2, env.d_f1,
-                                                     env.p_xy)
+        s.Pi, _, _ = s.policy_improvement(
+            V, s.W, s.Pi, env.J, env.D, env.gamma,
+            env.KEEP_IDLE, env.d_i1, env.d_i2, env.d_f1, env.p_xy)
         s.Pi = s.Pi.reshape(env.dim_i)
+        s.W = s.W.reshape(env.dim_i)
 
     def policy_evaluation(self, env, V, g, name, n_iter=0):
         """Policy Evaluation."""
         assert self.Pi is not None, 'Policy not initialized.'
+        assert self.Pi.shape == env.size_i, 'Policy shape mismatch.'
         inner_iter = 0
         stopped = False
         converged = False
@@ -291,27 +291,30 @@ class PolicyIteration:
         s.V = kwargs.get('V', np.zeros(env.dim, dtype=np.float32))  # V_{t-1}
         s.Pi = kwargs.get('Pi', s.init_pi(env))
         max_pi_iter = kwargs.get('max_pi_iter', env.max_iter)
+        stable = False
 
         s.Pi = s.Pi.reshape(env.size_i)
-        while not s.stable:
+        while not stable:
             s.V, s.g, _, _ = s.policy_evaluation(env, s.V, s.g,
                                                  'Policy Evaluation of PI',
                                                  s.iter)
             s.W = s.init_w(env, s.V)
             s.V = s.V.reshape(env.size)
             s.W = s.W.reshape(env.size_i)
-            s.Pi, s.stable, changes = s.policy_improvement(
+            s.Pi, stable, changes = s.policy_improvement(
                 s.V, s.W, s.Pi, env.J, env.D, env.gamma, env.KEEP_IDLE,
                 env.d_i1, env.d_i2, env.d_f1, env.p_xy)
             s.V = s.V.reshape(env.dim)
             s.W = s.W.reshape(env.dim_i)
             if s.iter > max_pi_iter:
                 print(f'Policy Iteration reached max_iter ({max_pi_iter}),'
-                      f' g ~ {s.g:.4f},'
-                      f' unstable changes ~ {changes}, {changes/env.size_i:.2f}%')
+                      f' g ~ {s.g:.4f},  unstable changes ~ '
+                      f'{changes}, {changes/env.size_i:.2f}%')
                 break
             s.iter += 1
             g_mem.append(s.g)
+        if stable:
+            s.converged = True
         s.Pi = s.Pi.reshape(env.dim_i)
         return g_mem
 
@@ -322,9 +325,9 @@ class ValueIteration:
     DICT_TYPE_I2 = tp.DictType(tp.unicode_type, tp.i4[:, :])  # int 2D vector
     DICT_TYPE_F1 = tp.DictType(tp.unicode_type, tp.f8[:])  # float 1D vector
 
-    def __init__(self, env):
+    def __init__(self):
         self.name = 'Value Iteration'
-        self.V = np.zeros(env.dim, dtype=np.float32)  # V_{t-1}
+        self.V = None
         self.g = 0
         self.iter = 0
         self.converged = False
@@ -366,6 +369,8 @@ class ValueIteration:
         return W
 
     def value_iteration(s, env, pi_learner):
+        if s.V is None:
+            s.V = np.zeros(env.dim, dtype=np.float32)
         stopped = False
         while not (stopped | s.converged):  # Update each state.
             W = pi_learner.init_w(env, s.V)
@@ -386,7 +391,7 @@ class ValueIteration:
 class OneStepPolicyImprovement:
     """One-step policy improvement."""
 
-    def __init__(self, env):
+    def __init__(self):
         self.name = 'One-step Policy Improvement'
         self.V_app = None
         self.V = None
@@ -439,7 +444,9 @@ class OneStepPolicyImprovement:
                 V_app[tuple(states)] += V[i, x]
         return V_app
 
-    def get_g(s, env, V):
+    def get_g(s, env, V, pi_learner):
         """Determine g via Policy Evaluation."""
-        s.V, s.g, s.converged, s.iter = s.pi_learner.policy_evaluation(
+        pi_learner.Pi = pi_learner.Pi.reshape(env.size_i)
+        s.V, s.g, s.converged, s.iter = pi_learner.policy_evaluation(
             env, V, s.g, s.name)
+        pi_learner.Pi = pi_learner.Pi.reshape(env.dim_i)

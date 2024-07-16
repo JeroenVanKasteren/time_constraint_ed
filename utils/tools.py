@@ -209,10 +209,11 @@ def load_args(raw_args=None):
     parser.add_argument('--job_id', default='0')  # SULRM_JOBID
     parser.add_argument('--array_id', default='0')  # SLURM_ARRAY_TASK_ID
     parser.add_argument('--time')  # SLURM_TIMELIMIT
-    parser.add_argument('--instance', default='01')  # User input
+    parser.add_argument('--instance', default='not_specified')  # User input
     parser.add_argument('--method', default='not_specified')  # User input
     parser.add_argument('--x', default=0)  # User input
     parser.add_argument('--max_iter', default=np.Inf)  # User input
+    parser.add_argument('--continue_run', default='True')  # User input
     args = parser.parse_args(raw_args)
     args.job_id = int(args.job_id)
     args.array_id = int(args.array_id)

@@ -15,18 +15,18 @@ class Simulation:
     FILEPATH_RESULT = 'results/simulation_pickles/result_'
 
     def __init__(self, **kwargs):
+        inst = kwargs.get('inst')
         self.inst_id = kwargs.get('inst_id')
         self.method = kwargs.get('method')
         self.N = kwargs.get('N', 1e5)
-        self.convergence_check = kwargs.get('convergence_check', 1e4)
+        max_time = kwargs.get('time', '0-00:10:00')
+        self.time_check = kwargs.get('time_check', 1e5)
 
-        inst = kwargs.get('inst')
-        inst = inst.iloc[(inst['method'] == self.method).idxmax()]
         self.env = Env(J=inst.J, S=inst.S, D=inst.D,
                        gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
                        mu=inst.mu, lab=inst.lab,
-                       seed=int(kwargs.get('inst_id')),
-                       max_time=kwargs.get('time', '0-00:10:00'),
+                       seed=42,
+                       max_time=max_time,
                        max_iter=self.N, sim='yes')
         self.J = self.env.J
         self.order = tools.fixed_order(self.env, self.method)
@@ -148,12 +148,12 @@ class Simulation:
                     arr, dep, fil, heap, kpi, n_admit, s = self.admission(
                         arr, arr_times, dep, fil, heap, i, kpi, n_admit, s,
                         time, x)
-            if (n_admit % self.convergence_check) == 0 and n_admit > 0:
+            if (n_admit % self.time_check) == 0 and n_admit > 0:
                 time_per = tools.sec_to_time((clock() - self.env.start_time)
-                                             / n_admit * 1e4)
+                                             / n_admit * self.time_check)
                 print(f'Sims done: {n_admit} (N={self.N}). Total time: '
                       f'{tools.sec_to_time(clock() - self.env.start_time)}, '
-                      f'time per 10,000 iterations: '
+                      f'time per {self.time_check} iterations: '
                       f'{time_per}.')
                 if (clock() - self.env.start_time) > self.env.max_time:
                     print(f'Time limit {self.env.max_time} reached, '

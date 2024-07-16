@@ -228,7 +228,8 @@ class TimeConstraintEDs:
         prob_delay = self.get_tail_prob(self.gamma, self.S, self.load,
                                         lab, mu, pi_0, 0)
         D = int(np.ceil(np.log(self.ZERO_ONE_PERC / prob_delay) /
-                        np.log(1 - (self.S * mu - lab) / (self.S * mu + self.gamma))))
+                        np.log(1 - (self.S * mu - lab) /
+                               (self.S * mu + self.gamma))))
         # D = int(np.ceil(-np.log(self.ZERO_ONE_PERC / prob_delay) /
         #                 (self.S * mu - lab) * self.gamma))
         return D

@@ -9,5 +9,6 @@
 # time is rounded to minutes
 TIMELIMIT=`squeue -j $SLURM_JOB_ID -o "%l" | tail -1`
 
-python simulation.py --job_id $SLURM_JOBID --array_id $SLURM_ARRAY_TASK_ID --time $TIMELIMIT --instance 01 --x 1e5
+# instance: J1 J2 J2_D_gam, J3, sim
+python run_simulations.py --job_id $SLURM_JOBID --array_id $SLURM_ARRAY_TASK_ID --time $TIMELIMIT --instance J2 --max_iter 1e6 --continue_run True
 # python read_results_sim.py
