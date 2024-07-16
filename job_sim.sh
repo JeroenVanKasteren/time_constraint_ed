@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name "ED_sim"
 #SBATCH --cpus-per-task 16
-#SBATCH --time 0-00:05:00
-#SBATCH --array 1-5
+#SBATCH --time 0-01:00:00
+#SBATCH --array 1-107
 #SBATCH --output results/read/prints_%A_%a.out
 #SBATCH --error results/read/prints_%A_%a.err
 
