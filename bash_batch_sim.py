@@ -5,8 +5,8 @@ JOBSCRIPT = """#!/bin/bash
 #SBATCH --cpus-per-task 16
 #SBATCH --time {time}
 #SBATCH --array 1-{n_array}
-#SBATCH --output results/read/prints_%A_%a.out
-#SBATCH --error results/read/prints_%A_%a.err
+#SBATCH --output results/read/prints_%A_%a_{name}.out
+#SBATCH --error results/read/prints_%A_%a_{name}.err
 
 # time is rounded to minutes
 TIMELIMIT=`squeue -j $SLURM_JOB_ID -o "%l" | tail -1`
@@ -17,7 +17,6 @@ python run_simulations.py --job_id $SLURM_JOBID --array_id $SLURM_ARRAY_TASK_ID 
 
 instances = [['J1', '0-00:20:00', '108'],
              ['J2', '0-00:20:00', '108'],
-             ['J2_D_gam', '0-00:20:00', '216'],
              ['sim', '0-00:20:00', '10']]
 
 for instance, time, n_array in instances:

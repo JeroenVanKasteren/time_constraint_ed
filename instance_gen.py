@@ -34,6 +34,7 @@ def main(name, solve):
                         'mu', 'lab', 'load', 'imbalance',
                         't', 'c', 'r',
                         't_prob']
+    # Ensure method names are distinguishable (unique: '_' + method + '_job')
     if solve:
         methods = ['vi', 'ospi', 'sdf', 'fcfs', 'pi', 'cmu_t_min']
         instance_columns.extend(['e', 'P', 'size', 'size_i'])

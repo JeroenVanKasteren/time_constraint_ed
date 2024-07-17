@@ -6,7 +6,7 @@ from utils import plotting
 import numpy as np
 from utils import tools
 
-ID = 'test'  # 'plot_J2', 'plot_J3'
+ID = 'plot_J2'  # 'plot_J2', 'plot_J3'
 max_t_prob = 0.9
 del_t_prob = True
 max_size = 2e6

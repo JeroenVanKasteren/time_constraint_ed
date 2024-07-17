@@ -5,8 +5,8 @@ JOBSCRIPT = """#!/bin/bash
 #SBATCH --cpus-per-task 16
 #SBATCH --time {time}
 #SBATCH --array 1-{n_array}
-#SBATCH --output results/read/prints_%A_%a.out
-#SBATCH --error results/read/prints_%A_%a.err
+#SBATCH --output results/read/prints_%A_%a_{name}.out
+#SBATCH --error results/read/prints_%A_%a_{name}.err
 
 # time is rounded to minutes
 TIMELIMIT=`squeue -j $SLURM_JOB_ID -o "%l" | tail -1`

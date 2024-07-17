@@ -37,7 +37,8 @@ class Simulation:
             tools.generate_times(self.env, self.N)
 
     def ospi(self, fil, i, x):
-        """One-step policy improvement.
+        """
+        One-step policy improvement.
         Var i indicates which class just arrived, i = J if no class arrived.
         """
         x = np.minimum(np.round(x * self.env.gamma, 0),

@@ -22,6 +22,7 @@ instance_name = 'J2'
 #         'continue_run': True}
 # args = tools.DotDict(args)
 args = tools.load_args()
+
 args.max_iter = np.inf if args.max_iter == 'inf' else float(args.max_iter)
 if args.method == 'not specified':
     methods = ['ospi', 'cmu_t_min', 'cmu_t_max', 'fcfs', 'sdf',
