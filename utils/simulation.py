@@ -82,6 +82,8 @@ class Simulation:
                 return np.nanargmin(np.where(fil, x, np.nan))
         elif self.method in ['cmu_t_min', 'cmu_t_max', 'l_max', 'l_min']:
             return np.nanargmin(np.where(fil, self.order, np.nan))
+        else:
+            raise ValueError(f'Unknown policy: {self.method}')
 
     def admission(self, arr, arr_times, dep, fil, heap, i, kpi, n_admit, s,
                   time, x):

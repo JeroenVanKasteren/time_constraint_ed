@@ -206,7 +206,7 @@ def load_result(method, instance_name):
 
 def load_args(raw_args=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--job_id', default='0')  # SULRM_JOBID
+    parser.add_argument('--job_id', default='0')  # SLURM_JOBID
     parser.add_argument('--array_id', default='0')  # SLURM_ARRAY_TASK_ID
     parser.add_argument('--time')  # SLURM_TIMELIMIT
     parser.add_argument('--instance', default='not_specified')  # User input
