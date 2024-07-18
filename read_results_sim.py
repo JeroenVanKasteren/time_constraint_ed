@@ -10,8 +10,12 @@ import pickle as pkl
 import os
 from utils import tools
 
-INSTANCE_ID = 'J2'  # instance set
-FILEPATH_INSTANCE = 'results/instances_' + INSTANCE_ID + '_sim.csv'
+# Debug
+# args = {'instance': 'J2'}
+# args = tools.DotDict(args)
+args = tools.load_args()
+
+FILEPATH_INSTANCE = 'results/instances_' + args.instance + '_sim.csv'
 FILEPATH_RESULT = 'results/'
 FILEPATH_PICKLES = 'results/simulation_pickles/'
 
@@ -27,7 +31,7 @@ if method == 'not specified':
 else:
     methods = [method]
 
-prefix = 'result_' + INSTANCE_ID + '_' + inst_nr
+prefix = 'result_' + args.instance + '_' + inst_nr
 files = [file for file in os.listdir(FILEPATH_PICKLES)
          if file.startswith(prefix)]
 
