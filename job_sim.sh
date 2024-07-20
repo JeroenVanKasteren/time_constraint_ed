@@ -11,7 +11,7 @@ TIMELIMIT=`squeue -j $SLURM_JOB_ID -o "%l" | tail -1`
 
 # instance: J1 J2 J2_D_gam sim
 # python run_simulations.py --job_id $SLURM_JOBID --array_id $SLURM_ARRAY_TASK_ID --time $TIMELIMIT --instance J2 --max_iter 1e6 --continue_run True
-python read_results_sim.py -- J1
-python read_results_sim.py -- J2
-python read_results_sim.py -- J2_D_gam
-python read_results_sim.py -- sim
+python read_results_sim.py --instance J1
+python read_results_sim.py --instance J2
+python read_results_sim.py --instance J2_D_gam
+python read_results_sim.py --instance sim

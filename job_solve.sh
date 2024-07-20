@@ -12,6 +12,6 @@ TIMELIMIT=`squeue -j $SLURM_JOB_ID -o "%l" | tail -1`
 # instance: J1 J2 J2_D_gam, J3
 # method: vi ospi sdf fcfs pi cmu_t_min
 # python train.py --job_id $SLURM_JOBID --array_id $SLURM_ARRAY_TASK_ID --time $TIMELIMIT --instance J2 --method vi
-python read_results.py -- J1
-python read_results.py -- J2
-python read_results.py -- J2_D_gam
+python read_results.py --instance J1
+python read_results.py --instance J2
+python read_results.py --instance J2_D_gam
