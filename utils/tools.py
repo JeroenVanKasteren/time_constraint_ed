@@ -156,6 +156,13 @@ def get_instance_grid(param_grid, sim=False, max_t_prob=0.9, max_size=2e6,
     return grid
 
 
+def get_smu_rho(lab_v, mu_v, s):
+    lab = np.array([np.sum(xi) for xi in lab_v])
+    mu = [sum(lab_) / sum(np.array(lab_) / np.array(mu_))
+          for lab_, mu_ in zip(lab_v, mu_v)]
+    return s * mu * (1 - lab / (s * mu))
+
+
 def get_time(time_string):
     """Read in time in formats (D)D-HH:MM:SS, (H)H:MM:SS, or (M)M:SS.
     Format in front of time is removed."""
@@ -260,14 +267,18 @@ def sec_to_time(time):
         return f"(MM:SS): {time // 60:02d}:{time % 60:02d}"
 
 
-def solved_and_left(inst):
-    methods = ['_'.join(column.split('_')[:-2]) for column in inst.columns
-               if column.endswith('job_id')]
+def solved_and_left(inst, opt_method='vi', sim=False):
+    if sim:
+        methods = ['_'.join(column.split('_')[:-1]) for column in inst.columns
+                   if column.endswith('_g')]
+    else:
+        methods = ['_'.join(column.split('_')[:-2]) for column in inst.columns
+                   if column.endswith('job_id')]
     for method in methods:
         print('Solved ' + method + ': ' + str(inst[method + '_g'].count()) +
               ', left: ' +
               str(len(inst) - inst[method + '_g'].count()), flush=True)
-        if method != 'vi':
+        if (method != opt_method) and not sim:
             print('Solved both for ' + method + ': ' +
                   str(inst[method + '_opt_gap'].count()), flush=True)
 
@@ -277,11 +288,6 @@ def strip_split(x):
         return np.array([float(i) for i in x.strip('[]').split(', ')])
     else:
         return np.array([float(i) for i in x.strip('[]').split()])
-
-
-def update_mean(mean, x, n):
-    """Welford's method to update the mean. Can be set to numba function."""
-    return mean + (x - mean) / n  # avg_{n-1} = avg_{n-1} + (x_n - avg_{n-1})/n
 
 
 def summarize_policy(env, learner, print_per_time=True):
@@ -334,3 +340,10 @@ def summarize_policy(env, learner, print_per_time=True):
                                        'None_Waiting': '{:,.2%}'.format,
                                        'Servers_Full': '{:,.2%}'.format,
                                        'Invalid_State': '{:,.2%}'.format}))
+
+
+def update_mean(mean, x, n):
+    """Welford's method to update the mean. Can be set to numba function."""
+    return mean + (
+                x - mean) / n  # avg_{n-1} = avg_{n-1} + (x_n - avg_{n-1})/n
+

@@ -16,6 +16,7 @@ from .tools import (conf_int,
                     generate_times,
                     get_erlang_c,
                     get_instance_grid,
+                    get_smu_rho,
                     get_time,
                     get_v_app,
                     inst_load,
@@ -29,6 +30,6 @@ from .tools import (conf_int,
                     sec_to_time,
                     solved_and_left,
                     strip_split,
-                    update_mean,
-                    summarize_policy)
+                    summarize_policy,
+                    update_mean)
 from .simulation import Simulation

@@ -6,11 +6,11 @@ from utils import plotting
 import numpy as np
 from utils import tools
 
-ID = 'plot_J2'  # 'plot_J2', 'plot_J3'
+ID = 'plot_J3'  # 'plot_J2', 'plot_J3'
 max_t_prob = 0.9
-del_t_prob = True
+del_t_prob = False
 max_size = 2e6
-del_size = True
+del_size = False
 
 if ID == 'plot_J1':
     param_grid = {'J': [1],
@@ -56,15 +56,10 @@ grid = tools.get_instance_grid(param_grid, max_t_prob=max_t_prob,
                                del_t_prob=del_t_prob,
                                del_size=del_size)
 
-lab = np.array([np.sum(xi) for xi in grid.lab])
-mu = [sum(lab) / sum(np.array(lab) / np.array(mu))
-      for lab, mu in zip(grid.lab, grid.mu)]
-S = grid.S.values
-smu_rho = S * mu * (1 - lab / (S * lab))
-grid['smu(1-rho)'] = smu_rho
+grid['smu(1-rho)'] = tools.get_smu_rho(grid.lab, grid.mu, grid.S)
 
 x, x_lab = grid.gamma, 'gamma'
-y, y_lab = smu_rho, 'smu(1-rho)'
+y, y_lab = grid['smu(1-rho)'], 'smu(1-rho)'
 cols = ['gamma', 'D', 'size', 'cap_prob', 'smu(1-rho)']
 vmax = {'gamma': None, 'D': None, 'size': None, 'cap_prob': None,
         'smu(1-rho)': None}

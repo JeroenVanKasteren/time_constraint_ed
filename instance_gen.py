@@ -153,7 +153,8 @@ def main(name, solve):
 
 
 if __name__ == '__main__':
-    for name in ['J1', 'J2', 'J2_D_gam', 'sim']:
-        for solve in [True, False]:
-            main(name, solve)
+    for name in ['J1', 'J2', 'J2_D_gam']:
+        main(name, True)
+    for name in ['J1', 'J2', 'sim']:
+        main(name, False)
     # main('J3', False)

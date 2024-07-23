@@ -23,7 +23,7 @@ methods = ['vi', 'ospi', 'sdf', 'fcfs', 'pi', 'cmu_t_min']
 for instance, time, n_array in instances:
     for method in methods:
         script = JOBSCRIPT.format(
-            name=instance + '_solve_ED',
+            name=instance + '_' + method + '_sim_ED',
             time=time,
             n_array=n_array,
             instance=instance,

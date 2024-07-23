@@ -6,6 +6,7 @@ Process all unread result files.
 
 import pandas as pd
 import os
+import re
 from utils import tools
 
 # Debug
@@ -27,7 +28,7 @@ methods = ['_'.join(column.split('_')[:-2]) for column in insts.columns
 
 # Process all unread result files
 for file in os.listdir(FILEPATH_RESULT):
-    if ((not file.startswith('result_' + args.instance)) or
+    if ((re.match('result_' + args.instance + r'_\d', file) is None) or
             (file.find('sim') >= 0)):
         continue
     result = pd.read_csv(FILEPATH_RESULT + file, index_col=0)
@@ -52,7 +53,7 @@ for file in os.listdir(FILEPATH_RESULT):
     os.rename(FILEPATH_RESULT + file, FILEPATH_READ + file)
 
 # Calculate opt_gaps
-methods.remove('vi')
+methods.remove(OPT_METHOD)
 for method in methods:
     for i in insts.index:
         insts.loc[i, method + '_opt_gap_tmp'] = \

@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import pickle as pkl
 import os
+import re
 from utils import tools
 
 # Debug
@@ -31,9 +32,10 @@ if method == 'not specified':
 else:
     methods = [method]
 
-prefix = 'result_' + args.instance + '_' + inst_nr
+pattern = 'result_' + args.instance + '_'
+pattern += r'\d' if inst_nr == '' else ''
 files = [file for file in os.listdir(FILEPATH_PICKLES)
-         if file.startswith(prefix)]
+         if (re.match('result_' + args.instance + r'_\d', file) is not None)]
 
 inst = tools.inst_load(FILEPATH_INSTANCE)
 for file in files:
@@ -57,11 +59,14 @@ for file in files:
     # per admission
     MA = tools.moving_average_admission(kpi_df, K, M)
     ci_perc = tools.conf_int(alpha, MA)
-    inst.loc[row_id, [method+'_perc', method+'_ci_perc']] = MA.mean(), ci_perc
+    inst.loc[row_id, [method+'_perc', method+'_perc_ci']] = MA.mean(), ci_perc
     # per time
     MA, _ = tools.moving_average(kpi_df, K, M, T)
     ci_g = tools.conf_int(alpha, MA)
-    inst.loc[row_id, [method+'_g', method+'_ci_g']] = MA.mean(), ci_g
+    inst.loc[row_id, [method+'_g', method+'_g_ci']] = MA.mean(), ci_g
     pkl.dump(pickle, open(FILEPATH_PICKLES + file, 'wb'))
+
 inst.to_csv(FILEPATH_INSTANCE, index=False)
 print('saved:', FILEPATH_INSTANCE)
+
+tools.solved_and_left(inst, sim=True)

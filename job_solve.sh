@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name "vi_ED_solve"
 #SBATCH --cpus-per-task 16
-#SBATCH --time 0-05:00:00
+#SBATCH --time 0-04:00:00
 #SBATCH --array 1-1
 #SBATCH --output results/read/prints_%A_%a.out
 #SBATCH --error results/read/prints_%A_%a.err

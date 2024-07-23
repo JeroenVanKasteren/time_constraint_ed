@@ -21,7 +21,7 @@ instances = [['J1', '0-00:20:00', '108', 'all'],
 
 for instance, time, n_array, method in instances:
     script = JOBSCRIPT.format(
-        name=instance + '_sim_ED',
+        name=instance + '_' + method + '_sim_ED',
         time=time,
         n_array=n_array,
         method=method,
