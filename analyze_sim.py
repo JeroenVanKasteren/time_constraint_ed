@@ -12,7 +12,7 @@ FILEPATH_INSTANCE = 'results/'
 FILEPATH_READ = 'results/read/'
 FILEPATH_PICKLES = 'results/simulation_pickles/'
 FILEPATH_V = 'results/value_functions/'
-INSTANCES_ID = '01'
+INSTANCES_ID = 'J1'
 FILEPATH_INSTANCES = 'results/instances_' + INSTANCES_ID + '.csv'
 
 instance_names = [f for f in os.listdir(FILEPATH_INSTANCE)
@@ -49,38 +49,6 @@ plotting.plot_multi_bar(FILEPATH_INSTANCE, instances, methods, 'perc')
 
 # Use instance 3 with mu_j = mu for all j and compare with FCFS
 
-
-def theory(inst_row, gamma):
-    """
-    Calculates statistics of
-    (Checked with Erlang C calculator, M/M/s)
-
-    parameters
-        inst_row: one row of instance dataframe
-        gamma: time scaling factor
-
-    return
-        g         (float): long term average reward
-        exp_wait  (float): expected waiting time, E(W_q)
-        tail_prob (float): P(W>t)
-    """
-    g = 0
-    lab = sum(inst_row.lab)
-    pi_0 = Env.get_pi_0(gamma, inst_row.S, inst_row.load, lab)
-    block_prob = pi_0 / (1 - inst_row.load)
-    exp_wait = block_prob / (inst_row.S * inst_row.mu[0] - lab)
-    success_prob = []
-    for i in range(inst_row.J):
-        prob_i = inst_row.lab[i] / lab
-        tail_prob_i = Env.get_tail_prob(gamma, inst_row.S, inst_row.load, lab,
-                                        inst_row.mu[i], pi_0,
-                                        inst_row.t[i]*gamma)
-        # identical
-        # tail_prob_i = block_prob * np.exp(-(inst_row.S * inst_row.mu[i] - lab)
-        #                                   * inst_row.t[i])
-        g += prob_i * lab * (inst_row.r[i] - inst_row.c[i] * tail_prob_i)
-        success_prob.append(1 - tail_prob_i)
-    return exp_wait, g, success_prob
 
 
 # interested = [instance_names[i - 1] for i in [1, 3, 9, 10, 11, 12]]

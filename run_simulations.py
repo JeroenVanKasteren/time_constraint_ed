@@ -7,7 +7,7 @@ FILEPATH_RESULT = 'results/simulation_pickles/result_'
 
 # local simulation ----------------
 # instances_name = 'sim'
-# inst = tools.inst_load(FILEPATH_INSTANCE + instance_name + '_sim.csv')
+# inst = tools.inst_load(FILEPATH_INSTANCE + instances_name + '_sim.csv')
 # for array_id in range(1, 3):  # len(inst) + 1):
 
 # local / Debug

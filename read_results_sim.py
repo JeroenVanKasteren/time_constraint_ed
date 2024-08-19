@@ -21,12 +21,12 @@ FILEPATH_RESULT = 'results/'
 FILEPATH_PICKLES = 'results/simulation_pickles/'
 
 inst_nr = ''  # '' to loop over all
-method = 'not specified'
+method = 'not_specified'
 start_K = int(1e2)
 M = 100
 alpha = 0.05
 
-if method == 'not specified':
+if method == 'not_specified':
     methods = ['ospi', 'cmu_t_min', 'cmu_t_max', 'fcfs', 'sdf',
                'sdfprior', 'l_max', 'l_min']
 else:

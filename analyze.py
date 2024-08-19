@@ -14,30 +14,51 @@ INSTANCES_ID = 'J1'
 FILEPATH_INSTANCE = 'results/instances_' + INSTANCES_ID
 FILEPATH_V = 'results/value_functions/'
 
+# Load in instance_set and extract methods used
 inst_set = tools.inst_load(FILEPATH_INSTANCE + '.csv')
+is_sim = 'sim' in INSTANCES_ID
+tools.solved_and_left(inst_set, sim=is_sim)
+if not is_sim:
+    solve_methods = ['_'.join(column.split('_')[:-2])
+                     for column in inst_set.columns
+                     if column.endswith('job_id')]
+
+# If a solve set, load in corresponding simulation set and append to inst_set
+has_sim = False
+if (not is_sim) and (FILEPATH_INSTANCE + '_sim.csv' in os.listdir('results')):
+    has_sim = True
+    sim_set = tools.inst_load(FILEPATH_INSTANCE + '_sim.csv')
+    tools.solved_and_left(inst_set, sim=True)
+    sim_methods = ['_'.join(column.split('_')[:-1])
+                   for column in sim_set.columns
+                   if column.endswith('_g')]
+    suffixes = ['_g', '_g_ci', '_perc', '_perc_ci']
+    for method in sim_methods:
+        inst_set[[method + x + '_sim' for x in suffixes]] = (
+            sim_set[[method + x for x in suffixes]].copy())
+methods_both = list(set(solve_methods) & set(sim_methods))
+
 inst_set['smu(1-rho)'] = tools.get_smu_rho(inst_set.lab,
                                            inst_set.mu,
                                            inst_set.S)
-tools.solved_and_left(inst_set)
-methods = ['_'.join(column.split('_')[:-2]) for column in inst_set.columns
-           if column.endswith('job_id')]
-if 'instances_' + INSTANCES_ID + '_sim.csv' in os.listdir('results'):
-    sim_set = tools.inst_load(FILEPATH_INSTANCE + '_sim.csv')
-    tools.solved_and_left(sim_set, sim=True)
-    sim_methods = ['_'.join(column.split('_')[:-1]) for column in
-                   sim_set.columns if column.endswith('_g')]
-    sim_set['smu(1-rho)'] = tools.get_smu_rho(sim_set.lab,
-                                              sim_set.mu,
-                                              sim_set.S)
+theory_g, theory_success_prob = [], []
+inst_set['theory_g'] = theory_g
 
 # inst_set[method + '_time'] = inst_set[method + '_time'].map(
-    #     lambda x: x if pd.isnull(x) else tools.get_time(x))
+#     lambda x: x if pd.isnull(x) else tools.get_time(x))
 # inst_conv = inst_set[pd.notnull(inst_set[method + '_g']) &
 #                      pd.notnull(inst_set[opt_m + '_g'])]
 # inst_part = inst_set[pd.notnull(inst_set[method + '_g']) |
 #                      pd.notnull(inst_set[opt_m + '_g'])]
 # inst_tmp = inst_set[pd.notnull(inst_set[method + '_g_tmp']) &
 #                     pd.notnull(inst_set[opt_m + '_g_tmp'])]
+
+# Difference between theory, solve, and sim
+exp_wait, g, success_prob = tools.get_gen_erlang_c(inst_row, 1e6)
+print(f'inst: {instance_name} \n'
+      f'upper bound of g: {sum(inst.r[0] * inst.lab[0]):0.4f} \n'
+      f'Theory, g={g:0.4f}, E(W)={exp_wait:0.4f}, '
+      f'P(W<t) = {["%.4f" % elem for elem in success_prob]}')
 
 opt_m = 'vi'
 opt_gap = {}

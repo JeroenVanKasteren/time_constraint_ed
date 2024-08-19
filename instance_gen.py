@@ -33,7 +33,7 @@ def main(name, solve):
     instance_columns = ['J', 'S', 'gamma', 'D',
                         'mu', 'lab', 'load', 'imbalance',
                         't', 'c', 'r',
-                        't_prob']
+                        't_prob', 'theory_g']
     # Ensure method names are distinguishable (unique: '_' + method + '_job')
     if solve:
         methods = ['vi', 'ospi', 'sdf', 'fcfs', 'pi', 'cmu_t_min']
