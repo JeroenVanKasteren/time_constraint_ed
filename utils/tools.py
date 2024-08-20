@@ -96,37 +96,39 @@ def get_erlang_c(mu, rho, s, t=0):
     return erlang_c, exp_w, pi_0, prob_late
 
 
-# def get_gen_erlang_c(inst_row, gamma):
-#     """
-#     Calculates statistics of inst_row, also for multiple classes.
-#     (Checked with Erlang C calculator, M/M/s)
-#
-#     parameters
-#         inst_row: one row of instance dataframe
-#         gamma: time scaling factor
-#
-#     return
-#         g         (float): long term average reward
-#         exp_wait  (float): expected waiting time, E(W_q)
-#         tail_prob (float): P(W>t)
-#     """
-#     g = 0
-#     lab = sum(inst_row.lab)
-#     pi_0 = Env.get_pi_0(gamma, inst_row.S, inst_row.load, lab)
-#     block_prob = pi_0 / (1 - inst_row.load)
-#     exp_wait = block_prob / (inst_row.S * inst_row.mu[0] - lab)
-#     success_prob = []
-#     for i in range(inst_row.J):
-#         prob_i = inst_row.lab[i] / lab
-#         tail_prob_i = Env.get_tail_prob(gamma, inst_row.S, inst_row.load, lab,
-#                                         inst_row.mu[i], pi_0,
-#                                         inst_row.t[i]*gamma)
-#         # identical
-#         # tail_prob_i = block_prob * np.exp(-(inst_row.S * inst_row.mu[i] - lab)
-#         #                                   * inst_row.t[i])
-#         g += prob_i * lab * (inst_row.r[i] - inst_row.c[i] * tail_prob_i)
-#         success_prob.append(1 - tail_prob_i)
-#     return exp_wait, g, success_prob
+def get_erlang_c_gam(inst, gamma):
+    """
+    Calculates statistics of inst, also for multiple classes.
+    (Checked with Erlang C calculator, M/M/s)
+    Works for J=1 and mu_i = mu for all i.
+
+    parameters
+        inst: one row of instance dataframe
+        gamma: time scaling factor
+
+    return
+        g         (float): long term average reward
+        exp_wait  (float): expected waiting time, E(W_q)
+        tail_prob (float): P(W>t)
+    """
+
+    lab = sum(inst.lab)
+    mu = lab / sum(inst.lab / inst.mu)
+    pi_0 = Env.get_pi_0(gamma, inst.S, inst.load, lab)
+    block_prob = pi_0 / (1 - inst.load)
+    exp_wait = block_prob / (inst.S * mu - lab)
+
+    g = 0
+    success_prob = []
+    for i in range(inst.J):
+        tail_prob_i = Env.get_tail_prob(gamma, inst.S, inst.load, lab,
+                                        mu, pi_0, inst.t[i]*gamma)
+        # identical
+        # tail_prob_i = block_prob * np.exp(-(inst_row.S * inst_row.mu[i] - lab)
+        #                                   * inst_row.t[i])
+        g += inst.lab[i] * (inst.r[i] - inst.c[i] * tail_prob_i)
+        success_prob.append(1 - tail_prob_i)
+    return exp_wait, g, success_prob
 
 
 def get_instance_grid(param_grid, sim=False, max_t_prob=0.9, max_size=2e6,

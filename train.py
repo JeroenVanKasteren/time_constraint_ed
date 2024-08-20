@@ -121,7 +121,8 @@ def main(raw_args=None):
             g_mem = learner.policy_iteration(env, g_mem=g_mem, Pi=Pi, V=V,
                                              max_pi_iter=max_pi_iter)
         else:
-            g_mem = learner.policy_iteration(env, max_pi_iter=max_pi_iter)
+            V = OneStepPolicyImprovement().get_v_app(env)
+            g_mem = learner.policy_iteration(env, max_pi_iter=max_pi_iter, V=V)
         np.savez(FILEPATH_V + 'g_' + args.instance + '_' + str(inst.iloc[0])
                  + '_' + args.method + '.npz', g_mem)
     else:

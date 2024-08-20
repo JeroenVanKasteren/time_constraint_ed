@@ -11,11 +11,12 @@ import numpy as np
 from utils import plotting, tools, TimeConstraintEDs as Env
 
 INSTANCES_ID = 'J1'
-FILEPATH_INSTANCE = 'results/instances_' + INSTANCES_ID
+FILEPATH_RESULTS = 'results/'
 FILEPATH_V = 'results/value_functions/'
 
 # Load in instance_set and extract methods used
-inst_set = tools.inst_load(FILEPATH_INSTANCE + '.csv')
+instance_name = 'instances_' + INSTANCES_ID
+inst_set = tools.inst_load(FILEPATH_RESULTS + instance_name + '.csv')
 is_sim = 'sim' in INSTANCES_ID
 tools.solved_and_left(inst_set, sim=is_sim)
 if not is_sim:
@@ -25,10 +26,11 @@ if not is_sim:
 
 # If a solve set, load in corresponding simulation set and append to inst_set
 has_sim = False
-if (not is_sim) and (FILEPATH_INSTANCE + '_sim.csv' in os.listdir('results')):
+if ((not is_sim) and
+        (instance_name + '_sim.csv' in os.listdir(FILEPATH_RESULTS))):
     has_sim = True
-    sim_set = tools.inst_load(FILEPATH_INSTANCE + '_sim.csv')
-    tools.solved_and_left(inst_set, sim=True)
+    sim_set = tools.inst_load(FILEPATH_RESULTS + instance_name + '_sim.csv')
+    tools.solved_and_left(sim_set, sim=True)
     sim_methods = ['_'.join(column.split('_')[:-1])
                    for column in sim_set.columns
                    if column.endswith('_g')]
@@ -41,32 +43,71 @@ methods_both = list(set(solve_methods) & set(sim_methods))
 inst_set['smu(1-rho)'] = tools.get_smu_rho(inst_set.lab,
                                            inst_set.mu,
                                            inst_set.S)
-theory_g, theory_success_prob = [], []
-inst_set['theory_g'] = theory_g
-
-# inst_set[method + '_time'] = inst_set[method + '_time'].map(
-#     lambda x: x if pd.isnull(x) else tools.get_time(x))
-# inst_conv = inst_set[pd.notnull(inst_set[method + '_g']) &
-#                      pd.notnull(inst_set[opt_m + '_g'])]
-# inst_part = inst_set[pd.notnull(inst_set[method + '_g']) |
-#                      pd.notnull(inst_set[opt_m + '_g'])]
-# inst_tmp = inst_set[pd.notnull(inst_set[method + '_g_tmp']) &
-#                     pd.notnull(inst_set[opt_m + '_g_tmp'])]
 
 # Difference between theory, solve, and sim
-exp_wait, g, success_prob = tools.get_gen_erlang_c(inst_row, 1e6)
-print(f'inst: {instance_name} \n'
-      f'upper bound of g: {sum(inst.r[0] * inst.lab[0]):0.4f} \n'
-      f'Theory, g={g:0.4f}, E(W)={exp_wait:0.4f}, '
-      f'P(W<t) = {["%.4f" % elem for elem in success_prob]}')
+inst_j1 = inst_set[inst_set.J == 1]
+theory_g = []
+theory_g_gam = []
+for i, row in inst_j1.iterrows():
+    _, _, _, prob_late = tools.get_erlang_c(row.mu[0], row.load, row.S,
+                                            t=row.t[0])
+    theory_g.append(row.lab[0] * (row.r[0] - row.c[0] * prob_late))
+    _, g, _ = tools.get_erlang_c_gam(row, row.gamma)
+    theory_g_gam.append(g)
+inst_j1['theory_g'] = theory_g
+inst_j1['theory_g_gam'] = theory_g_gam
+
+# for J = 1
+data = inst_j1
+opt_m = 'theory'
+ref_m = 'theory'
+# theory vs sim
+methods, suffix, opt_suf, ref_suf = sim_methods, '_g_sim', '_g', '_g'
+# theory discr. vs solve
+methods, suffix, opt_suf, ref_suf = solve_methods, '_g', '_g_gam', '_g_gam'
+# theory vs solve
+methods, suffix, opt_suf, ref_suf = solve_methods, '_g', '_g', '_g'
+
+# TODO continue at home
+
+# for any J
+data = inst_set
+opt_m = 'vi'
+# compare opt vi vs solve
+ref_m = 'vi'
+methods, suffix, opt_suf, ref_suf = solve_methods, '_g', '_g'
+# compare opt vi vs sim
+ref_m = 'vi'
+methods, suffix, opt_suf, ref_suf = solve_methods, '_g', '_g'
+# compare opt ospi vs sim
+opt_m = ospi
+methods, suffix, opt_suf, ref_suf = solve_methods, '_g', '_g'
+
+opt_gap = {}
+for method in [m for m in methods if m != opt_m]:
+    subset = data[[method + suffix, opt_m + opt_suffix]].dropna()
+    opt_gap[method] = ((subset[opt_m + opt_suffix] - subset[method + suffix])
+                       / subset[ref_m + ref_suffix])
+
+fig, ax = plt.subplots()
+for i, method in enumerate([m for m in methods if m != opt_m]):
+    ax.boxplot(opt_gap[method], positions=[i], tick_labels=[method])
+plt.axhline(0)
+ax.set_title('Optimality gap for ' + INSTANCES_ID)
+plt.show()
+
+# exp_wait, g, success_prob = tools.get_gen_erlang_c(inst_row, 1e6)
+# print(f'inst: {instance_name} \n'
+#       f'upper bound of g: {sum(inst.r[0] * inst.lab[0]):0.4f} \n'
+#       f'Theory, g={g:0.4f}, E(W)={exp_wait:0.4f}, '
+#       f'P(W<t) = {["%.4f" % elem for elem in success_prob]}')
 
 opt_m = 'vi'
+methods, suffix, opt_suffix = solve_methods, '_g', '_g_gam'
 opt_gap = {}
 for method in [m for m in methods if m != opt_m]:
     subset = inst_set[[method + '_g', opt_m + '_g']].dropna()
-    inst_conv = subset[pd.notnull(subset[method + '_g']) &
-                       pd.notnull(subset[opt_m + '_g'])]
-    opt_gap[method] = (abs(subset[method + '_g'] - subset[opt_m + '_g'])
+    opt_gap[method] = ((subset[opt_m + '_g'] - subset[method + '_g'])
                        / subset[opt_m + '_g'])
 
 ref_m = 'ospi'
@@ -80,6 +121,7 @@ for i, method in enumerate([m for m in methods if m != ref_m]):
 fig, ax = plt.subplots()
 for i, method in enumerate([m for m in methods if m != opt_m]):
     ax.boxplot(opt_gap[method], positions=[i], tick_labels=[method])
+plt.axhline(0)
 ax.set_title('Optimality gap for ' + INSTANCES_ID)
 plt.show()
 

@@ -51,6 +51,8 @@ plotting.plot_multi_bar(FILEPATH_INSTANCE, instances, methods, 'perc')
 
 
 
+
+
 # interested = [instance_names[i - 1] for i in [1, 3, 9, 10, 11, 12]]
 # interested = [instance_names[i - 1] for i in [9]]
 for instance_name in instance_names:
