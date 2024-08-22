@@ -37,6 +37,98 @@ def plot_convergence(kpi_df, method, k, t, m=100):
     plt.show()
 
 
+def plot_gap(data, methods, meth_v, comp_m, comp_v, ref_m, ref_v, title,
+             violin=False, multi_xyc=False, title_xyc='',
+             x_lab='size', y_lab='smu(1-rho)'):
+    """
+    Boxplot (optimality) gap of value (v) for methods in comparison to value of
+    a comparison method, relative to value of reference method.
+    (A method is not compared against itself.)
+    """
+
+    gap = {}
+    plot_methods = [m for m in methods if m != comp_m]
+    for method in plot_methods:
+        subset_cols = list({comp_m + comp_v, method + meth_v, ref_m + ref_v})
+        subset = data[subset_cols].dropna()
+        gap[method] = ((subset[comp_m + comp_v] - subset[method + meth_v])
+                       / subset[ref_m + ref_v]) * 100
+        if multi_xyc and not gap[method].empty:
+            subset_cols.extend([x_lab, y_lab])
+            subset = data[subset_cols].dropna()
+            plot_xyc(subset[x_lab],
+                     subset[y_lab],
+                     gap[method],
+                     title=comp_m + ' vs ' + method + title_xyc,
+                     x_lab=x_lab,
+                     y_lab=y_lab,
+                     c_lab='gap (%)')
+
+    fig, ax = plt.subplots()
+    for i, method in enumerate([m for m in methods if m != comp_m]):
+        if violin:
+            if gap[method].empty:  # Edge case for empty data
+                gap[method][0] = 0
+            ax.violinplot(gap[method], positions=[i], showmedians=True)
+        else:
+            ax.boxplot(gap[method], positions=[i], tick_labels=[method])
+    plt.axhline(0)
+    ax.set_title(title)
+    ax.set_ylabel('gap (%)')
+    if violin:
+        ax.set_xticks(range(len(plot_methods)))
+        ax.set_xticklabels(plot_methods)
+    plt.show()
+
+
+def plot_multi_bar(filepath, instance_names, methods, kpi, normalize=False,
+                   width=0.1):
+    # https://matplotlib.org/stable/gallery/lines_bars_and_markers/barchart.html#sphx-glr-gallery-lines-bars-and-markers-barchart-py
+    performances = {method: [[], []] for method in methods}
+    min_y, max_y = 0, 0
+    inst_nrs = [name.split('_')[2][:-4] for name in instance_names]
+    for instance_name in instance_names:
+        inst = utils.tools.inst_load(filepath + instance_name)
+        optimal = sum(inst.r[0] * inst.lab[0])
+        for row_id, method in enumerate(methods):
+            if normalize:
+                performances[method][0].extend(
+                    [inst.loc[row_id, kpi] / optimal])
+                performances[method][1].extend(
+                    [inst.loc[row_id, 'ci_' + kpi] / optimal])
+            else:
+                performances[method][0].extend([inst.loc[row_id, kpi]])
+                performances[method][1].extend([inst.loc[row_id, 'ci_' + kpi]])
+        min_y = np.min([min_y, np.min(inst[kpi] - inst['ci_' + kpi])])
+        max_y = np.max([max_y, np.max(inst[kpi] + inst['ci_' + kpi])])
+    if normalize:
+        min_y, max_y = 0, 1
+    else:
+        min_y, max_y = (utils.tools.round_significance(min_y * 1.1),
+                        utils.tools.round_significance(max_y * 1.1))
+    x = np.arange(len(instance_names))  # the label locations
+    multiplier = 0
+    fig, ax = plt.subplots(layout='constrained')
+    for method, [value, conf_int] in performances.items():
+        value, conf_int = np.array(value), np.array(conf_int)
+        offset = width * multiplier
+        rects = ax.bar(x + offset, value, width, label=method, yerr=conf_int)
+        ax.bar_label(rects, padding=3, fmt='{0:.3f}', fontsize=6, rotation=90)
+        multiplier += 1
+    ax.set_ylabel('g')
+    if kpi == 'perc':
+        ax.set_ylabel('Percentage of arrivals served on time')
+    else:
+        if normalize:
+            ax.set_ylabel('Optimality gap of g')
+        else:
+            ax.set_ylabel('Long term average reward')
+    ax.set_xticks(x + width, inst_nrs)
+    ax.legend(loc='lower left', ncols=3)
+    ax.set_ylim(min_y, max_y)
+    plt.show()
+
+
 def plot_pi(env, Pi, zero_state, **kwargs):
     """
     Plot policy Pi.
@@ -95,7 +187,7 @@ def plot_pi(env, Pi, zero_state, **kwargs):
             t_x, t_y = [0, t[i]], [t[i], t[i]]
     else:
         i, j = choosing_classes(env, **kwargs)
-        states[1 + j] = slice(d_cap) if 'D' in kwargs else slice(None)  # x_j
+        states[1 + j] = slice(d_cap) if d_cap > 0 else slice(None)  # x_j
         print_states[1 + j] = ':'
         max_ticks = 10
         title = 'Policy, ' + str(print_states)
@@ -104,7 +196,7 @@ def plot_pi(env, Pi, zero_state, **kwargs):
             t_x, t_y = [0, t[i], t[i]], [t[i], t[i], 0]
     print_states[1 + i] = ':'
     y_label = 'Waiting time state FIL queue ' + str(i + 1)
-    states[1 + i] = slice(d_cap) if 'D' in kwargs else slice(None)  # x_i
+    states[1 + i] = slice(d_cap) if d_cap > 0 else slice(None)  # x_i
     pi_i = Pi[tuple(states)]
     x_ticks = np.arange(0, pi_i.shape[1], max(1, np.ceil(pi_i.shape[1]
                                                          / max_ticks)))
@@ -146,60 +238,11 @@ def plot_pi(env, Pi, zero_state, **kwargs):
     ax.set_yticks(np.arange(pi_i.shape[0] + 1) - 0.5, minor=True)
     ax.set_xticklabels(x_ticks)
     ax.set_yticklabels(y_ticks)
-    if 'cap_d' in kwargs:
-        cap_d = kwargs.get('cap_d')
-        ax.set_ylim(0, cap_d)
+    if d_cap > 0:
+        ax.set_ylim(0, d_cap)
         if not (('i' in kwargs) & ('j' not in kwargs)):
-            ax.set_xlim(0, cap_d)
+            ax.set_xlim(0, d_cap)
     ax.grid(which='minor', color='black', linestyle='-', linewidth=0.25)
-    plt.show()
-
-
-def plot_multi_bar(filepath, instance_names, methods, kpi, normalize=False,
-                   width=0.1):
-    # https://matplotlib.org/stable/gallery/lines_bars_and_markers/barchart.html#sphx-glr-gallery-lines-bars-and-markers-barchart-py
-    performances = {method: [[], []] for method in methods}
-    min_y, max_y = 0, 0
-    inst_nrs = [name.split('_')[2][:-4] for name in instance_names]
-    for instance_name in instance_names:
-        inst = utils.tools.inst_load(filepath + instance_name)
-        optimal = sum(inst.r[0] * inst.lab[0])
-        for row_id, method in enumerate(methods):
-            if normalize:
-                performances[method][0].extend(
-                    [inst.loc[row_id, kpi] / optimal])
-                performances[method][1].extend(
-                    [inst.loc[row_id, 'ci_' + kpi] / optimal])
-            else:
-                performances[method][0].extend([inst.loc[row_id, kpi]])
-                performances[method][1].extend([inst.loc[row_id, 'ci_' + kpi]])
-        min_y = np.min([min_y, np.min(inst[kpi] - inst['ci_' + kpi])])
-        max_y = np.max([max_y, np.max(inst[kpi] + inst['ci_' + kpi])])
-    if normalize:
-        min_y, max_y = 0, 1
-    else:
-        min_y, max_y = (utils.tools.round_significance(min_y * 1.1),
-                        utils.tools.round_significance(max_y * 1.1))
-    x = np.arange(len(instance_names))  # the label locations
-    multiplier = 0
-    fig, ax = plt.subplots(layout='constrained')
-    for method, [value, conf_int] in performances.items():
-        value, conf_int = np.array(value), np.array(conf_int)
-        offset = width * multiplier
-        rects = ax.bar(x + offset, value, width, label=method, yerr=conf_int)
-        ax.bar_label(rects, padding=3, fmt='{0:.3f}', fontsize=6, rotation=90)
-        multiplier += 1
-    ax.set_ylabel('g')
-    if kpi == 'perc':
-        ax.set_ylabel('Percentage of arrivals served on time')
-    else:
-        if normalize:
-            ax.set_ylabel('Optimality gap of g')
-        else:
-            ax.set_ylabel('Long term average reward')
-    ax.set_xticks(x + width, inst_nrs)
-    ax.legend(loc='lower left', ncols=3)
-    ax.set_ylim(min_y, max_y)
     plt.show()
 
 
