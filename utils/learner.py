@@ -30,11 +30,9 @@ class PolicyIteration:
         self.g = kwargs.get('g', 0)
         self.iter = 0
         self.converged = False
-        if 'Pi' in kwargs:
-            self.Pi = kwargs.get('Pi')
+        self.Pi = kwargs.get('Pi', None)
         self.V = None
         self.W = None
-        self.Pi = None
 
 
     @staticmethod

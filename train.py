@@ -121,8 +121,18 @@ def main(raw_args=None):
             g_mem = learner.policy_iteration(env, g_mem=g_mem, Pi=Pi, V=V,
                                              max_pi_iter=max_pi_iter)
         else:
-            V = OneStepPolicyImprovement().get_v_app(env)
-            g_mem = learner.policy_iteration(env, max_pi_iter=max_pi_iter, V=V)
+            ospi_file = 'pi_' + args.instance + '_' + str(
+                inst.iloc[0]) + '_ospi.npz'
+            if ospi_file in os.listdir(FILEPATH_V):
+                print('Loading Pi from file', flush=True)
+                learner.Pi = np.load(FILEPATH_V + pi_file)['arr_0']
+            else:
+                ospi_learner = OneStepPolicyImprovement()
+                ospi_learner.V_app = ospi_learner.get_v_app(env)
+                learner.one_step_policy_improvement(env, learner.V_app)
+            g_mem = learner.policy_iteration(env,
+                                             max_pi_iter=max_pi_iter,
+                                             Pi=learner.Pi)
         np.savez(FILEPATH_V + 'g_' + args.instance + '_' + str(inst.iloc[0])
                  + '_' + args.method + '.npz', g_mem)
     else:
