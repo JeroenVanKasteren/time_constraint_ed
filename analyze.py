@@ -8,13 +8,21 @@ import matplotlib.pyplot as plt
 import os
 import pandas as pd
 import numpy as np
-from utils import plotting, tools, TimeConstraintEDs as Env
+from utils import plotting, tools, TimeConstraintEDs as Env, PolicyIteration
 
 INSTANCES_ID = 'J1'
 FILEPATH_RESULTS = 'results/'
 FILEPATH_V = 'results/value_functions/'
 multi_xyc = True
 violin = True
+
+ids_to_analyze = {'J1': [1, 2, 3], 'J2': [1, 2, 3]}  # ID_i
+cap_d = 100
+summarize_policy = True
+plot_policy = True
+plot_g_mem = True
+plot_v = True
+plot_w = True
 
 # Load in instance_set and extract methods used
 instance_name = 'instances_' + INSTANCES_ID
@@ -142,40 +150,103 @@ plotting.plot_gap(inst_set,
 #       f'Theory, g={g:0.4f}, E(W)={exp_wait:0.4f}, '
 #       f'P(W<t) = {["%.4f" % elem for elem in success_prob]}')
 
+plot_v = True
+plot_w = True
+plot_g_mem = True
+# iets met method doen, waarbij pi, v, en w voor alle methods
+# alleen g_mem is specifiek voor pi
 # to doorspitten
-chosen_files = ['J1_2', 'J1_5', 'J2_8']  # ID_i
-for file_id in chosen_files:
-    file = 'g_' + file_id + '_pi.npz'
-    g_mem = np.load(FILEPATH_V + 'g_' + file)['arr_0']
+for inst_id in ids_to_analyze[INSTANCES_ID]:
+    inst = inst_set.iloc[inst_id]
+    env = Env(J=inst.J, S=inst.S, D=inst.D,
+              gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
+              mu=inst.mu, lab=inst.lab)
+    for method in solve_methods:
+        name = method + ' inst: ' + INSTANCES_ID + '_' + str(inst_id)
+        state = np.concatenate(([0] * inst.J,  # S-1, int(S/2)
+                                [0, inst.S - 1])).astype(object)
+        if plot_policy or summarize_policy:
+            Pi = np.load(FILEPATH_V + '_'.join(['pi',
+                                                INSTANCES_ID,
+                                                str(inst_id),
+                                                method + '.npz']))['arr_0']
+            if summarize_policy:
+                pi_learner = PolicyIteration(Pi=Pi)
+                tools.summarize_policy(env, pi_learner, print_per_time=False)
+            if plot_policy:
+                state_pi = np.concatenate(([0], state))
+                plotting.plot_pi(env, Pi, False,
+                                 state=state_pi,
+                                 name=name,
+                                 t=inst.t,
+                                 cap_d=cap_d)
+        if plot_w:
+            w = np.load(FILEPATH_V + '_'.join(['w',
+                                               INSTANCES_ID,
+                                               str(inst_id),
+                                               method + '.npz']))['arr_0']
+            state_w = np.concatenate(([0], state))
+            plotting.plot_w(env, w, False,
+                            state=state_w,
+                            name=name,
+                            t=inst.t,
+                            cap_d=cap_d)
+        if plot_v:
+            V = np.load(FILEPATH_V + '_'.join(['v',
+                                               INSTANCES_ID,
+                                               str(inst_id),
+                                               method + '.npz']))['arr_0']
+            plotting.plot_v(env, V, False,
+                            state=state,
+                            name=name,
+                            t=inst.t,
+                            cap_d=cap_d)
+    if plot_g_mem:
+        g_mem = np.load(FILEPATH_V + '_'.join(['g', INSTANCES_ID, str(inst_id),
+                                               'pi.npz']))['arr_0']
+        g_ospi = np.load(FILEPATH_V + '_'.join(['g', INSTANCES_ID, str(inst_id),
+                                               'ospi.npz']))['arr_0']
+        plt.scatter(range(1 + len(g_mem)), [g_ospi] + g_mem)
+        plt.xlabel('Iterations')
+        plt.ylabel('g')
+        plt.title('Policy Iteration starting with OSPI')
+        plt.show()
+
+# ONLY IF SOLVE PRESENT!
+# Make code to give an overview for the whole file of g_mem performance vs ospi
+# after each extra iteration.
+gap = {'abs': [], 'rel': []}
+for row in inst_set:
+    # row.vi_g, row.ospi_g
+    g_mem = np.load(FILEPATH_V + '_'.join(['g', INSTANCES_ID, str(inst_id),
+                                           'pi.npz']))['arr_0']
+    gap['abs'].append(g_mem)
+    gap['rel'].append(g_mem - g_ospi)
+    # draw line at opt
+
+subset_cols = list({comp_m + comp_v, method + meth_v, ref_m + ref_v})
+subset = data[subset_cols].dropna()
+gap[method] = ((subset[comp_m + comp_v] - subset[method + meth_v])
+               / subset[ref_m + ref_v]) * 100
+
+fig, ax = plt.subplots()
+for i, method in enumerate([m for m in methods if m != comp_m]):
+    if violin:
+        if gap[method].empty:  # Edge case for empty data
+            gap[method][0] = 0
+        ax.violinplot(gap[method], positions=[i], showmedians=True)
+    else:
+        ax.boxplot(gap[method], positions=[i], tick_labels=[method])
+plt.axhline(0)
+ax.set_title(title)
+ax.set_ylabel('gap (%)')
+if violin:
+    ax.set_xticks(range(len(plot_methods)))
+    ax.set_xticklabels(plot_methods)
+plt.show()
 
 # find file
 # for file in os.listdir(FILEPATH_V):
 #     if not (file.startswith('g_' + INSTANCES_ID)):
 #         continue  # or file.endswith('_pi.npz')):
 #     print(file)
-
-
-cap_d = 100
-solve_id = 0
-inst = tools.inst_load(FILEPATH_INSTANCE + '.csv')
-inst = inst.iloc[0]
-env = Env(J=inst.J, S=inst.S, D=inst.D,
-          gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
-          mu=inst.mu, lab=inst.lab)
-for method in methods:
-    pi_file = ('pi_' + INSTANCES_ID + '_' + str(solve_id) + '_' +
-               method + '.npz')
-    Pi = np.load(FILEPATH_V + pi_file)['arr_0']
-    name = method + '_' + str(solve_id)
-    state = np.concatenate(([0],
-                            [0] * inst.J,
-                            [0, int(inst.S / 2)])).astype(object)
-    plotting.plot_pi(env, Pi, False, state=state, name=name, t=inst.t)
-
-    v_file = ('v_' + INSTANCES_ID + '_' + str(solve_id) + '_' +
-              method + '.npz')
-    v = np.load(FILEPATH_V + v_file)['arr_0']
-    state = np.concatenate(([0] * inst.J,
-                            [0, int(inst.S / 2)])).astype(object)
-    name = method + '_' + str(solve_id)
-    plotting.plot_v(env, v, False, state=state, name=name)

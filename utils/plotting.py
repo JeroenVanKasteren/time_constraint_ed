@@ -258,6 +258,7 @@ def plot_v(env, V, zero_state, **kwargs):
 
     states = state.copy()
     print_states = state.astype('str')
+    d_cap = kwargs.get('d_cap', 0)
     t = kwargs.get('t', [0])
     if ('i' in kwargs) & ('j' not in kwargs):
         i = kwargs.get('i')
@@ -271,7 +272,7 @@ def plot_v(env, V, zero_state, **kwargs):
             t_x, t_y = [0, t[i]], [t[i], t[i]]
     else:
         i, j = choosing_classes(env, **kwargs)
-        states[j] = slice(None)  # x_j
+        states[j] = slice(d_cap) if d_cap > 0 else slice(None)  # x_j
         print_states[i] = ':'
         print_states[j] = ':'
         max_ticks = 10
@@ -282,13 +283,13 @@ def plot_v(env, V, zero_state, **kwargs):
             t_x, t_y = [0, t[i], t[i]], [t[i], t[i], 0]
     if 'name' in kwargs:
         title = kwargs.get('name') + ', ' + title
-    states[i] = slice(None)  # x_i
+    states[i] = slice(d_cap) if d_cap > 0 else slice(None)  # x_i
     print_states[i] = ':'
     V_i = V[tuple(states)]
 
     plt.imshow(V_i, origin='lower')
     if 't' in kwargs:
-        lines(xdata=t_x, ydata=t_y, linewidth=0.5,
+        lines(xdata=t_x, ydata=t_y, linewidth=0.5,  # t_x, t_y will be assigned
               linestyle='-.', color='green')
     plt.colorbar()
     plt.title(title)
