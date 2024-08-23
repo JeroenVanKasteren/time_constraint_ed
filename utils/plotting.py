@@ -37,7 +37,26 @@ def plot_convergence(kpi_df, method, k, t, m=100):
     plt.show()
 
 
-def plot_gap(data, methods, meth_v, comp_m, comp_v, ref_m, ref_v, title,
+def multi_boxplot(gap, keys, title, x_ticks, y_label, violin=False):
+    fig, ax = plt.subplots()
+    for i, key in enumerate(keys):
+        if violin:
+            if gap[key].empty:  # Edge case for empty data
+                gap[key][0] = 0
+            ax.violinplot(gap[key], positions=[i], showmedians=True)
+        else:
+            ax.boxplot(gap[key], positions=[i], tick_labels=[key])
+    plt.axhline(0)
+    ax.set_title(title)
+    ax.set_ylabel(y_label)
+    if violin:
+        ax.set_xticks(range(len(x_ticks)))
+        ax.set_xticklabels(x_ticks)
+    plt.show()
+
+
+def plot_gap(data, methods,
+             meth_v, comp_m, comp_v, ref_m, ref_v, title,
              violin=False, multi_xyc=False, title_xyc='',
              x_lab='size', y_lab='smu(1-rho)'):
     """
@@ -47,8 +66,9 @@ def plot_gap(data, methods, meth_v, comp_m, comp_v, ref_m, ref_v, title,
     """
 
     gap = {}
-    plot_methods = [m for m in methods if m != comp_m]
-    for method in plot_methods:
+    for method in methods:
+        if comp_m + comp_v == method + meth_v:
+            continue
         subset_cols = list({comp_m + comp_v, method + meth_v, ref_m + ref_v})
         subset = data[subset_cols].dropna()
         gap[method] = ((subset[comp_m + comp_v] - subset[method + meth_v])
@@ -63,22 +83,8 @@ def plot_gap(data, methods, meth_v, comp_m, comp_v, ref_m, ref_v, title,
                      x_lab=x_lab,
                      y_lab=y_lab,
                      c_lab='gap (%)')
-
-    fig, ax = plt.subplots()
-    for i, method in enumerate([m for m in methods if m != comp_m]):
-        if violin:
-            if gap[method].empty:  # Edge case for empty data
-                gap[method][0] = 0
-            ax.violinplot(gap[method], positions=[i], showmedians=True)
-        else:
-            ax.boxplot(gap[method], positions=[i], tick_labels=[method])
-    plt.axhline(0)
-    ax.set_title(title)
-    ax.set_ylabel('gap (%)')
-    if violin:
-        ax.set_xticks(range(len(plot_methods)))
-        ax.set_xticklabels(plot_methods)
-    plt.show()
+    multi_boxplot(gap, methods, title, methods,
+                  'gap (%)', violin=violin)
 
 
 def plot_multi_bar(filepath, instance_names, methods, kpi, normalize=False,
@@ -129,179 +135,136 @@ def plot_multi_bar(filepath, instance_names, methods, kpi, normalize=False,
     plt.show()
 
 
-def plot_pi(env, Pi, zero_state, **kwargs):
+def state_selection(env,
+                    dim_i=False,
+                    x=None,  # None, 'random', array
+                    s=None,  # None, 'random', number, array
+                    dep_arr=0,  # state[0] = i (arrival) / env.J + 1 (departure)
+                    wait_perc=None):  # percentage of target, float or array
+    if x == 'random':
+        x = env.x_states[np.random.randint(len(env.x_states))]
+    elif wait_perc is not None:
+        x = (np.ones(env.J) * env.t * env.gamma * wait_perc).astype(int)
+    elif x is None:
+        x = np.zeros(env.J)
+
+    if s == 'random':
+        s = env.s_states[np.random.randint(len(env.s_states))]
+    elif s is None:
+        s = np.zeros(env.J)
+    elif type(s) is int:  # Divide servers equally, with s spare servers
+        s = np.array((env.S - s) // env.J).astype(int)
+
+    assert len(x) == env.J, 'x has wrong dimension'
+    assert len(s) == env.J, 's has wrong dimension'
+    if dim_i:  # if a policy (# dim_i uneven, dim even)
+        state = np.concatenate((x, s)).astype(object)
+    else:
+        state = np.concatenate(([dep_arr], x, s))
+    return state
+
+
+def plot_heatmap(env, state, **kwargs):
     """
-    Plot policy Pi.
+    Plot policy Pi or value V or W.
 
     :param env: Environment object to extract dimension
     :type env: utils.env.TimeConstraintEDs
-    :param Pi: Numpy matrix, Policy to plot
-    :type Pi: numpy.ndarray
-    :param zero_state: Boolean, if True, plot x_i = 0 and s_i = 0
-    :type zero_state: bool
-    :key smu: bool, take policy after a departure if True
-    :key state: Numpy array, state to plot (array([0,0,0,0]).astype(object))
+    :param state: State (i, x, s)
+    :type state: numpy.ndarray
+    :key Pi/V/W: numpy.ndarray, data to plot
     :key i: int, queue i to plot
     :key j: int, queue j to plot
-    :key learner: String, name of the learner
-    :key name: String, name of the plot
+    :key title: String, title of the plot
     :key t: Numpy array, target per class
     :key d_cap: int, time cap for plot
     :return: -
 
-    If zero_state is True, take the state x_i = 0 and s_i = 0.
-    If zero_state is False, take the given state.
-    If zero_state is False and state is not given, take a random state.
-
-    If smu is given, plot the policy after a departure.
     If i given and j not, take x_i and s_i as axis.
     If i and j are given or only 2 queues (J=2), take x_i and x_j as axis.
     Otherwise, choose 2 random queues.
     """
-
-    if zero_state:
-        state = np.zeros(len(env.dim_i), 'int').astype(object)
-        state[0] = env.J + 1 if 'smu' in kwargs else 0
-    elif 'state' in kwargs:
-        state = kwargs.get('state')
-    else:  # Select a random valid states
-        x, s = (np.random.randint(len(env.x_states)),
-                np.random.randint(len(env.s_states)))
-        state = np.concatenate(([0],
-                                env.x_states[x],
-                                env.s_states[s])).astype(object)
-        state[0] = env.J + 1 if 'smu' in kwargs else 0
+    title = kwargs.get('title', '')
+    d_cap = kwargs.get('d_cap', 0)
+    t = kwargs.get('t', [0])
+    event = 'V' in kwargs
 
     states = state.copy()
     print_states = state.astype('str')
-    d_cap = kwargs.get('d_cap', 0)
-    t = kwargs.get('t', [0])
     if ('i' in kwargs) & ('j' not in kwargs):
         i = kwargs.get('i')
-        states[1 + i + env.J] = slice(None)  # s_i
-        print_states[1 + i + env.J] = ':'
-        max_ticks = 5
-        title = 'Policy, queue: ' + str(i + 1) + ', ' + str(print_states)
         x_label = 'Servers occupied by queue ' + str(i + 1)
+        states[event + i + env.J] = slice(None)  # s_i
+        print_states[event + i + env.J] = ':'  # s_i on x axis
+        max_ticks = kwargs.get('max_ticks', 5)
+        title = title + ' queue: ' + str(i + 1) + ', ' + str(print_states)
         if 't' in kwargs:
             t_x, t_y = [0, t[i]], [t[i], t[i]]
     else:
         i, j = choosing_classes(env, **kwargs)
-        states[1 + j] = slice(d_cap) if d_cap > 0 else slice(None)  # x_j
-        print_states[1 + j] = ':'
-        max_ticks = 10
-        title = 'Policy, ' + str(print_states)
         x_label = 'Waiting time state FIL queue ' + str(j + 1)
+        states[event + j] = slice(d_cap) if d_cap > 0 else slice(None)  # x_j
+        print_states[event + j] = ':'  # x_j on x axis
+        max_ticks = kwargs.get('max_ticks', 10)
+        title = title + str(print_states)
         if 't' in kwargs:
             t_x, t_y = [0, t[i], t[i]], [t[i], t[i], 0]
-    print_states[1 + i] = ':'
     y_label = 'Waiting time state FIL queue ' + str(i + 1)
-    states[1 + i] = slice(d_cap) if d_cap > 0 else slice(None)  # x_i
-    pi_i = Pi[tuple(states)]
-    x_ticks = np.arange(0, pi_i.shape[1], max(1, np.ceil(pi_i.shape[1]
-                                                         / max_ticks)))
-    y_ticks = np.arange(0, pi_i.shape[0], max(1, np.ceil(pi_i.shape[0]
-                                                         / max_ticks)))
-    if 'name' in kwargs:
-        title = kwargs.get('name') + ', ' + title
-    cols = ['black', 'grey', 'lightyellow', 'lightgrey']
-    queues = ['blue', 'crimson', 'darkgreen', 'gold', 'teal']
-    cols.extend(queues[0:env.J])
-    cmap = colors.ListedColormap(cols)  # Color list
-    dic = {}
-    for i in range(env.J):
-        dic['Queue ' + str(i + 1)] = queues[i]
-    dic['Keep Idle'] = cols[2]
-    dic['None Waiting'] = cols[3]
-    dic['Servers Full'] = cols[1]
-    dic['Not Evaluated'] = cols[0]
-    patches = [mpatches.Patch(edgecolor='black', facecolor=v, label=k)
-               for k, v in dic.items()]
+    states[event + i] = slice(d_cap) if d_cap > 0 else slice(None)  # x_i
+    print_states[event + i] = ':'  # x_i on y axis
 
-    bounds = [env.NOT_EVALUATED, env.SERVERS_FULL,
-              env.KEEP_IDLE, env.NONE_WAITING]
-    bounds.extend(np.arange(env.J + 1) + 1)
-    norm = colors.BoundaryNorm(bounds, cmap.N)
+    if 'V' in kwargs:
+        data = kwargs.get('V')[tuple(states)]
+    elif 'Pi' in kwargs:
+        data = kwargs.get('Pi')[tuple(states)]
+    elif 'W' in kwargs:
+        data = kwargs.get('W')[tuple(states)]
 
-    plt.imshow(pi_i, origin='lower', cmap=cmap, norm=norm)
+    if 'Pi' in kwargs:
+        color_list = ['black', 'grey', 'lightyellow', 'lightgrey']
+        queues = ['blue', 'crimson', 'darkgreen', 'gold', 'teal']
+        color_list.extend(queues[0:env.J])
+        cmap = colors.ListedColormap(color_list)  # Color list
+        dic = {'Not Evaluated': color_list[0],
+               'Servers Full': color_list[1],
+               'Keep Idle': color_list[2],
+               'None Waiting': color_list[3]}
+        for i in range(env.J):
+            dic['Queue ' + str(i + 1)] = queues[i]
+        patches = [mpatches.Patch(edgecolor='black', facecolor=v, label=k)
+                   for k, v in dic.items()]
+        bounds = ([env.NOT_EVALUATED, env.SERVERS_FULL,
+                   env.KEEP_IDLE, env.NONE_WAITING]
+                  + list(range(1, env.J + 2)))
+        norm = colors.BoundaryNorm(bounds, cmap.N)
+        plt.imshow(data, origin='lower', cmap=cmap, norm=norm)
+        plt.legend(handles=patches, loc=2, bbox_to_anchor=(1.01, 1))
+    else:  # 'V' or 'W' in kwargs
+        plt.imshow(data, origin='lower', cmap='coolwarm')
+        plt.colorbar()
+
     if 't' in kwargs:
         lines(xdata=t_x, ydata=t_y, linewidth=0.5,
               linestyle='-.', color='green')
-    plt.legend(handles=patches, loc=2, bbox_to_anchor=(1.01, 1))
+    x_ticks = np.arange(0, data.shape[1],
+                        max(1, np.ceil(data.shape[1] / max_ticks)))
+    y_ticks = np.arange(0, data.shape[0],
+                        max(1, np.ceil(data.shape[0] / max_ticks)))
     plt.title(title)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     ax = plt.gca()
     ax.set_xticks(x_ticks)
     ax.set_yticks(y_ticks)
-    ax.set_xticks(np.arange(pi_i.shape[1] + 1) - 0.5, minor=True)
-    ax.set_yticks(np.arange(pi_i.shape[0] + 1) - 0.5, minor=True)
+    ax.set_xticks(np.arange(data.shape[1] + 1) - 0.5, minor=True)
+    ax.set_yticks(np.arange(data.shape[0] + 1) - 0.5, minor=True)
     ax.set_xticklabels(x_ticks)
     ax.set_yticklabels(y_ticks)
     if d_cap > 0:
         ax.set_ylim(0, d_cap)
         if not (('i' in kwargs) & ('j' not in kwargs)):
             ax.set_xlim(0, d_cap)
-    ax.grid(which='minor', color='black', linestyle='-', linewidth=0.25)
-    plt.show()
-
-
-def plot_v(env, V, zero_state, **kwargs):
-    if zero_state:
-        state = np.zeros(len(env.dim), 'int').astype(object)
-    elif 'state' in kwargs:  # state = array([0,0,0,0]).astype(object)
-        state = kwargs.get('state')
-    else:  # Select a random valid states
-        state = np.concatenate(
-            (env.x_states[np.random.randint(len(env.x_states))],
-             env.S_states[np.random.randint(len(env.S_states))])).astype(object)
-
-    states = state.copy()
-    print_states = state.astype('str')
-    d_cap = kwargs.get('d_cap', 0)
-    t = kwargs.get('t', [0])
-    if ('i' in kwargs) & ('j' not in kwargs):
-        i = kwargs.get('i')
-        states[i + env.J] = slice(None)  # s_i
-        print_states[i + env.J] = ':'
-        max_ticks = 5
-        title = 'V(x), queue: ' + str(i + 1) + ', ' + str(print_states)
-        x_label = 'Servers occupied by queue ' + str(i + 1)
-        y_label = 'Waiting time state FIL queue ' + str(i + 1)
-        if 't' in kwargs:
-            t_x, t_y = [0, t[i]], [t[i], t[i]]
-    else:
-        i, j = choosing_classes(env, **kwargs)
-        states[j] = slice(d_cap) if d_cap > 0 else slice(None)  # x_j
-        print_states[i] = ':'
-        print_states[j] = ':'
-        max_ticks = 10
-        title = 'V(x), ' + str(print_states)
-        x_label = 'Waiting time state FIL queue ' + str(j + 1)
-        y_label = 'Waiting time state FIL queue ' + str(i + 1)
-        if 't' in kwargs:
-            t_x, t_y = [0, t[i], t[i]], [t[i], t[i], 0]
-    if 'name' in kwargs:
-        title = kwargs.get('name') + ', ' + title
-    states[i] = slice(d_cap) if d_cap > 0 else slice(None)  # x_i
-    print_states[i] = ':'
-    V_i = V[tuple(states)]
-
-    plt.imshow(V_i, origin='lower')
-    if 't' in kwargs:
-        lines(xdata=t_x, ydata=t_y, linewidth=0.5,  # t_x, t_y will be assigned
-              linestyle='-.', color='green')
-    plt.colorbar()
-    plt.title(title)
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    ax = plt.gca()
-    ax.set_xticks(np.arange(0, V_i.shape[1],
-                            max(1, np.ceil(V_i.shape[1] / max_ticks))))
-    ax.set_yticks(np.arange(0, V_i.shape[0], max(1, np.ceil(V_i.shape[0]/10))))
-    ax.set_xticks(np.arange(V_i.shape[1] + 1) - 0.5, minor=True)
-    ax.set_yticks(np.arange(V_i.shape[0] + 1) - 0.5, minor=True)
-    ax.grid(which='minor', color='black', linestyle='-', linewidth=0.1)
+    ax.grid(which='minor', color='black', linestyle='-', linewidth=0.2)
     plt.show()
 
 

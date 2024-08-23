@@ -20,8 +20,8 @@ FILEPATH_RESULT = 'results/'
 OPT_METHOD = 'vi'
 
 insts = pd.read_csv(FILEPATH_INSTANCES)
-# tools.remove_empty_files(FILEPATH_READ)
-# tools.remove_empty_files(FILEPATH_RESULT)
+tools.remove_empty_files(FILEPATH_READ)
+tools.remove_empty_files(FILEPATH_RESULT)
 
 methods = ['_'.join(column.split('_')[:-2]) for column in insts.columns
            if column.endswith('job_id')]

@@ -4,10 +4,11 @@ from .learner import (OneStepPolicyImprovement,
                       ValueIteration)
 from .plotting import (choosing_classes,
                        plot_convergence,
+                       multi_boxplot,
                        plot_gap,
                        plot_multi_bar,
-                       plot_pi,
-                       plot_v,
+                       state_selection,
+                       plot_heatmap,
                        plot_waiting,
                        plot_xyc)
 from .tools import (conf_int,

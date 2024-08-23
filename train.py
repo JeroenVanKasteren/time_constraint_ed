@@ -34,7 +34,8 @@ def main(raw_args=None):
 
     inst = pd.read_csv(FILEPATH_INSTANCE + args.instance + '.csv')
     cols = ['t', 'c', 'r', 'lab', 'mu']
-    inst.loc[:, cols] = inst.loc[:, cols].map(tools.strip_split)
+    for col in cols:
+        inst.loc[:, col] = inst.loc[:, col].map(tools.strip_split)
     inst = inst[pd.isnull(inst[args.method + '_g'])]
 
     if args.array_id - 1 + args.x >= len(inst):
@@ -125,7 +126,7 @@ def main(raw_args=None):
                 inst.iloc[0]) + '_ospi.npz'
             if ospi_file in os.listdir(FILEPATH_V):
                 print('Loading Pi from file', flush=True)
-                learner.Pi = np.load(FILEPATH_V + pi_file)['arr_0']
+                learner.Pi = np.load(FILEPATH_V + ospi_file)['arr_0']
             else:
                 ospi_learner = OneStepPolicyImprovement()
                 ospi_learner.V_app = ospi_learner.get_v_app(env)
