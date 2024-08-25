@@ -305,7 +305,9 @@ def sec_to_time(time):
         return f"(MM:SS): {time // 60:02d}:{time % 60:02d}"
 
 
-def solved_and_left(inst, opt_method='vi', sim=False):
+def solved_and_left(inst, opt_method='vi', sim=False, use_g_tmp=False):
+    g_s = '_g_tmp' if use_g_tmp and (sim is False) else '_g'
+    opt_gap_s = '_opt_gap_tmp' if use_g_tmp and (sim is False) else '_opt_gap'
     if sim:
         methods = ['_'.join(column.split('_')[:-1]) for column in inst.columns
                    if column.endswith('_g')]
@@ -313,12 +315,12 @@ def solved_and_left(inst, opt_method='vi', sim=False):
         methods = ['_'.join(column.split('_')[:-2]) for column in inst.columns
                    if column.endswith('job_id')]
     for method in methods:
-        print('Solved ' + method + ': ' + str(inst[method + '_g'].count()) +
+        print('Solved ' + method + ': ' + str(inst[method + g_s].count()) +
               ', left: ' +
-              str(len(inst) - inst[method + '_g'].count()), flush=True)
+              str(len(inst) - inst[method + g_s].count()), flush=True)
         if (method != opt_method) and not sim:
             print('Solved both for ' + method + ': ' +
-                  str(inst[method + '_opt_gap'].count()), flush=True)
+                  str(inst[method + opt_gap_s].count()), flush=True)
 
 
 def strip_split(x):

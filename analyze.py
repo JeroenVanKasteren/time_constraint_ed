@@ -10,9 +10,13 @@ import pandas as pd
 import numpy as np
 from utils import plotting, tools, TimeConstraintEDs as Env, PolicyIteration
 
-INSTANCES_ID = 'J1'
 FILEPATH_RESULTS = 'results/'
 FILEPATH_V = 'results/value_functions/'
+
+overview = False
+
+instance_id = 'J2_D_gam'
+use_g_tmp = True
 max_pi_iter = 10
 multi_xyc = True
 violin = True
@@ -36,11 +40,31 @@ plot_w = True
 cap_d = 100
 dep_arr = 0
 
+g_tmp = '_g_tmp' if use_g_tmp else '_g'
+
+# give an overview of methods solved / unsolved
+if overview:
+    for instance_id_tmp in ['J1', 'J2', 'J2_D_gam',
+                            'J1_sim', 'J2_sim', 'sim_sim']:
+        instance_name_tmp = 'instances_' + instance_id_tmp
+        inst_set_tmp = tools.inst_load(FILEPATH_RESULTS + instance_name_tmp +
+                                       '.csv')
+        is_sim = 'sim' in instance_id_tmp
+        print(instance_name_tmp)
+        if is_sim:
+            tools.solved_and_left(inst_set_tmp, sim=True)
+        else:
+            for g_tmp_b in [False, True]:
+                print('Using _g_tmp' if g_tmp_b else 'Using _g')
+                tools.solved_and_left(inst_set_tmp, sim=False,
+                                      use_g_tmp=g_tmp_b)
+        print('\n')
+
 # Load in instance_set and extract methods used
-instance_name = 'instances_' + INSTANCES_ID
+instance_name = 'instances_' + instance_id
 inst_set = tools.inst_load(FILEPATH_RESULTS + instance_name + '.csv')
-is_sim = 'sim' in INSTANCES_ID
-tools.solved_and_left(inst_set, sim=is_sim)
+is_sim = 'sim' in instance_id
+tools.solved_and_left(inst_set, sim=is_sim, use_g_tmp=use_g_tmp)
 solve_methods = []
 if not is_sim:
     solve_methods = ['_'.join(column.split('_')[:-2])
@@ -102,7 +126,7 @@ if theory_vs_sim:
 if theory_discr_vs_solve:
     plotting.plot_gap(inst_theory,
                       solve_methods,
-                      '_g',
+                      g_tmp,
                       'theory',
                       '_g_gam',
                       'theory',
@@ -114,7 +138,7 @@ if theory_discr_vs_solve:
 if theory_vs_solve:
     plotting.plot_gap(inst_theory,
                       solve_methods,
-                      '_g',
+                      g_tmp,
                       'theory',
                       '_g',
                       'theory',
@@ -127,11 +151,11 @@ if theory_vs_solve:
 if vi_vs_solve:
     plotting.plot_gap(inst_set,
                       solve_methods,
-                      '_g',
+                      g_tmp,
                       'vi',
-                      '_g',
+                      g_tmp,
                       'vi',
-                      '_g',
+                      g_tmp,
                       'Gap of g for solve vs VI',
                       multi_xyc=multi_xyc,
                       violin=violin)
@@ -142,9 +166,9 @@ if vi_vs_sim:
                       sim_methods,
                       '_g_sim',
                       'vi',
-                      '_g',
+                      g_tmp,
                       'vi',
-                      '_g',
+                      g_tmp,
                       'Gap of g for sim vs VI',
                       multi_xyc=multi_xyc,
                       violin=violin)
@@ -153,11 +177,11 @@ if vi_vs_sim:
 if ospi_vs_solve:
     plotting.plot_gap(inst_set,
                       solve_methods,
-                      '_g',
+                      g_tmp,
                       'ospi',
-                      '_g',
+                      g_tmp,
                       'vi',
-                      '_g',
+                      g_tmp,
                       'Gap of g for sim vs OSPI rel to VI',
                       multi_xyc=multi_xyc,
                       violin=violin)
@@ -170,9 +194,9 @@ if solve_vs_sim:
                           [method],
                           '_g_sim',
                           method,
-                          '_g',
+                          g_tmp,
                           method,
-                          '_g',
+                          g_tmp,
                           'Gap of g sims vs solve for ' + method,
                           multi_xyc=multi_xyc,
                           violin=violin)
@@ -182,8 +206,8 @@ if solve_vs_sim:
 if (not is_sim) and (plot_pi_abs or plot_pi_rel):
     gap_abs = {'abs_' + str(i): [] for i in range(max_pi_iter + 1)}
     gap_rel = {'rel_' + str(i): [] for i in range(max_pi_iter)}
-    for row in inst_set:
-        g_mem = np.load(FILEPATH_V + '_'.join(['g', INSTANCES_ID, str(inst_id),
+    for i, row in enumerate(inst_set):
+        g_mem = np.load(FILEPATH_V + '_'.join(['g', instance_id, str(i),
                                                'pi.npz']))['arr_0']
         gap_abs['abs_0'].append((row.vi_g - row.ospi_g) / row.vi_g)
         for i in range(max_pi_iter):
@@ -204,13 +228,13 @@ if (not is_sim) and (plot_pi_abs or plot_pi_rel):
                                violin=violin)
 
 # Plotting Pi, V, W
-for inst_id in ids_to_analyze[INSTANCES_ID]:
+for inst_id in ids_to_analyze[instance_id]:
     inst = inst_set.iloc[inst_id]
     env = Env(J=inst.J, S=inst.S, D=inst.D,
               gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
               mu=inst.mu, lab=inst.lab)
     for method in solve_methods:
-        name = method + ' inst: ' + INSTANCES_ID + '_' + str(inst_id)
+        name = method + ' inst: ' + instance_id + '_' + str(inst_id)
         state = plotting.state_selection(env,
                                          dim_i=True,
                                          s=1,
@@ -218,7 +242,7 @@ for inst_id in ids_to_analyze[INSTANCES_ID]:
         state_i = np.concatenate(([dep_arr], state))
         if plot_policy or summarize_policy:
             Pi = np.load(FILEPATH_V + '_'.join(['pi',
-                                                INSTANCES_ID,
+                                                instance_id,
                                                 str(inst_id),
                                                 method + '.npz']))['arr_0']
             if summarize_policy:
@@ -232,7 +256,7 @@ for inst_id in ids_to_analyze[INSTANCES_ID]:
                                       cap_d=cap_d)
         if plot_w:
             w = np.load(FILEPATH_V + '_'.join(['w',
-                                               INSTANCES_ID,
+                                               instance_id,
                                                str(inst_id),
                                                method + '.npz']))['arr_0']
             state_w = np.concatenate(([0], state))
@@ -243,7 +267,7 @@ for inst_id in ids_to_analyze[INSTANCES_ID]:
                                   cap_d=cap_d)
         if plot_v:
             V = np.load(FILEPATH_V + '_'.join(['v',
-                                               INSTANCES_ID,
+                                               instance_id,
                                                str(inst_id),
                                                method + '.npz']))['arr_0']
             plotting.plot_heatmap(env, state_i,
@@ -252,9 +276,9 @@ for inst_id in ids_to_analyze[INSTANCES_ID]:
                                   t=inst.t,
                                   cap_d=cap_d)
     if plot_g_mem:
-        g_mem = np.load(FILEPATH_V + '_'.join(['g', INSTANCES_ID, str(inst_id),
+        g_mem = np.load(FILEPATH_V + '_'.join(['g', instance_id, str(inst_id),
                                                'pi.npz']))['arr_0']
-        g_ospi = np.load(FILEPATH_V + '_'.join(['g', INSTANCES_ID, str(inst_id),
+        g_ospi = np.load(FILEPATH_V + '_'.join(['g', instance_id, str(inst_id),
                                                'ospi.npz']))['arr_0']
         plt.scatter(range(1 + len(g_mem)), [g_ospi] + g_mem)
         plt.xlabel('Iterations')
@@ -275,3 +299,25 @@ for inst_id in ids_to_analyze[INSTANCES_ID]:
 #       f'upper bound of g: {sum(inst.r[0] * inst.lab[0]):0.4f} \n'
 #       f'Theory, g={g:0.4f}, E(W)={exp_wait:0.4f}, '
 #       f'P(W<t) = {["%.4f" % elem for elem in success_prob]}')
+
+# Analyze different gamma
+if instance_id == 'J2_D_gam':
+    gammas = set(inst_set.gamma)
+    data = pd.DataFrame()
+    methods = []
+    for gamma in gammas:
+        for d in [0, 5, 10]:
+            for method in ['vi', 'ospi']:
+                method_name = method + '_gam_' + str(gamma) + '_' + str(d)
+                data[method_name + g_tmp] = (
+                    inst_set[inst_set.D == int(d*gamma)][method + g_tmp])
+                methods.append(method_name)
+    ref_m = 'vi_gam_' + str(max(gammas)) + '_' + str(0)
+    plotting.plot_gap(data,
+                      methods,
+                      g_tmp,
+                      ref_m, g_tmp,
+                      ref_m, g_tmp,
+                      'Gap of g for different D and gamma',
+                      multi_xyc=multi_xyc,
+                      violin=violin)
