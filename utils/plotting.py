@@ -83,7 +83,7 @@ def plot_gap(data, methods,
                      x_lab=x_lab,
                      y_lab=y_lab,
                      c_lab='gap (%)')
-    multi_boxplot(gap, methods, title, methods,
+    multi_boxplot(gap, gap.keys(), title, gap.keys(),
                   'gap (%)', violin=violin)
 
 

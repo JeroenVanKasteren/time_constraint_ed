@@ -15,7 +15,7 @@ FILEPATH_V = 'results/value_functions/'
 
 overview = False
 
-instance_id = 'J2_D_gam'
+instance_id = 'J2'
 use_g_tmp = True
 max_pi_iter = 10
 multi_xyc = True
@@ -24,23 +24,25 @@ violin = True
 theory_vs_sim = False
 theory_discr_vs_solve = False
 theory_vs_solve = False
-vi_vs_solve = False
-vi_vs_sim = False
+vi_vs_solve = True
+vi_vs_sim = True
 ospi_vs_solve = False
-solve_vs_sim = False
-plot_pi_abs = False
-plot_pi_rel = False
+solve_vs_sim = True
+plot_pi_abs = True
+plot_pi_rel = True
 
 ids_to_analyze = {'J1': [1, 2, 3], 'J2': [1, 2, 3]}  # ID_i
 summarize_policy = False
-plot_policy = True
-plot_g_mem = True
-plot_v = True
-plot_w = True
+plot_policy = False
+plot_g_mem = False
+plot_v = False
+plot_w = False
 cap_d = 100
 dep_arr = 0
 
+analyze_gamma = False
 g_tmp = '_g_tmp' if use_g_tmp else '_g'
+methods_gam_analyze = ['vi', 'ospi']
 
 # give an overview of methods solved / unsolved
 if overview:
@@ -70,6 +72,7 @@ if not is_sim:
     solve_methods = ['_'.join(column.split('_')[:-2])
                      for column in inst_set.columns
                      if column.endswith('job_id')]
+    inst_set = inst_set[inst_set['gamma'] == max(set(inst_set['gamma']))]
 
 # If a solve set, load in corresponding simulation set and append to inst_set
 has_sim = False
@@ -197,31 +200,32 @@ if solve_vs_sim:
                           g_tmp,
                           method,
                           g_tmp,
-                          'Gap of g sims vs solve for ' + method,
+                          'Gap of g, (solve_g - sims-g) for ' + method,
                           multi_xyc=multi_xyc,
-                          violin=violin)
+                          violin=violin,
+                          title_xyc=' solve_g - sim_g')
 
 
 # Diminishing opt. gap of policy iteration, abs. and rel. to OSPI
 if (not is_sim) and (plot_pi_abs or plot_pi_rel):
     gap_abs = {'abs_' + str(i): [] for i in range(max_pi_iter + 1)}
     gap_rel = {'rel_' + str(i): [] for i in range(max_pi_iter)}
-    for i, row in enumerate(inst_set):
+    for i, row in inst_set.iterrows():
         g_mem = np.load(FILEPATH_V + '_'.join(['g', instance_id, str(i),
                                                'pi.npz']))['arr_0']
         gap_abs['abs_0'].append((row.vi_g - row.ospi_g) / row.vi_g)
         for i in range(max_pi_iter):
-            g = g_mem[min(i, max_pi_iter)]
+            g = g_mem[min([i, max_pi_iter, len(g_mem) - 1])]
             gap_abs['abs_' + str(i+1)].append((row.vi_g - g) / row.vi_g * 100)
             gap_rel['rel_' + str(i)].append((row.ospi_g - g) / row.ospi_g * 100)
     if plot_pi_abs:
-        plotting.multi_boxplot(gap_abs, gap_abs.keys,
+        plotting.multi_boxplot(gap_abs, gap_abs.keys(),
                                'Policy Iteration opt. gap',
                                range(max_pi_iter + 1),
                                'gap (%)',
                                violin=violin)
     if plot_pi_rel:
-        plotting.multi_boxplot(gap_rel, gap_rel.keys,
+        plotting.multi_boxplot(gap_rel, gap_rel.keys(),
                                'Policy Iteration gap rel. to OSPI',
                                range(max_pi_iter),
                                'gap (%)',
@@ -301,18 +305,48 @@ for inst_id in ids_to_analyze[instance_id]:
 #       f'P(W<t) = {["%.4f" % elem for elem in success_prob]}')
 
 # Analyze different gamma
-if instance_id == 'J2_D_gam':
-    gammas = set(inst_set.gamma)
-    data = pd.DataFrame()
+if analyze_gamma and len(set(inst_set['gamma'])) > 1:
+    # note that size and smu(1-rho) are just for plotting, not for key
+    key_cols = ['J', 'S', 'mu', 'load', 'imbalance', 'size', 'smu(1-rho)']
+    cols = [*key_cols, 'gamma', 'D', *[x + g_tmp for x in methods_gam_analyze]]
+    inst_set_tmp = inst_set[cols].copy()
+    inst_set_tmp['mu'] = inst_set_tmp['mu'].apply(str)  # np array unhashable
+    inst_set_tmp['imbalance'] = inst_set_tmp['imbalance'].apply(str)
+    data = inst_set_tmp[key_cols].copy().drop_duplicates(ignore_index=True)
+    gammas = set(inst_set_tmp['gamma'])
+    if instance_id == 'J2_D_gam':
+        d_multiples = [5, 10, 0]  # 0 must be last
+    elif instance_id == 'J3':
+        d_multiples = [4, 0]
+    else:
+        d_multiples = [0]
     methods = []
     for gamma in gammas:
-        for d in [0, 5, 10]:
-            for method in ['vi', 'ospi']:
-                method_name = method + '_gam_' + str(gamma) + '_' + str(d)
-                data[method_name + g_tmp] = (
-                    inst_set[inst_set.D == int(d*gamma)][method + g_tmp])
-                methods.append(method_name)
-    ref_m = 'vi_gam_' + str(max(gammas)) + '_' + str(0)
+        for d in d_multiples:
+            for method in methods_gam_analyze:
+                name = method + '_gam_' + str(gamma) + '_' + str(d)
+                methods.append(name)
+                if d > 0:
+                    mask = ((inst_set_tmp.D == int(d * gamma)) &
+                            (inst_set_tmp.gamma == gamma))
+                else:
+                    # Note that duplicates are removed, as checking for
+                    # ~D isin(gamma*d) does not work for duplicates
+                    mask = (inst_set_tmp.gamma == gamma)
+                data_slice = inst_set_tmp[mask].copy()
+                data_slice.rename(columns={method + g_tmp: name + g_tmp},
+                                  inplace=True)
+                drop_methods = [m + g_tmp for m in methods_gam_analyze
+                                if m != method]
+                data_slice.drop(columns=['gamma', 'D', *drop_methods],
+                                inplace=True)
+                # Drop duplicates to ensure that the merge is correct
+                # Does not matter which to remove, as it are duplicates
+                data_slice = data_slice[~data_slice[key_cols].duplicated()]
+                data = pd.merge(data, data_slice, on=key_cols, how='left')
+            # Remove duplicates from slicing set, to be left with
+            inst_set_tmp.drop(data_slice.index, inplace=True)
+    ref_m = 'vi_gam_' + str(max(gammas)) + '_0'
     plotting.plot_gap(data,
                       methods,
                       g_tmp,
@@ -321,3 +355,8 @@ if instance_id == 'J2_D_gam':
                       'Gap of g for different D and gamma',
                       multi_xyc=multi_xyc,
                       violin=violin)
+
+# pd.set_option('display.max_columns', 12)
+# pd.set_option('display.width', 100)
+
+
