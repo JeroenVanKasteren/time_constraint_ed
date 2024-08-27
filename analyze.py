@@ -34,15 +34,16 @@ plot_pi_rel = False
 ids_to_analyze = {'J1': [1, 2, 3], 'J2': [1, 2, 3]}  # ID_i
 summarize_policy = False
 plot_policy = False
-plot_g_mem = False
+plot_g_mem = True
 plot_v = False
 plot_w = False
 cap_d = 100
 dep_arr = 0
 
-analyze_gamma = True
-g_tmp = '_g_tmp' if use_g_tmp else '_g'
+analyze_gamma = False
 methods_gam_analyze = ['vi', 'ospi']
+g_tmp = '_g_tmp' if use_g_tmp else '_g'
+
 
 # pd.set_option('display.max_columns', 12)
 # pd.set_option('display.width', 200)
@@ -290,11 +291,9 @@ if instance_id in ids_to_analyze:
                                       t=inst.t,
                                       cap_d=cap_d)
         if plot_g_mem:
-            g_mem = np.load(FILEPATH_V + '_'.join(['g', instance_id, str(inst_id),
-                                                   'pi.npz']))['arr_0']
-            g_ospi = np.load(FILEPATH_V + '_'.join(['g', instance_id, str(inst_id),
-                                                   'ospi.npz']))['arr_0']
-            plt.scatter(range(1 + len(g_mem)), [g_ospi] + g_mem)
+            g_mem = np.load(FILEPATH_V + '_'.join(
+                ['g', instance_id, str(inst_id), 'pi.npz']))['arr_0']
+            plt.scatter(range(1 + len(g_mem)), [inst['ospi' + g_tmp]] + g_mem)
             plt.xlabel('Iterations')
             plt.ylabel('g')
             plt.title('Policy Iteration starting with OSPI')
