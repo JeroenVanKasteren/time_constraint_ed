@@ -37,8 +37,10 @@ def plot_convergence(kpi_df, method, k, t, m=100):
     plt.show()
 
 
-def multi_boxplot(gap, keys, title, x_ticks, y_label, violin=False):
+def multi_boxplot(gap, keys, title, x_ticks, y_label, violin=False,
+                  rotation=20, bottom=0):
     fig, ax = plt.subplots()
+    fig.subplots_adjust(bottom=bottom)
     for i, key in enumerate(keys):
         if violin:
             if gap[key].empty:  # Edge case for empty data
@@ -51,14 +53,15 @@ def multi_boxplot(gap, keys, title, x_ticks, y_label, violin=False):
     ax.set_ylabel(y_label)
     if violin:
         ax.set_xticks(range(len(x_ticks)))
-        ax.set_xticklabels(x_ticks)
+        ax.set_xticklabels(x_ticks, rotation=rotation)
     plt.show()
 
 
 def plot_gap(data, methods,
              meth_v, comp_m, comp_v, ref_m, ref_v, title,
              violin=False, multi_xyc=False, title_xyc='',
-             x_lab='size', y_lab='smu(1-rho)'):
+             x_lab='size', y_lab='smu(1-rho)',
+             rotation=20, bottom=0):
     """
     Boxplot (optimality) gap of value (v) for methods in comparison to value of
     a comparison method, relative to value of reference method.
@@ -84,7 +87,8 @@ def plot_gap(data, methods,
                      y_lab=y_lab,
                      c_lab='gap (%)')
     multi_boxplot(gap, gap.keys(), title, gap.keys(),
-                  'gap (%)', violin=violin)
+                  'gap (%)', violin=violin,
+                  rotation=rotation, bottom=bottom)
 
 
 def plot_multi_bar(filepath, instance_names, methods, kpi, normalize=False,
@@ -153,7 +157,7 @@ def state_selection(env,
     elif s is None:
         s = np.zeros(env.J)
     elif type(s) is int:  # Divide servers equally, with s spare servers
-        s = np.array((env.S - s) // env.J).astype(int)
+        s = (np.arange(env.J) < (env.S - s) % env.J) + ((env.S - s) // env.J)
 
     assert len(x) == env.J, 'x has wrong dimension'
     assert len(s) == env.J, 's has wrong dimension'

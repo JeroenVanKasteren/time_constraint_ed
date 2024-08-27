@@ -15,7 +15,7 @@ FILEPATH_V = 'results/value_functions/'
 
 overview = False
 
-instance_id = 'J2'
+instance_id = 'J2_D_gam'
 use_g_tmp = True
 max_pi_iter = 10
 multi_xyc = True
@@ -24,12 +24,12 @@ violin = True
 theory_vs_sim = False
 theory_discr_vs_solve = False
 theory_vs_solve = False
-vi_vs_solve = True
-vi_vs_sim = True
+vi_vs_solve = False
+vi_vs_sim = False
 ospi_vs_solve = False
-solve_vs_sim = True
-plot_pi_abs = True
-plot_pi_rel = True
+solve_vs_sim = False
+plot_pi_abs = False
+plot_pi_rel = False
 
 ids_to_analyze = {'J1': [1, 2, 3], 'J2': [1, 2, 3]}  # ID_i
 summarize_policy = False
@@ -40,9 +40,18 @@ plot_w = False
 cap_d = 100
 dep_arr = 0
 
-analyze_gamma = False
+analyze_gamma = True
 g_tmp = '_g_tmp' if use_g_tmp else '_g'
 methods_gam_analyze = ['vi', 'ospi']
+
+# pd.set_option('display.max_columns', 12)
+# pd.set_option('display.width', 200)
+
+# find file
+# for file in os.listdir(FILEPATH_V):
+#     if not (file.startswith('g_' + INSTANCES_ID)):
+#         continue  # or file.endswith('_pi.npz')):
+#     print(file)
 
 # give an overview of methods solved / unsolved
 if overview:
@@ -68,11 +77,15 @@ inst_set = tools.inst_load(FILEPATH_RESULTS + instance_name + '.csv')
 is_sim = 'sim' in instance_id
 tools.solved_and_left(inst_set, sim=is_sim, use_g_tmp=use_g_tmp)
 solve_methods = []
+inst_set['smu(1-rho)'] = tools.get_smu_rho(inst_set.lab,
+                                           inst_set.mu,
+                                           inst_set.S)
 if not is_sim:
     solve_methods = ['_'.join(column.split('_')[:-2])
                      for column in inst_set.columns
                      if column.endswith('job_id')]
-    inst_set = inst_set[inst_set['gamma'] == max(set(inst_set['gamma']))]
+    inst_set_gammas = inst_set.copy()
+    inst_set = inst_set[inst_set['gamma'] == max(inst_set['gamma'])]
 
 # If a solve set, load in corresponding simulation set and append to inst_set
 has_sim = False
@@ -90,10 +103,6 @@ if ((not is_sim) and
         inst_set[[method + x + '_sim' for x in suffixes]] = (
             sim_set[[method + x for x in suffixes]].copy())
 methods_both = list(set(solve_methods) & set(sim_methods))
-
-inst_set['smu(1-rho)'] = tools.get_smu_rho(inst_set.lab,
-                                           inst_set.mu,
-                                           inst_set.S)
 
 # Difference between theory vs solve and sim for mu == mu_j
 inst_theory = inst_set[inst_set.apply(lambda x_row: len(set(x_row.mu)) == 1,
@@ -232,88 +241,75 @@ if (not is_sim) and (plot_pi_abs or plot_pi_rel):
                                violin=violin)
 
 # Plotting Pi, V, W
-for inst_id in ids_to_analyze[instance_id]:
-    inst = inst_set.iloc[inst_id]
-    env = Env(J=inst.J, S=inst.S, D=inst.D,
-              gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
-              mu=inst.mu, lab=inst.lab)
-    for method in solve_methods:
-        name = method + ' inst: ' + instance_id + '_' + str(inst_id)
-        state = plotting.state_selection(env,
-                                         dim_i=True,
-                                         s=1,
-                                         wait_perc=0.7)
-        state_i = np.concatenate(([dep_arr], state))
-        if plot_policy or summarize_policy:
-            Pi = np.load(FILEPATH_V + '_'.join(['pi',
-                                                instance_id,
-                                                str(inst_id),
-                                                method + '.npz']))['arr_0']
-            if summarize_policy:
-                pi_learner = PolicyIteration(Pi=Pi)
-                tools.summarize_policy(env, pi_learner, print_per_time=False)
-            if plot_policy:
+if instance_id in ids_to_analyze:
+    for inst_id in ids_to_analyze[instance_id]:
+        inst = inst_set.iloc[inst_id]
+        env = Env(J=inst.J, S=inst.S, D=inst.D,
+                  gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
+                  mu=inst.mu, lab=inst.lab)
+        for method in solve_methods:
+            name = method + ' inst: ' + instance_id + '_' + str(inst_id)
+            state = plotting.state_selection(env,
+                                             dim_i=True,
+                                             s=1,
+                                             wait_perc=0.7)
+            state_i = np.concatenate(([dep_arr], state))
+            if plot_policy or summarize_policy:
+                Pi = np.load(FILEPATH_V + '_'.join(['pi',
+                                                    instance_id,
+                                                    str(inst_id),
+                                                    method + '.npz']))['arr_0']
+                if summarize_policy:
+                    pi_learner = PolicyIteration(Pi=Pi)
+                    tools.summarize_policy(env, pi_learner, print_per_time=False)
+                if plot_policy:
+                    plotting.plot_heatmap(env, state_i,
+                                          Pi=Pi,
+                                          title='PI ',
+                                          t=inst.t,
+                                          cap_d=cap_d)
+            if plot_w:
+                w = np.load(FILEPATH_V + '_'.join(['w',
+                                                   instance_id,
+                                                   str(inst_id),
+                                                   method + '.npz']))['arr_0']
+                state_w = np.concatenate(([0], state))
                 plotting.plot_heatmap(env, state_i,
-                                      Pi=Pi,
-                                      title='PI ',
+                                      W=w,
+                                      title='W ',
                                       t=inst.t,
                                       cap_d=cap_d)
-        if plot_w:
-            w = np.load(FILEPATH_V + '_'.join(['w',
-                                               instance_id,
-                                               str(inst_id),
-                                               method + '.npz']))['arr_0']
-            state_w = np.concatenate(([0], state))
-            plotting.plot_heatmap(env, state_i,
-                                  W=w,
-                                  title='W ',
-                                  t=inst.t,
-                                  cap_d=cap_d)
-        if plot_v:
-            V = np.load(FILEPATH_V + '_'.join(['v',
-                                               instance_id,
-                                               str(inst_id),
-                                               method + '.npz']))['arr_0']
-            plotting.plot_heatmap(env, state_i,
-                                  V=V,
-                                  title='V ',
-                                  t=inst.t,
-                                  cap_d=cap_d)
-    if plot_g_mem:
-        g_mem = np.load(FILEPATH_V + '_'.join(['g', instance_id, str(inst_id),
-                                               'pi.npz']))['arr_0']
-        g_ospi = np.load(FILEPATH_V + '_'.join(['g', instance_id, str(inst_id),
-                                               'ospi.npz']))['arr_0']
-        plt.scatter(range(1 + len(g_mem)), [g_ospi] + g_mem)
-        plt.xlabel('Iterations')
-        plt.ylabel('g')
-        plt.title('Policy Iteration starting with OSPI')
-        plt.show()
-
-
-# find file
-# for file in os.listdir(FILEPATH_V):
-#     if not (file.startswith('g_' + INSTANCES_ID)):
-#         continue  # or file.endswith('_pi.npz')):
-#     print(file)
-
-# Old code
-# exp_wait, g, success_prob = tools.get_gen_erlang_c(inst_row, 1e6)
-# print(f'inst: {instance_name} \n'
-#       f'upper bound of g: {sum(inst.r[0] * inst.lab[0]):0.4f} \n'
-#       f'Theory, g={g:0.4f}, E(W)={exp_wait:0.4f}, '
-#       f'P(W<t) = {["%.4f" % elem for elem in success_prob]}')
+            if plot_v:
+                V = np.load(FILEPATH_V + '_'.join(['v',
+                                                   instance_id,
+                                                   str(inst_id),
+                                                   method + '.npz']))['arr_0']
+                plotting.plot_heatmap(env, state_i,
+                                      V=V,
+                                      title='V ',
+                                      t=inst.t,
+                                      cap_d=cap_d)
+        if plot_g_mem:
+            g_mem = np.load(FILEPATH_V + '_'.join(['g', instance_id, str(inst_id),
+                                                   'pi.npz']))['arr_0']
+            g_ospi = np.load(FILEPATH_V + '_'.join(['g', instance_id, str(inst_id),
+                                                   'ospi.npz']))['arr_0']
+            plt.scatter(range(1 + len(g_mem)), [g_ospi] + g_mem)
+            plt.xlabel('Iterations')
+            plt.ylabel('g')
+            plt.title('Policy Iteration starting with OSPI')
+            plt.show()
 
 # Analyze different gamma
-if analyze_gamma and len(set(inst_set['gamma'])) > 1:
+if analyze_gamma and len(set(inst_set_gammas['gamma'])) > 1:
     # note that size and smu(1-rho) are just for plotting, not for key
-    key_cols = ['J', 'S', 'mu', 'load', 'imbalance', 'size', 'smu(1-rho)']
+    key_cols = ['J', 'S', 'mu', 'load', 'imbalance', 'smu(1-rho)']
     cols = [*key_cols, 'gamma', 'D', *[x + g_tmp for x in methods_gam_analyze]]
-    inst_set_tmp = inst_set[cols].copy()
+    inst_set_tmp = inst_set_gammas[cols].copy()
     inst_set_tmp['mu'] = inst_set_tmp['mu'].apply(str)  # np array unhashable
     inst_set_tmp['imbalance'] = inst_set_tmp['imbalance'].apply(str)
     data = inst_set_tmp[key_cols].copy().drop_duplicates(ignore_index=True)
-    gammas = set(inst_set_tmp['gamma'])
+    gammas = sorted(list(set(inst_set_tmp['gamma'])))
     if instance_id == 'J2_D_gam':
         d_multiples = [5, 10, 0]  # 0 must be last
     elif instance_id == 'J3':
@@ -346,17 +342,23 @@ if analyze_gamma and len(set(inst_set['gamma'])) > 1:
                 data = pd.merge(data, data_slice, on=key_cols, how='left')
             # Remove duplicates from slicing set, to be left with
             inst_set_tmp.drop(data_slice.index, inplace=True)
+    methods.sort()  # to get logical order in picture
     ref_m = 'vi_gam_' + str(max(gammas)) + '_0'
     plotting.plot_gap(data,
                       methods,
                       g_tmp,
                       ref_m, g_tmp,
                       ref_m, g_tmp,
-                      'Gap of g for different D and gamma',
-                      multi_xyc=multi_xyc,
-                      violin=violin)
+                      'Gap of g for different D and gamma for ' + instance_id,
+                      multi_xyc=False,
+                      violin=violin,
+                      x_lab='imbalance',
+                      rotation=80,
+                      bottom=0.28)  # 0.27 for J2_D_gam
 
-# pd.set_option('display.max_columns', 12)
-# pd.set_option('display.width', 100)
-
-
+# Old code
+# exp_wait, g, success_prob = tools.get_gen_erlang_c(inst_row, 1e6)
+# print(f'inst: {instance_name} \n'
+#       f'upper bound of g: {sum(inst.r[0] * inst.lab[0]):0.4f} \n'
+#       f'Theory, g={g:0.4f}, E(W)={exp_wait:0.4f}, '
+#       f'P(W<t) = {["%.4f" % elem for elem in success_prob]}')
