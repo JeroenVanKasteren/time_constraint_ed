@@ -15,11 +15,11 @@ FILEPATH_V = 'results/value_functions/'
 
 overview = False
 
-instance_id = 'J2_D_gam'
+instance_id = 'J1'
 use_g_tmp = True
 max_pi_iter = 10
 multi_xyc = True
-violin = True
+violin = False
 
 theory_vs_sim = False
 theory_discr_vs_solve = False
@@ -28,19 +28,21 @@ vi_vs_solve = False
 vi_vs_sim = False
 ospi_vs_solve = False
 solve_vs_sim = False
+
 plot_pi_abs = False
 plot_pi_rel = False
 
-ids_to_analyze = {'J1': [1, 2, 3], 'J2': [1, 2, 3]}  # ID_i
-summarize_policy = False
-plot_policy = False
-plot_g_mem = False
-plot_v = False
-plot_w = False
+ids_to_analyze = {'J1': [35, 70], 'J2': [1, 2, 3]}  # ID_i
+summarize_policy = True
+plot_policy = True
+calculate_pi = True
+plot_g_mem = True
+plot_v = True
+plot_w = True
 cap_d = 100
 dep_arr = 0
 
-analyze_gamma = True
+analyze_gamma = False
 g_tmp = '_g_tmp' if use_g_tmp else '_g'
 methods_gam_analyze = ['vi', 'ospi']
 
@@ -217,20 +219,20 @@ if solve_vs_sim:
 
 # Diminishing opt. gap of policy iteration, abs. and rel. to OSPI
 if (not is_sim) and (plot_pi_abs or plot_pi_rel):
-    gap_abs = {'abs_' + str(i): [] for i in range(max_pi_iter + 1)}
+    gap_abs = {'abs_' + str(i): [] for i in range(max_pi_iter)}
     gap_rel = {'rel_' + str(i): [] for i in range(max_pi_iter)}
     for i, row in inst_set.iterrows():
         g_mem = np.load(FILEPATH_V + '_'.join(['g', instance_id, str(i),
                                                'pi.npz']))['arr_0']
-        gap_abs['abs_0'].append((row.vi_g - row.ospi_g) / row.vi_g)
+        vi_g, ospi_g = row['vi' + g_tmp], row['ospi' + g_tmp]
         for i in range(max_pi_iter):
             g = g_mem[min([i, max_pi_iter, len(g_mem) - 1])]
-            gap_abs['abs_' + str(i+1)].append((row.vi_g - g) / row.vi_g * 100)
-            gap_rel['rel_' + str(i)].append((row.ospi_g - g) / row.ospi_g * 100)
+            gap_abs['abs_' + str(i)].append((vi_g - g) / vi_g * 100)
+            gap_rel['rel_' + str(i)].append((ospi_g - g) / ospi_g * 100)
     if plot_pi_abs:
         plotting.multi_boxplot(gap_abs, gap_abs.keys(),
                                'Policy Iteration opt. gap',
-                               range(max_pi_iter + 1),
+                               range(max_pi_iter),
                                'gap (%)',
                                violin=violin)
     if plot_pi_rel:
@@ -243,7 +245,7 @@ if (not is_sim) and (plot_pi_abs or plot_pi_rel):
 # Plotting Pi, V, W
 if instance_id in ids_to_analyze:
     for inst_id in ids_to_analyze[instance_id]:
-        inst = inst_set.iloc[inst_id]
+        inst = inst_set.loc[inst_id]
         env = Env(J=inst.J, S=inst.S, D=inst.D,
                   gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
                   mu=inst.mu, lab=inst.lab)
@@ -254,37 +256,40 @@ if instance_id in ids_to_analyze:
                                              s=1,
                                              wait_perc=0.7)
             state_i = np.concatenate(([dep_arr], state))
-            if plot_policy or summarize_policy:
-                Pi = np.load(FILEPATH_V + '_'.join(['pi',
-                                                    instance_id,
-                                                    str(inst_id),
-                                                    method + '.npz']))['arr_0']
-                if summarize_policy:
-                    pi_learner = PolicyIteration(Pi=Pi)
-                    tools.summarize_policy(env, pi_learner, print_per_time=False)
-                if plot_policy:
-                    plotting.plot_heatmap(env, state_i,
-                                          Pi=Pi,
-                                          title='PI ',
-                                          t=inst.t,
-                                          cap_d=cap_d)
+            file = '_'.join([instance_id, str(inst_id), method + '.npz'])
+            file_pi = 'pi_' + file
+            file_w = 'w_' + file
+            file_v = 'v_' + file
+            V = np.load(FILEPATH_V + file_v)['arr_0']
+            if (file_pi in os.listdir(FILEPATH_V)
+                    and (plot_policy or summarize_policy)):
+                Pi = np.load(FILEPATH_V + file_pi)['arr_0']
+            elif calculate_pi:
+                pi_learner = PolicyIteration()
+                pi_learner.one_step_policy_improvement(env, V)
+                Pi = pi_learner.Pi
+                w = pi_learner.W
+            if summarize_policy:
+                pi_learner = PolicyIteration(Pi=Pi)
+                tools.summarize_policy(env, pi_learner, print_per_time=False)
+            if plot_policy:
+                plotting.plot_heatmap(env, state_i,
+                                      Pi=Pi,
+                                      title='PI ',
+                                      t=inst.t,
+                                      cap_d=cap_d)
             if plot_w:
-                w = np.load(FILEPATH_V + '_'.join(['w',
-                                                   instance_id,
-                                                   str(inst_id),
-                                                   method + '.npz']))['arr_0']
+                if not calculate_pi:
+                    w = np.load(FILEPATH_V + file_w)['arr_0']
                 state_w = np.concatenate(([0], state))
                 plotting.plot_heatmap(env, state_i,
                                       W=w,
                                       title='W ',
                                       t=inst.t,
                                       cap_d=cap_d)
+            # if file_pi in os.listdir(FILEPATH_V) and
             if plot_v:
-                V = np.load(FILEPATH_V + '_'.join(['v',
-                                                   instance_id,
-                                                   str(inst_id),
-                                                   method + '.npz']))['arr_0']
-                plotting.plot_heatmap(env, state_i,
+                plotting.plot_heatmap(env, state,
                                       V=V,
                                       title='V ',
                                       t=inst.t,
@@ -362,3 +367,12 @@ if analyze_gamma and len(set(inst_set_gammas['gamma'])) > 1:
 #       f'upper bound of g: {sum(inst.r[0] * inst.lab[0]):0.4f} \n'
 #       f'Theory, g={g:0.4f}, E(W)={exp_wait:0.4f}, '
 #       f'P(W<t) = {["%.4f" % elem for elem in success_prob]}')
+
+# if vi but missing pi
+# pi_learner = PolicyIteration()
+# v_file = ('v_' + args.instance + '_' + str(inst.iloc[0]) + '_vi.npz')
+# if v_file in os.listdir(FILEPATH_V):
+    # learner.V = np.load(FILEPATH_V + v_file)['arr_0']
+    # env.convergence_check = 1
+    # env.max_iter = 1
+    # learner.value_iteration(env, pi_learner)

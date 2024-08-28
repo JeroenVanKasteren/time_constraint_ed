@@ -114,9 +114,9 @@ class PolicyIteration:
         if (converged | (((i % env.print_modulo == 0) & (j == -1))
                          | (j % env.print_modulo == 0))):
             print(f'iter: {i}, inner_iter: {j}, '
-                  f'delta: {delta_max - delta_min:.3f}, '
-                  f'd_min: {delta_min:.3f}, d_max: {delta_max:.3f}, '
-                  f'g: {g:.4f}')
+                  f'delta: {delta_max - delta_min:.5f}, '
+                  f'd_min: {delta_min:.5f}, d_max: {delta_max:.5f}, '
+                  f'g: {g:.5f}')
             print(utils.tools.sec_to_time(clock() - env.start_time))
         if converged:
             iter = i if j == -1 else j

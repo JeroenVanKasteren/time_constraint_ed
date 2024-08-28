@@ -16,6 +16,7 @@ from matplotlib import colors
 
 
 def choosing_classes(env, **kwargs):
+    """Assumed J > 1."""
     if ('i' in kwargs) & ('j' in kwargs):
         return kwargs.get('i'), kwargs.get('j')
     elif env.J == 2:
@@ -38,12 +39,12 @@ def plot_convergence(kpi_df, method, k, t, m=100):
 
 
 def multi_boxplot(gap, keys, title, x_ticks, y_label, violin=False,
-                  rotation=20, bottom=0):
+                  rotation=20, left=0.1, bottom=0.1):
     fig, ax = plt.subplots()
-    fig.subplots_adjust(bottom=bottom)
+    fig.subplots_adjust(left=left, bottom=bottom)
     for i, key in enumerate(keys):
         if violin:
-            if gap[key].empty:  # Edge case for empty data
+            if len(gap[key]) == 0:  # Edge case for empty data
                 gap[key][0] = 0
             ax.violinplot(gap[key], positions=[i], showmedians=True)
         else:
@@ -76,7 +77,7 @@ def plot_gap(data, methods,
         subset = data[subset_cols].dropna()
         gap[method] = ((subset[comp_m + comp_v] - subset[method + meth_v])
                        / subset[ref_m + ref_v]) * 100
-        if multi_xyc and not gap[method].empty:
+        if multi_xyc:
             subset_cols.extend([x_lab, y_lab])
             subset = data[subset_cols].dropna()
             plot_xyc(subset[x_lab],
@@ -162,7 +163,7 @@ def state_selection(env,
     assert len(x) == env.J, 'x has wrong dimension'
     assert len(s) == env.J, 's has wrong dimension'
     if dim_i:  # if a policy (# dim_i uneven, dim even)
-        state = np.concatenate((x, s)).astype(object)
+        state = np.concatenate([x, s]).astype(object)
     else:
         state = np.concatenate(([dep_arr], x, s))
     return state
@@ -191,12 +192,12 @@ def plot_heatmap(env, state, **kwargs):
     title = kwargs.get('title', '')
     d_cap = kwargs.get('d_cap', 0)
     t = kwargs.get('t', [0])
-    event = 'V' in kwargs
+    event = 'V' not in kwargs
 
     states = state.copy()
     print_states = state.astype('str')
-    if ('i' in kwargs) & ('j' not in kwargs):
-        i = kwargs.get('i')
+    if (('i' in kwargs) & ('j' not in kwargs)) or env.J == 1:
+        i = kwargs.get('i', 0)
         x_label = 'Servers occupied by queue ' + str(i + 1)
         states[event + i + env.J] = slice(None)  # s_i
         print_states[event + i + env.J] = ':'  # s_i on x axis
@@ -218,11 +219,11 @@ def plot_heatmap(env, state, **kwargs):
     print_states[event + i] = ':'  # x_i on y axis
 
     if 'V' in kwargs:
-        data = kwargs.get('V')[tuple(states)]
+        data = np.transpose(kwargs.get('V')[tuple(states)])
     elif 'Pi' in kwargs:
-        data = kwargs.get('Pi')[tuple(states)]
+        data = np.transpose(kwargs.get('Pi')[tuple(states)])
     elif 'W' in kwargs:
-        data = kwargs.get('W')[tuple(states)]
+        data = np.transpose(kwargs.get('W')[tuple(states)])
 
     if 'Pi' in kwargs:
         color_list = ['black', 'grey', 'lightyellow', 'lightgrey']
@@ -241,10 +242,13 @@ def plot_heatmap(env, state, **kwargs):
                    env.KEEP_IDLE, env.NONE_WAITING]
                   + list(range(1, env.J + 2)))
         norm = colors.BoundaryNorm(bounds, cmap.N)
-        plt.imshow(data, origin='lower', cmap=cmap, norm=norm)
+        plt.imshow(data, origin='lower', cmap=cmap, norm=norm,
+                   aspect='auto',  # allows rectangles (instead of only squares)
+                   interpolation='none')  # no interpolation
         plt.legend(handles=patches, loc=2, bbox_to_anchor=(1.01, 1))
     else:  # 'V' or 'W' in kwargs
-        plt.imshow(data, origin='lower', cmap='coolwarm')
+        plt.imshow(data, origin='lower', cmap='coolwarm', aspect='auto',
+                   interpolation='none')  # no interpolation
         plt.colorbar()
 
     if 't' in kwargs:
