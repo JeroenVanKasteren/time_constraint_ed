@@ -225,6 +225,7 @@ def plot_heatmap(env, state, **kwargs):
     elif 'W' in kwargs:
         data = np.transpose(kwargs.get('W')[tuple(states)])
 
+    fig, ax = plt.subplots(1)
     if 'Pi' in kwargs:
         color_list = ['black', 'grey', 'lightyellow', 'lightgrey']
         queues = ['blue', 'crimson', 'darkgreen', 'gold', 'teal']
@@ -242,14 +243,14 @@ def plot_heatmap(env, state, **kwargs):
                    env.KEEP_IDLE, env.NONE_WAITING]
                   + list(range(1, env.J + 2)))
         norm = colors.BoundaryNorm(bounds, cmap.N)
-        plt.imshow(data, origin='lower', cmap=cmap, norm=norm,
+        ax.imshow(data, origin='lower', cmap=cmap, norm=norm,
                    aspect='auto',  # allows rectangles (instead of only squares)
                    interpolation='none')  # no interpolation
-        plt.legend(handles=patches, loc=2, bbox_to_anchor=(1.01, 1))
+        fig.legend(handles=patches, loc=2, bbox_to_anchor=(1.01, 1))
     else:  # 'V' or 'W' in kwargs
-        plt.imshow(data, origin='lower', cmap='coolwarm', aspect='auto',
-                   interpolation='none')  # no interpolation
-        plt.colorbar()
+        im = ax.imshow(data, origin='lower', cmap='coolwarm', aspect='auto',
+                       interpolation='none')  # no interpolation
+        plt.colorbar(im)
 
     if 't' in kwargs:
         lines(xdata=t_x, ydata=t_y, linewidth=0.5,
@@ -258,10 +259,10 @@ def plot_heatmap(env, state, **kwargs):
                         max(1, np.ceil(data.shape[1] / max_ticks)))
     y_ticks = np.arange(0, data.shape[0],
                         max(1, np.ceil(data.shape[0] / max_ticks)))
-    plt.title(title)
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    ax = plt.gca()
+    ax.set_title(title)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    # ax = plt.gca()
     ax.set_xticks(x_ticks)
     ax.set_yticks(y_ticks)
     ax.set_xticks(np.arange(data.shape[1] + 1) - 0.5, minor=True)
@@ -273,6 +274,7 @@ def plot_heatmap(env, state, **kwargs):
         if not (('i' in kwargs) & ('j' not in kwargs)):
             ax.set_xlim(0, d_cap)
     ax.grid(which='minor', color='black', linestyle='-', linewidth=0.2)
+    fig.subplots_adjust(right=0.9)
     plt.show()
 
 

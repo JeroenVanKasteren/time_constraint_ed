@@ -249,7 +249,7 @@ if instance_id in ids_to_analyze:
         env = Env(J=inst.J, S=inst.S, D=inst.D,
                   gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
                   mu=inst.mu, lab=inst.lab)
-        for method in solve_methods:
+        for method in ['vi', 'ospi']:
             name = method + ' inst: ' + instance_id + '_' + str(inst_id)
             state = plotting.state_selection(env,
                                              dim_i=True,
@@ -275,34 +275,33 @@ if instance_id in ids_to_analyze:
             if plot_policy:
                 plotting.plot_heatmap(env, state_i,
                                       Pi=Pi,
-                                      title='PI ',
+                                      title=method + ' policy ',
                                       t=inst.t,
                                       cap_d=cap_d)
             if plot_w:
                 if not calculate_pi:
                     w = np.load(FILEPATH_V + file_w)['arr_0']
-                state_w = np.concatenate(([0], state))
                 plotting.plot_heatmap(env, state_i,
                                       W=w,
-                                      title='W ',
+                                      title=method + ' W ',
                                       t=inst.t,
                                       cap_d=cap_d)
             # if file_pi in os.listdir(FILEPATH_V) and
             if plot_v:
                 plotting.plot_heatmap(env, state,
                                       V=V,
-                                      title='V ',
+                                      title=method + ' V ',
                                       t=inst.t,
                                       cap_d=cap_d)
         if plot_g_mem:
             g_mem = np.load(FILEPATH_V + '_'.join(['g', instance_id, str(inst_id),
                                                    'pi.npz']))['arr_0']
-            g_ospi = np.load(FILEPATH_V + '_'.join(['g', instance_id, str(inst_id),
-                                                   'ospi.npz']))['arr_0']
-            plt.scatter(range(1 + len(g_mem)), [g_ospi] + g_mem)
-            plt.xlabel('Iterations')
-            plt.ylabel('g')
-            plt.title('Policy Iteration starting with OSPI')
+            fig, ax = plt.subplots(1)
+            ax.scatter(range(len(g_mem)), g_mem)
+            ax.set_xlabel('Iterations')
+            ax.set_ylabel('g')
+            ax.set_title('Policy Iteration starting with OSPI')
+            ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
             plt.show()
 
 # Analyze different gamma
