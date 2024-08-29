@@ -16,9 +16,9 @@ FILEPATH_V = 'results/value_functions/'
 overview = False
 
 instance_id = 'J1'
-use_g_tmp = True
+use_g_tmp = False
 max_pi_iter = 10
-multi_xyc = True
+multi_xyc = False
 violin = False
 
 theory_vs_sim = False
@@ -32,10 +32,10 @@ solve_vs_sim = False
 plot_pi_abs = False
 plot_pi_rel = False
 
-ids_to_analyze = {'J1': [35, 70], 'J2': [1, 2, 3]}  # ID_i
+ids_to_analyze = {'J1': [107], 'J2': [47, 59]}  # ID_i
 summarize_policy = True
-plot_policy = True
 calculate_pi = True
+plot_policy = True
 plot_g_mem = True
 plot_v = True
 plot_w = True
@@ -43,6 +43,7 @@ cap_d = 100
 dep_arr = 0
 
 analyze_gamma = False
+
 g_tmp = '_g_tmp' if use_g_tmp else '_g'
 methods_gam_analyze = ['vi', 'ospi']
 
@@ -133,9 +134,13 @@ if theory_vs_sim:
                       '_g',
                       'theory',
                       '_g',
-                      'Gap of g for sims vs theory',
+                      'Gap of g for sims vs theory for ' + instance_id,
                       multi_xyc=multi_xyc,
-                      violin=violin)
+                      title_xyc=instance_id + ' sim',
+                      violin=violin,
+                      rotation=20,
+                      left=0.1,
+                      bottom=0.1)
 # theory discr. vs solve
 if theory_discr_vs_solve:
     plotting.plot_gap(inst_theory,
@@ -145,9 +150,13 @@ if theory_discr_vs_solve:
                       '_g_gam',
                       'theory',
                       '_g_gam',
-                      'Gap of g for solve vs discr theory',
+                      'Gap of g for solve vs discr theory for ' + instance_id,
                       multi_xyc=multi_xyc,
-                      violin=violin)
+                      title_xyc=instance_id + ' solve & theory discr.',
+                      violin=violin,
+                      rotation=20,
+                      left=0.1,
+                      bottom=0.1)
 # theory vs solve
 if theory_vs_solve:
     plotting.plot_gap(inst_theory,
@@ -157,9 +166,13 @@ if theory_vs_solve:
                       '_g',
                       'theory',
                       '_g',
-                      'Gap of g for solve vs theory',
+                      'Gap of g for solve vs theory for ' + instance_id,
                       multi_xyc=multi_xyc,
-                      violin=violin)
+                      title_xyc=instance_id + ' solve & theory',
+                      violin=violin,
+                      rotation=20,
+                      left=0.1,
+                      bottom=0.1)
 
 # compare VI vs solve
 if vi_vs_solve:
@@ -170,9 +183,13 @@ if vi_vs_solve:
                       g_tmp,
                       'vi',
                       g_tmp,
-                      'Gap of g for solve vs VI',
+                      'Gap of g for solve vs VI for ' + instance_id,
                       multi_xyc=multi_xyc,
-                      violin=violin)
+                      title_xyc=instance_id + ' solve vs VI',
+                      violin=violin,
+                      rotation=20,
+                      left=0.1,
+                      bottom=0.1)
 
 # compare VI vs sim
 if vi_vs_sim:
@@ -183,9 +200,13 @@ if vi_vs_sim:
                       g_tmp,
                       'vi',
                       g_tmp,
-                      'Gap of g for sim vs VI',
+                      'Gap of g for sim vs VI for ' + instance_id,
                       multi_xyc=multi_xyc,
-                      violin=violin)
+                      title_xyc=instance_id + ' sim vs VI',
+                      violin=violin,
+                      rotation=20,
+                      left=0.1,
+                      bottom=0.1)
 
 # compare OSPI vs solve (rel to vi)
 if ospi_vs_solve:
@@ -196,9 +217,13 @@ if ospi_vs_solve:
                       g_tmp,
                       'vi',
                       g_tmp,
-                      'Gap of g for sim vs OSPI rel to VI',
+                      'Gap of g for sim vs OSPI rel to VI for ' + instance_id,
                       multi_xyc=multi_xyc,
-                      violin=violin)
+                      title_xyc=instance_id + ' solve vs OSPI',
+                      violin=violin,
+                      rotation=20,
+                      left=0.1,
+                      bottom=0.1)
 
 # compare solve against sim per method
 if solve_vs_sim:
@@ -213,9 +238,11 @@ if solve_vs_sim:
                           g_tmp,
                           'Gap of g, (solve_g - sims-g) for ' + method,
                           multi_xyc=multi_xyc,
+                          title_xyc=instance_id + ' solve_g - sim_g',
                           violin=violin,
-                          title_xyc=' solve_g - sim_g')
-
+                          rotation=20,
+                          left=0.1,
+                          bottom=0.1)
 
 # Diminishing opt. gap of policy iteration, abs. and rel. to OSPI
 if (not is_sim) and (plot_pi_abs or plot_pi_rel):
@@ -227,24 +254,30 @@ if (not is_sim) and (plot_pi_abs or plot_pi_rel):
         vi_g, ospi_g = row['vi' + g_tmp], row['ospi' + g_tmp]
         for i in range(max_pi_iter):
             g = g_mem[min([i, max_pi_iter, len(g_mem) - 1])]
-            gap_abs['abs_' + str(i)].append((vi_g - g) / vi_g * 100)
-            gap_rel['rel_' + str(i)].append((ospi_g - g) / ospi_g * 100)
+            if not np.isnan(vi_g):
+                gap_abs['abs_' + str(i)].append((vi_g - g) / vi_g * 100)
+            if not np.isnan(ospi_g):
+                gap_rel['rel_' + str(i)].append((ospi_g - g) / ospi_g * 100)
     if plot_pi_abs:
         plotting.multi_boxplot(gap_abs, gap_abs.keys(),
                                'Policy Iteration opt. gap',
                                range(max_pi_iter),
                                'gap (%)',
-                               violin=violin)
+                               violin=violin,
+                               rotation=0)
     if plot_pi_rel:
         plotting.multi_boxplot(gap_rel, gap_rel.keys(),
                                'Policy Iteration gap rel. to OSPI',
                                range(max_pi_iter),
                                'gap (%)',
-                               violin=violin)
+                               violin=violin,
+                               rotation=0)
 
 # Plotting Pi, V, W
 if instance_id in ids_to_analyze:
     for inst_id in ids_to_analyze[instance_id]:
+        if inst_id not in inst_set.index:
+            continue
         inst = inst_set.loc[inst_id]
         env = Env(J=inst.J, S=inst.S, D=inst.D,
                   gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
@@ -261,18 +294,19 @@ if instance_id in ids_to_analyze:
             file_w = 'w_' + file
             file_v = 'v_' + file
             V = np.load(FILEPATH_V + file_v)['arr_0']
+            Pi = None
             if (file_pi in os.listdir(FILEPATH_V)
                     and (plot_policy or summarize_policy)):
                 Pi = np.load(FILEPATH_V + file_pi)['arr_0']
-            elif calculate_pi:
+            elif calculate_pi and (plot_policy or summarize_policy):
                 pi_learner = PolicyIteration()
                 pi_learner.one_step_policy_improvement(env, V)
                 Pi = pi_learner.Pi
                 w = pi_learner.W
-            if summarize_policy:
+            if (Pi is not None) and summarize_policy:
                 pi_learner = PolicyIteration(Pi=Pi)
                 tools.summarize_policy(env, pi_learner, print_per_time=False)
-            if plot_policy:
+            if (Pi is not None) and plot_policy:
                 plotting.plot_heatmap(env, state_i,
                                       Pi=Pi,
                                       title=method + ' policy ',
@@ -294,8 +328,8 @@ if instance_id in ids_to_analyze:
                                       t=inst.t,
                                       cap_d=cap_d)
         if plot_g_mem:
-            g_mem = np.load(FILEPATH_V + '_'.join(['g', instance_id, str(inst_id),
-                                                   'pi.npz']))['arr_0']
+            g_mem = np.load(FILEPATH_V + '_'.join(
+                ['g', instance_id, str(inst_id), 'pi.npz']))['arr_0']
             fig, ax = plt.subplots(1)
             ax.scatter(range(len(g_mem)), g_mem)
             ax.set_xlabel('Iterations')
@@ -358,6 +392,7 @@ if analyze_gamma and len(set(inst_set_gammas['gamma'])) > 1:
                       violin=violin,
                       x_lab='imbalance',
                       rotation=80,
+                      left=0.1,
                       bottom=0.28)  # 0.27 for J2_D_gam
 
 # Old code
@@ -375,3 +410,7 @@ if analyze_gamma and len(set(inst_set_gammas['gamma'])) > 1:
     # env.convergence_check = 1
     # env.max_iter = 1
     # learner.value_iteration(env, pi_learner)
+
+# if remove_unsolved:
+#     for method in ['vi']:  # solve_methods
+#         inst_set = inst_set[~inst_set[method + g_tmp].isna()]
