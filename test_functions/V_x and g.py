@@ -30,6 +30,7 @@ rho = env.rho
 a = env.a
 r = env.r
 
+
 def V_f(env, g):
     """Calculate V for a single queue."""
     V = np.zeros(S + env.D + 1)

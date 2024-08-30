@@ -32,16 +32,18 @@ solve_vs_sim = False
 plot_pi_abs = False
 plot_pi_rel = False
 
-ids_to_analyze = {'J1': [107], 'J2': [47, 59]}  # ID_i
-summarize_policy = True
+ids_to_analyze = {'J1': list(range(27, 36)), 'J2': [47, 59]}  # ID_i
+ref_method = 'vi'
+comp_methods = ['vi', 'ospi', 'pi', 'fcfs']
+summarize_policy = False
 calculate_pi = True
 plot_policy = True
-plot_g_mem = True
-plot_v = True
-plot_w = True
+plot_g_mem = False
+plot_v = False
+plot_w = False
 cap_d = 100
 dep_arr = 0
-
+dec = 4
 analyze_gamma = False
 
 g_tmp = '_g_tmp' if use_g_tmp else '_g'
@@ -83,6 +85,15 @@ solve_methods = []
 inst_set['smu(1-rho)'] = tools.get_smu_rho(inst_set.lab,
                                            inst_set.mu,
                                            inst_set.S)
+
+# add isolated g
+inst_set['isolated_g'] = 0.0
+for i, inst in inst_set.iterrows():
+    env_i = Env(J=inst.J, S=inst.S, D=inst.D,
+                gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
+                mu=inst.mu, lab=inst.lab)
+    inst_set.loc[i, 'isolated_g'] = sum(env_i.g)
+
 if not is_sim:
     solve_methods = ['_'.join(column.split('_')[:-2])
                      for column in inst_set.columns
@@ -108,65 +119,70 @@ if ((not is_sim) and
 methods_both = list(set(solve_methods) & set(sim_methods))
 
 # Difference between theory vs solve and sim for mu == mu_j
-inst_theory = inst_set[inst_set.apply(lambda x_row: len(set(x_row.mu)) == 1,
-                                      axis=1)].reindex()
-theory_g = []
-theory_g_gam = []
-for i, row in inst_theory.iterrows():
-    prob_i = row.lab/sum(row.lab)
-    _, _, _, prob_late = tools.get_erlang_c(row.mu[0], row.load, row.S,
-                                            row.t, prob_i)
-    theory_g.append(sum(row.lab * (row.r - row.c * prob_late)))
-    _, g, _ = tools.get_erlang_c_gam(row, row.gamma)
-    theory_g_gam.append(g)
+inst_mm1 = inst_set[inst_set.apply(lambda x_row: len(set(x_row.mu)) == 1,
+                                   axis=1)].reindex()
+mm1_g = []
+mm1_discr_g = []
+for i, inst in inst_mm1.iterrows():
+    # M/M/1 g
+    prob_i = inst.lab/sum(inst.lab)
+    _, _, _, prob_late = tools.get_erlang_c(inst.mu[0], inst.load, inst.S,
+                                            inst.t, prob_i)
+    mm1_g.append(sum(inst.lab * (inst.r - inst.c * prob_late)))
+    # M/M/1 discr g
+    env = Env(J=1, S=inst.S, D=inst.D,
+              gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
+              mu=[sum(inst.lab) / sum(sum(inst.lab) / inst.mu)],
+              lab=[sum(inst.lab)])
+    mm1_discr_g.append(sum(env.g))
     # optional test:
     # _, g, _ = tools.get_erlang_c_gam(row, 1e6)
-    # theory_g2.append(g)
-inst_theory.loc[:, 'theory_g'] = theory_g
-inst_theory.loc[:, 'theory_g_gam'] = theory_g_gam
+    # mm1_g.append(g)
+inst_mm1.loc[:, 'mm1_g'] = mm1_g
+inst_mm1.loc[:, 'mm1_discr_g'] = mm1_discr_g
 
-# theory vs sim
+# MM1 vs sim
 if theory_vs_sim:
-    plotting.plot_gap(inst_theory,
+    plotting.plot_gap(inst_mm1,
                       sim_methods,
                       '_g_sim',
-                      'theory',
+                      'mm1',
                       '_g',
-                      'theory',
+                      'mm1',
                       '_g',
-                      'Gap of g for sims vs theory for ' + instance_id,
+                      'Gap of g for sims vs M/M/1 for ' + instance_id,
                       multi_xyc=multi_xyc,
                       title_xyc=instance_id + ' sim',
                       violin=violin,
                       rotation=20,
                       left=0.1,
                       bottom=0.1)
-# theory discr. vs solve
+# MM1 discr. vs solve
 if theory_discr_vs_solve:
-    plotting.plot_gap(inst_theory,
+    plotting.plot_gap(inst_mm1,
                       solve_methods,
                       g_tmp,
-                      'theory',
-                      '_g_gam',
-                      'theory',
-                      '_g_gam',
-                      'Gap of g for solve vs discr theory for ' + instance_id,
+                      'mm1_discr',
+                      '_g',
+                      'mm1_discr',
+                      '_g',
+                      'Gap of g for solve vs M/M/1 discr for ' + instance_id,
                       multi_xyc=multi_xyc,
-                      title_xyc=instance_id + ' solve & theory discr.',
+                      title_xyc=instance_id + ' solve & M/M/1 discr',
                       violin=violin,
                       rotation=20,
                       left=0.1,
                       bottom=0.1)
-# theory vs solve
+# MM1 vs solve
 if theory_vs_solve:
-    plotting.plot_gap(inst_theory,
+    plotting.plot_gap(inst_mm1,
                       solve_methods,
                       g_tmp,
-                      'theory',
+                      'mm1',
                       '_g',
-                      'theory',
+                      'mm1',
                       '_g',
-                      'Gap of g for solve vs theory for ' + instance_id,
+                      'Gap of g for solve vs M/M/1 for ' + instance_id,
                       multi_xyc=multi_xyc,
                       title_xyc=instance_id + ' solve & theory',
                       violin=violin,
@@ -246,34 +262,63 @@ if solve_vs_sim:
 
 # Diminishing opt. gap of policy iteration, abs. and rel. to OSPI
 if (not is_sim) and (plot_pi_abs or plot_pi_rel):
-    gap_abs = {'abs_' + str(i): [] for i in range(max_pi_iter)}
-    gap_rel = {'rel_' + str(i): [] for i in range(max_pi_iter)}
-    for i, row in inst_set.iterrows():
+    gap_abs = {'abs_' + str(i): [] for i in range(max_pi_iter + 1)}
+    gap_rel = {'rel_' + str(i): [] for i in range(max_pi_iter + 1)}
+    gap_imp_abs = {'abs_' + str(i): [] for i in range(max_pi_iter)}
+    gap_imp_rel = {'rel_' + str(i): [] for i in range(max_pi_iter)}
+    for i, inst in inst_set.iterrows():
         g_mem = np.load(FILEPATH_V + '_'.join(['g', instance_id, str(i),
                                                'pi.npz']))['arr_0']
-        vi_g, ospi_g = row['vi' + g_tmp], row['ospi' + g_tmp]
-        for i in range(max_pi_iter):
-            g = g_mem[min([i, max_pi_iter, len(g_mem) - 1])]
+        vi_g, ospi_g = inst['vi' + g_tmp], inst['ospi' + g_tmp]
+        # add isolated g
+        env_i = Env(J=inst.J, S=inst.S, D=inst.D,
+                    gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
+                    mu=inst.mu, lab=inst.lab)
+        if not np.isnan(vi_g):
+            gap_abs['abs_0'].append((vi_g - sum(env_i.g)) / vi_g * 100)
+        if not np.isnan(ospi_g):
+            gap_rel['rel_0'].append((ospi_g - sum(env_i.g)) / ospi_g * 100)
+        for j in range(1, max_pi_iter + 1):
+            g = g_mem[min([j, max_pi_iter, len(g_mem) - 1])]
             if not np.isnan(vi_g):
-                gap_abs['abs_' + str(i)].append((vi_g - g) / vi_g * 100)
+                gap_abs['abs_' + str(j)].append((vi_g - g) / vi_g * 100)
+                gap_imp_abs['abs_' + str(j-1)].append(
+                    gap_abs['abs_' + str(j-1)][-1]
+                    - gap_abs['abs_' + str(j)][-1])
             if not np.isnan(ospi_g):
-                gap_rel['rel_' + str(i)].append((ospi_g - g) / ospi_g * 100)
+                gap_rel['rel_' + str(j)].append((ospi_g - g) / ospi_g * 100)
+                gap_imp_rel['rel_' + str(j-1)].append(
+                    gap_rel['rel_' + str(j-1)][-1]
+                    - gap_rel['rel_' + str(j)][-1])
     if plot_pi_abs:
         plotting.multi_boxplot(gap_abs, gap_abs.keys(),
                                'Policy Iteration opt. gap',
-                               range(max_pi_iter),
+                               range(max_pi_iter + 1),
                                'gap (%)',
+                               violin=violin,
+                               rotation=0)
+        plotting.multi_boxplot(gap_imp_abs, gap_imp_abs.keys(),
+                               'Policy Iteration improvement in opt. gap',
+                               range(1, max_pi_iter + 1),
+                               'Improvement in gap-%',
                                violin=violin,
                                rotation=0)
     if plot_pi_rel:
         plotting.multi_boxplot(gap_rel, gap_rel.keys(),
                                'Policy Iteration gap rel. to OSPI',
-                               range(max_pi_iter),
+                               range(max_pi_iter + 1),
                                'gap (%)',
                                violin=violin,
                                rotation=0)
+        plotting.multi_boxplot(gap_imp_abs, gap_imp_abs.keys(),
+                               'Policy Iteration improvement in '
+                               'gap rel. to OSPI',
+                               range(1, max_pi_iter + 1),
+                               'Improvement in gap-%)',
+                               violin=violin,
+                               rotation=0)
 
-# Plotting Pi, V, W
+# Analyzing & Plotting Pi, V, W
 if instance_id in ids_to_analyze:
     for inst_id in ids_to_analyze[instance_id]:
         if inst_id not in inst_set.index:
@@ -282,51 +327,77 @@ if instance_id in ids_to_analyze:
         env = Env(J=inst.J, S=inst.S, D=inst.D,
                   gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
                   mu=inst.mu, lab=inst.lab)
-        for method in ['vi', 'ospi']:
-            name = method + ' inst: ' + instance_id + '_' + str(inst_id)
-            state = plotting.state_selection(env,
-                                             dim_i=True,
-                                             s=1,
-                                             wait_perc=0.7)
-            state_i = np.concatenate(([dep_arr], state))
+        # load in ref V, w, Pi
+        file = '_'.join([instance_id, str(inst_id), ref_method + '.npz'])
+        g_ref = round(inst[ref_method + g_tmp], dec)
+        V_ref = np.load(FILEPATH_V + 'v_' + file)['arr_0']
+        Pi_ref = None
+        if 'pi_' + file in os.listdir(FILEPATH_V):
+            Pi_ref = np.load(FILEPATH_V + 'pi_' + file)['arr_0']
+        elif calculate_pi:
+            pi_learner = PolicyIteration()
+            pi_learner.one_step_policy_improvement(env, V)
+            Pi_ref = pi_learner.Pi
+            w_ref = pi_learner.W
+        print('Instance', instance_id, 'ID', inst_id, 'ref_method', ref_method)
+        for method in comp_methods:
+            # load in data
             file = '_'.join([instance_id, str(inst_id), method + '.npz'])
-            file_pi = 'pi_' + file
-            file_w = 'w_' + file
-            file_v = 'v_' + file
-            V = np.load(FILEPATH_V + file_v)['arr_0']
+            g = round(inst[method + g_tmp], dec)
+            V = np.load(FILEPATH_V + 'v_' + file)['arr_0']
             Pi = None
-            if (file_pi in os.listdir(FILEPATH_V)
+            if ('pi_' + file in os.listdir(FILEPATH_V)
                     and (plot_policy or summarize_policy)):
-                Pi = np.load(FILEPATH_V + file_pi)['arr_0']
+                Pi = np.load(FILEPATH_V + 'pi_' + file)['arr_0']
             elif calculate_pi and (plot_policy or summarize_policy):
                 pi_learner = PolicyIteration()
                 pi_learner.one_step_policy_improvement(env, V)
                 Pi = pi_learner.Pi
                 w = pi_learner.W
+
+            name = method + ' inst: ' + instance_id + '_' + str(inst_id)
+            print('g_' + method + ': ', g, 'Equal to ref?', g == g_ref)
+
+            # Summarize policy
             if (Pi is not None) and summarize_policy:
                 pi_learner = PolicyIteration(Pi=Pi)
                 tools.summarize_policy(env, pi_learner, print_per_time=False)
+
+            # Plotting policy
+            state = plotting.state_selection(env,
+                                             dim_i=True,
+                                             s=1,
+                                             wait_perc=0.7)
+            state_i = np.concatenate(([dep_arr], state))
             if (Pi is not None) and plot_policy:
                 plotting.plot_heatmap(env, state_i,
                                       Pi=Pi,
-                                      title=method + ' policy ',
+                                      title=name + ' policy ',
                                       t=inst.t,
                                       cap_d=cap_d)
             if plot_w:
                 if not calculate_pi:
-                    w = np.load(FILEPATH_V + file_w)['arr_0']
+                    w = np.load(FILEPATH_V + 'w_' + file)['arr_0']
                 plotting.plot_heatmap(env, state_i,
                                       W=w,
-                                      title=method + ' W ',
+                                      title=name + ' W ',
                                       t=inst.t,
                                       cap_d=cap_d)
             # if file_pi in os.listdir(FILEPATH_V) and
             if plot_v:
                 plotting.plot_heatmap(env, state,
                                       V=V,
-                                      title=method + ' V ',
+                                      title=name + ' V ',
                                       t=inst.t,
                                       cap_d=cap_d)
+            # comparing to reference
+            if (Pi is not None) and (Pi_ref is not None):
+                print('Policy of ' + method + 'Equal to ref?',
+                      np.allclose(Pi, Pi_ref, rtol=1e-3))
+            zero_state = tuple(np.zeros(len(env.dim), dtype=int))
+            print('V of ' + method + 'Equal to ref?',
+                  np.allclose(V - V[zero_state], V_ref - V_ref[zero_state],
+                              rtol=1e-3))
         if plot_g_mem:
             g_mem = np.load(FILEPATH_V + '_'.join(
                 ['g', instance_id, str(inst_id), 'pi.npz']))['arr_0']
@@ -401,16 +472,3 @@ if analyze_gamma and len(set(inst_set_gammas['gamma'])) > 1:
 #       f'upper bound of g: {sum(inst.r[0] * inst.lab[0]):0.4f} \n'
 #       f'Theory, g={g:0.4f}, E(W)={exp_wait:0.4f}, '
 #       f'P(W<t) = {["%.4f" % elem for elem in success_prob]}')
-
-# if vi but missing pi
-# pi_learner = PolicyIteration()
-# v_file = ('v_' + args.instance + '_' + str(inst.iloc[0]) + '_vi.npz')
-# if v_file in os.listdir(FILEPATH_V):
-    # learner.V = np.load(FILEPATH_V + v_file)['arr_0']
-    # env.convergence_check = 1
-    # env.max_iter = 1
-    # learner.value_iteration(env, pi_learner)
-
-# if remove_unsolved:
-#     for method in ['vi']:  # solve_methods
-#         inst_set = inst_set[~inst_set[method + g_tmp].isna()]
