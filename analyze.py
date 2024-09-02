@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 import os
 import pandas as pd
 import numpy as np
-from utils import plotting, tools, TimeConstraintEDs as Env, PolicyIteration
+from utils import (plotting, tools, TimeConstraintEDs as Env, PolicyIteration,
+                   OneStepPolicyImprovement)
 
 FILEPATH_RESULTS = 'results/'
 FILEPATH_V = 'results/value_functions/'
@@ -32,10 +33,15 @@ solve_vs_sim = False
 plot_pi_abs = False
 plot_pi_rel = False
 
-ids_to_analyze = {'J1': list(range(27, 36)), 'J2': [47, 59]}  # ID_i
+ids_to_analyze = {'J1': list(range(27, 28)), 'J2': [47, 59]}  # ID_i
 ref_method = 'vi'
 comp_methods = ['vi', 'ospi', 'pi', 'fcfs']
 summarize_policy = False
+tol = 1e-1
+check_v_app = True
+print_states_pi = True
+print_states_v = False
+print_states_v_app = False
 calculate_pi = True
 plot_policy = True
 plot_g_mem = False
@@ -327,7 +333,10 @@ if instance_id in ids_to_analyze:
         env = Env(J=inst.J, S=inst.S, D=inst.D,
                   gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
                   mu=inst.mu, lab=inst.lab)
-        # load in ref V, w, Pi
+        dep_arr = inst.J
+        zero_state = tuple(np.zeros(len(env.dim), dtype=int))
+
+        # load in ref V, w, Pi, v_app
         file = '_'.join([instance_id, str(inst_id), ref_method + '.npz'])
         g_ref = round(inst[ref_method + g_tmp], dec)
         V_ref = np.load(FILEPATH_V + 'v_' + file)['arr_0']
@@ -339,7 +348,23 @@ if instance_id in ids_to_analyze:
             pi_learner.one_step_policy_improvement(env, V)
             Pi_ref = pi_learner.Pi
             w_ref = pi_learner.W
-        print('Instance', instance_id, 'ID', inst_id, 'ref_method', ref_method)
+
+        print('\n')
+        if g_ref is None:
+            print('reference g_' + method + ' stuck')
+        if check_v_app:
+            learner_ospi = OneStepPolicyImprovement()
+            v_app = learner_ospi.get_v_app(env)
+            mask = ~np.isclose(v_app - v_app[zero_state],
+                               V_ref - V_ref[zero_state],
+                               rtol=1e-3)
+            print('V_app equal to ref?', not mask.any())
+            if print_states_v_app:
+                print(np.transpose(mask.nonzero()))
+
+        print('Instance', instance_id, 'id', inst_id,
+              'ref_method', ref_method, '\n')
+
         for method in comp_methods:
             # load in data
             file = '_'.join([instance_id, str(inst_id), method + '.npz'])
@@ -355,14 +380,16 @@ if instance_id in ids_to_analyze:
                 Pi = pi_learner.Pi
                 w = pi_learner.W
 
-            name = method + ' inst: ' + instance_id + '_' + str(inst_id)
-            print('g_' + method + ': ', g, 'Equal to ref?', g == g_ref)
+            if g is None:
+                print('g_' + method + ' stuck')
+            print('g_' + method + ': ', g, ' equal to ref?', g == g_ref)
 
             # Summarize policy
             if (Pi is not None) and summarize_policy:
                 pi_learner = PolicyIteration(Pi=Pi)
                 tools.summarize_policy(env, pi_learner, print_per_time=False)
 
+            name = method + ' inst: ' + instance_id + '_' + str(inst_id)
             # Plotting policy
             state = plotting.state_selection(env,
                                              dim_i=True,
@@ -373,7 +400,7 @@ if instance_id in ids_to_analyze:
                 plotting.plot_heatmap(env, state_i,
                                       Pi=Pi,
                                       title=name + ' policy ',
-                                      t=inst.t,
+                                      t=inst.t * inst.gamma,
                                       cap_d=cap_d)
             if plot_w:
                 if not calculate_pi:
@@ -390,14 +417,28 @@ if instance_id in ids_to_analyze:
                                       title=name + ' V ',
                                       t=inst.t,
                                       cap_d=cap_d)
-            # comparing to reference
+            # comparing pi to reference
             if (Pi is not None) and (Pi_ref is not None):
-                print('Policy of ' + method + 'Equal to ref?',
-                      np.allclose(Pi, Pi_ref, rtol=1e-3))
-            zero_state = tuple(np.zeros(len(env.dim), dtype=int))
-            print('V of ' + method + 'Equal to ref?',
-                  np.allclose(V - V[zero_state], V_ref - V_ref[zero_state],
-                              rtol=1e-3))
+                mask = ~np.isclose(Pi, Pi_ref, rtol=tol)
+                print('Policy of ' + method + ' equal to ref?', not mask.any())
+                if print_states_pi:
+                    print(np.transpose(mask.nonzero()))
+            # comparing V to reference
+            mask = ~np.isclose(V - V[zero_state],
+                               V_ref - V_ref[zero_state],
+                               rtol=tol)
+            print('V of ' + method + ' equal to ref?', not mask.any())
+            if print_states_v:
+                print(np.transpose(mask.nonzero()))
+            # comparing V to V_app
+            if check_v_app:
+                mask = ~np.isclose(v_app - v_app[zero_state],
+                                   V - V[zero_state],
+                                   rtol=tol)
+                print('V_app equal to V of ' + method + '? ', not mask.any())
+                if print_states_v_app:
+                    print(np.transpose(mask.nonzero()))
+            print('\n')
         if plot_g_mem:
             g_mem = np.load(FILEPATH_V + '_'.join(
                 ['g', instance_id, str(inst_id), 'pi.npz']))['arr_0']

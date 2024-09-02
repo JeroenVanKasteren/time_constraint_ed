@@ -144,7 +144,7 @@ def state_selection(env,
                     dim_i=False,
                     x=None,  # None, 'random', array
                     s=None,  # None, 'random', number, array
-                    dep_arr=0,  # state[0] = i (arrival) / env.J + 1 (departure)
+                    dep_arr=0,  # state[0] = i (arrival) / env.J (departure)
                     wait_perc=None):  # percentage of target, float or array
     if x == 'random':
         x = env.x_states[np.random.randint(len(env.x_states))]
@@ -200,11 +200,13 @@ def plot_heatmap(env, state, **kwargs):
         i = kwargs.get('i', 0)
         x_label = 'Servers occupied by queue ' + str(i + 1)
         states[event + i + env.J] = slice(None)  # s_i
-        print_states[event + i + env.J] = ':'  # s_i on x axis
+        print_states[event + i + env.J] = ':'  # s_i on y axis
+        if env.J == 1:
+            print_states[event + i] = ':'  # x_i on x axis
         max_ticks = kwargs.get('max_ticks', 5)
         title = title + ' queue: ' + str(i + 1) + ', ' + str(print_states)
         if 't' in kwargs:
-            t_x, t_y = [0, t[i]], [t[i], t[i]]
+            t_x, t_y = [0, env.S], [t[i], t[i]]
     else:
         i, j = choosing_classes(env, **kwargs)
         x_label = 'Waiting time state FIL queue ' + str(j + 1)
@@ -219,11 +221,11 @@ def plot_heatmap(env, state, **kwargs):
     print_states[event + i] = ':'  # x_i on y axis
 
     if 'V' in kwargs:
-        data = np.transpose(kwargs.get('V')[tuple(states)])
+        data = kwargs.get('V')[tuple(states)]
     elif 'Pi' in kwargs:
-        data = np.transpose(kwargs.get('Pi')[tuple(states)])
+        data = kwargs.get('Pi')[tuple(states)]
     elif 'W' in kwargs:
-        data = np.transpose(kwargs.get('W')[tuple(states)])
+        data = kwargs.get('W')[tuple(states)]
 
     fig, ax = plt.subplots(1)
     if 'Pi' in kwargs:
@@ -246,15 +248,12 @@ def plot_heatmap(env, state, **kwargs):
         ax.imshow(data, origin='lower', cmap=cmap, norm=norm,
                    aspect='auto',  # allows rectangles (instead of only squares)
                    interpolation='none')  # no interpolation
-        fig.legend(handles=patches, loc=2, bbox_to_anchor=(1.01, 1))
+        fig.legend(handles=patches, loc=3)
     else:  # 'V' or 'W' in kwargs
         im = ax.imshow(data, origin='lower', cmap='coolwarm', aspect='auto',
                        interpolation='none')  # no interpolation
         plt.colorbar(im)
 
-    if 't' in kwargs:
-        lines(xdata=t_x, ydata=t_y, linewidth=0.5,
-              linestyle='-.', color='green')
     x_ticks = np.arange(0, data.shape[1],
                         max(1, np.ceil(data.shape[1] / max_ticks)))
     y_ticks = np.arange(0, data.shape[0],
@@ -262,7 +261,6 @@ def plot_heatmap(env, state, **kwargs):
     ax.set_title(title)
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
-    # ax = plt.gca()
     ax.set_xticks(x_ticks)
     ax.set_yticks(y_ticks)
     ax.set_xticks(np.arange(data.shape[1] + 1) - 0.5, minor=True)
@@ -275,6 +273,9 @@ def plot_heatmap(env, state, **kwargs):
             ax.set_xlim(0, d_cap)
     ax.grid(which='minor', color='black', linestyle='-', linewidth=0.2)
     fig.subplots_adjust(right=0.9)
+    if 't' in kwargs:
+        lines(xdata=t_x, ydata=t_y, linewidth=0.5,
+              linestyle='-.', color='darkgreen')
     plt.show()
 
 
