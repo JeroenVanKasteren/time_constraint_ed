@@ -195,30 +195,37 @@ def plot_heatmap(env, state, **kwargs):
     event = 'V' not in kwargs
 
     states = state.copy()
-    print_states = state.astype('str')
+    print_states = [''] * (event + 2 * env.J)
+    for i in range(env.J):
+        print_states[event + i] = '$x_{' + str(i + 1) + '}$=' + str(states[i])
+        print_states[event + i + env.J] = ('$s_{' + str(i + 1) + '}=' +
+                                           str(states[i]))
+    if (event == 1) and (states[0] < env.J):
+        print_states[0] = '$arr_{' + str(states[0] + 1) + '}$'
+    elif (event == 1) and (states[0] == env.J):
+        print_states[0] = 'dep'
+
     if (('i' in kwargs) & ('j' not in kwargs)) or env.J == 1:
         i = kwargs.get('i', 0)
         x_label = 'Servers occupied by queue ' + str(i + 1)
         states[event + i + env.J] = slice(None)  # s_i
-        print_states[event + i + env.J] = ':'  # s_i on y axis
-        if env.J == 1:
-            print_states[event + i] = ':'  # x_i on x axis
+        print_states[event + i + env.J] = '$\\forall  s_{' + str(i + 1) + '}$'
         max_ticks = kwargs.get('max_ticks', 5)
-        title = title + ' queue: ' + str(i + 1) + ', ' + str(print_states)
         if 't' in kwargs:
-            t_x, t_y = [0, env.S], [t[i], t[i]]
+            t_x, t_y = [-0.5, env.S + 0.5], [t[i] + 0.5, t[i] + 0.5]
     else:
         i, j = choosing_classes(env, **kwargs)
         x_label = 'Waiting time state FIL queue ' + str(j + 1)
         states[event + j] = slice(d_cap) if d_cap > 0 else slice(None)  # x_j
-        print_states[event + j] = ':'  # x_j on x axis
+        print_states[event + j] = '$\\forall x_{' + str(j + 1) + '}$'  # x axis
         max_ticks = kwargs.get('max_ticks', 10)
-        title = title + str(print_states)
         if 't' in kwargs:
-            t_x, t_y = [0, t[i], t[i]], [t[i], t[i], 0]
+            t_x = [0, t[i] + 0.5, t[i] + 0.5]
+            t_y = [t[i] + 0.5, t[i] + 0.5, 0]
     y_label = 'Waiting time state FIL queue ' + str(i + 1)
     states[event + i] = slice(d_cap) if d_cap > 0 else slice(None)  # x_i
-    print_states[event + i] = ':'  # x_i on y axis
+    print_states[event + i] = '$\\forall x_{' + str(i + 1) + '}$'  # y axis
+    title = title + ' [' + ', '.join(print_states) + ']'
 
     if 'V' in kwargs:
         data = kwargs.get('V')[tuple(states)]
@@ -227,7 +234,10 @@ def plot_heatmap(env, state, **kwargs):
     elif 'W' in kwargs:
         data = kwargs.get('W')[tuple(states)]
 
-    fig, ax = plt.subplots(1)
+    fig, ax = plt.subplots()
+    if 't' in kwargs:
+        ax.plot(t_x, t_y, linewidth=2, linestyle='--',
+                color='green')
     if 'Pi' in kwargs:
         color_list = ['black', 'grey', 'lightyellow', 'lightgrey']
         queues = ['blue', 'crimson', 'darkgreen', 'gold', 'teal']
@@ -246,9 +256,14 @@ def plot_heatmap(env, state, **kwargs):
                   + list(range(1, env.J + 2)))
         norm = colors.BoundaryNorm(bounds, cmap.N)
         ax.imshow(data, origin='lower', cmap=cmap, norm=norm,
-                   aspect='auto',  # allows rectangles (instead of only squares)
-                   interpolation='none')  # no interpolation
-        fig.legend(handles=patches, loc=3)
+                  aspect='auto',  # allows rectangles (instead of only squares)
+                  interpolation='none')  # no interpolation
+        # Shrink current axis by 20%
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+        # Put a legend to the right of the current axis
+        ax.legend(handles=patches, loc='center left', bbox_to_anchor=(1, 0.5))
     else:  # 'V' or 'W' in kwargs
         im = ax.imshow(data, origin='lower', cmap='coolwarm', aspect='auto',
                        interpolation='none')  # no interpolation
@@ -272,10 +287,6 @@ def plot_heatmap(env, state, **kwargs):
         if not (('i' in kwargs) & ('j' not in kwargs)):
             ax.set_xlim(0, d_cap)
     ax.grid(which='minor', color='black', linestyle='-', linewidth=0.2)
-    fig.subplots_adjust(right=0.9)
-    if 't' in kwargs:
-        lines(xdata=t_x, ydata=t_y, linewidth=0.5,
-              linestyle='-.', color='darkgreen')
     plt.show()
 
 

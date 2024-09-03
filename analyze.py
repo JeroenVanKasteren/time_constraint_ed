@@ -33,22 +33,22 @@ solve_vs_sim = False
 plot_pi_abs = False
 plot_pi_rel = False
 
-ids_to_analyze = {'J1': list(range(27, 28)), 'J2': [47, 59]}  # ID_i
+ids_to_analyze = {'J1': [32, 104], 'J2': [47, 59]}  # ID_i
 ref_method = 'vi'
 comp_methods = ['vi', 'ospi', 'pi', 'fcfs']
 summarize_policy = False
-tol = 1e-1
+tol = 1e-2
 check_v_app = True
 print_states_pi = True
 print_states_v = False
 print_states_v_app = False
 calculate_pi = True
 plot_policy = True
-plot_g_mem = False
-plot_v = False
-plot_w = False
+plot_g_mem = True
+plot_v = True
+plot_w = True
 cap_d = 100
-dep_arr = 0
+dep_arr = -1  # -1 for all, else arrival {0, ..., J - 1} or departure env.J
 dec = 4
 analyze_gamma = False
 
@@ -333,7 +333,6 @@ if instance_id in ids_to_analyze:
         env = Env(J=inst.J, S=inst.S, D=inst.D,
                   gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
                   mu=inst.mu, lab=inst.lab)
-        dep_arr = inst.J
         zero_state = tuple(np.zeros(len(env.dim), dtype=int))
 
         # load in ref V, w, Pi, v_app
@@ -341,13 +340,14 @@ if instance_id in ids_to_analyze:
         g_ref = round(inst[ref_method + g_tmp], dec)
         V_ref = np.load(FILEPATH_V + 'v_' + file)['arr_0']
         Pi_ref = None
-        if 'pi_' + file in os.listdir(FILEPATH_V):
-            Pi_ref = np.load(FILEPATH_V + 'pi_' + file)['arr_0']
-        elif calculate_pi:
-            pi_learner = PolicyIteration()
-            pi_learner.one_step_policy_improvement(env, V)
-            Pi_ref = pi_learner.Pi
-            w_ref = pi_learner.W
+        # if 'pi_' + file in os.listdir(FILEPATH_V):
+        #     Pi_ref = np.load(FILEPATH_V + 'pi_' + file)['arr_0']
+        #     w = np.load(FILEPATH_V + 'w_' + file)['arr_0']
+        # elif calculate_pi:
+        pi_learner = PolicyIteration()  # TODO
+        pi_learner.one_step_policy_improvement(env, V_ref)
+        Pi_ref = pi_learner.Pi
+        w_ref = pi_learner.W
 
         print('\n')
         if g_ref is None:
@@ -365,20 +365,24 @@ if instance_id in ids_to_analyze:
         print('Instance', instance_id, 'id', inst_id,
               'ref_method', ref_method, '\n')
 
+        print('Impact discr state space: ',
+              sum(env.lab)**2/env.gamma * env.pi_0,
+              '\nWith lab:', env.lab, 'P(W>t):', env.target_prob)
         for method in comp_methods:
             # load in data
             file = '_'.join([instance_id, str(inst_id), method + '.npz'])
             g = round(inst[method + g_tmp], dec)
             V = np.load(FILEPATH_V + 'v_' + file)['arr_0']
             Pi = None
-            if ('pi_' + file in os.listdir(FILEPATH_V)
-                    and (plot_policy or summarize_policy)):
-                Pi = np.load(FILEPATH_V + 'pi_' + file)['arr_0']
-            elif calculate_pi and (plot_policy or summarize_policy):
-                pi_learner = PolicyIteration()
-                pi_learner.one_step_policy_improvement(env, V)
-                Pi = pi_learner.Pi
-                w = pi_learner.W
+            # if ('pi_' + file in os.listdir(FILEPATH_V)
+            #         and (plot_policy or summarize_policy)):
+            #     Pi = np.load(FILEPATH_V + 'pi_' + file)['arr_0']
+            #     w = np.load(FILEPATH_V + 'w_' + file)['arr_0']
+            # elif calculate_pi and (plot_policy or summarize_policy):
+            pi_learner = PolicyIteration()  # TODO
+            pi_learner.one_step_policy_improvement(env, V)
+            Pi = pi_learner.Pi
+            w = pi_learner.W
 
             if g is None:
                 print('g_' + method + ' stuck')
@@ -395,27 +399,27 @@ if instance_id in ids_to_analyze:
                                              dim_i=True,
                                              s=1,
                                              wait_perc=0.7)
-            state_i = np.concatenate(([dep_arr], state))
-            if (Pi is not None) and plot_policy:
-                plotting.plot_heatmap(env, state_i,
-                                      Pi=Pi,
-                                      title=name + ' policy ',
-                                      t=inst.t * inst.gamma,
-                                      cap_d=cap_d)
-            if plot_w:
-                if not calculate_pi:
-                    w = np.load(FILEPATH_V + 'w_' + file)['arr_0']
-                plotting.plot_heatmap(env, state_i,
-                                      W=w,
-                                      title=name + ' W ',
-                                      t=inst.t,
-                                      cap_d=cap_d)
+            events = range(env.J + 1) if dep_arr == -1 else [dep_arr]
+            for event in events:
+                state_i = np.concatenate(([event], state))
+                if (Pi is not None) and plot_policy:
+                    plotting.plot_heatmap(env, state_i,
+                                          Pi=Pi,
+                                          title=name + ' policy',
+                                          t=inst.t * inst.gamma,
+                                          cap_d=cap_d)
+                if (Pi is not None) and plot_w:
+                    plotting.plot_heatmap(env, state_i,
+                                          W=w,
+                                          title=name + ' W',
+                                          t=inst.t * inst.gamma,
+                                          cap_d=cap_d)
             # if file_pi in os.listdir(FILEPATH_V) and
             if plot_v:
                 plotting.plot_heatmap(env, state,
                                       V=V,
-                                      title=name + ' V ',
-                                      t=inst.t,
+                                      title=name + ' V',
+                                      t=inst.t * inst.gamma,
                                       cap_d=cap_d)
             # comparing pi to reference
             if (Pi is not None) and (Pi_ref is not None):
@@ -449,6 +453,18 @@ if instance_id in ids_to_analyze:
             ax.set_title('Policy Iteration starting with OSPI')
             ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
             plt.show()
+
+# Analyze impact discr state space
+term_list = []
+for i, inst in inst_set.iterrows():
+    pi_0 = Env.get_pi_0(inst.gamma, inst.S, inst.load, sum(inst.lab))
+    term_list.append(pi_0 * sum(inst.lab)**2 / inst.gamma)
+plotting.plot_xyc(inst_set.t_prob, term_list, inst_set.fcfs_opt_gap,
+                  title='Impact discr state space, instance:' + instance_id,
+                  x_lab='P(W>t)',
+                  y_lab='extra term',
+                  c_lab='opt gap fcfs (vs VI)',
+                  c_rot=270, c_map='coolwarm')
 
 # Analyze different gamma
 if analyze_gamma and len(set(inst_set_gammas['gamma'])) > 1:
