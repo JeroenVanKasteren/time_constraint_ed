@@ -33,18 +33,19 @@ solve_vs_sim = False
 plot_pi_abs = False
 plot_pi_rel = False
 
-ids_to_analyze = {'J1': [32, 104], 'J2': [47, 59]}  # ID_i
+# J1: 32
+ids_to_analyze = {'J1': [104], 'J2': [47, 59]}  # ID_i
 ref_method = 'vi'
 comp_methods = ['vi', 'ospi', 'pi', 'fcfs']
 summarize_policy = False
 tol = 1e-2
 check_v_app = True
-print_states_pi = True
+print_states_pi = False
 print_states_v = False
 print_states_v_app = False
 calculate_pi = True
 plot_policy = True
-plot_g_mem = True
+plot_g_mem = False
 plot_v = True
 plot_w = True
 cap_d = 100
@@ -324,6 +325,21 @@ if (not is_sim) and (plot_pi_abs or plot_pi_rel):
                                violin=violin,
                                rotation=0)
 
+# check if v_app is decreasing
+if check_v_app:
+    inst_set['v_app_incr'] = 0.0
+    learner_ospi = OneStepPolicyImprovement()
+    for i, inst in inst_set.iterrows():
+        for j in range(env.J):
+            v_app_j = learner_ospi.get_v_app_i(env, j)
+            for x in range(2, int(inst.t[j] * inst.gamma)):
+                if v_app_j[x] > v_app_j[x - 1]:
+                    inst_set.loc[i, 'v_app_incr'] = v_app_j[x] - v_app_j[x - 1]
+                    break
+            if not inst_set.loc[i, 'v_app_incr']:
+                break
+    print(inst_set['v_app_incr'])
+
 # Analyzing & Plotting Pi, V, W
 if instance_id in ids_to_analyze:
     for inst_id in ids_to_analyze[instance_id]:
@@ -340,27 +356,22 @@ if instance_id in ids_to_analyze:
         g_ref = round(inst[ref_method + g_tmp], dec)
         V_ref = np.load(FILEPATH_V + 'v_' + file)['arr_0']
         Pi_ref = None
-        # if 'pi_' + file in os.listdir(FILEPATH_V):
-        #     Pi_ref = np.load(FILEPATH_V + 'pi_' + file)['arr_0']
-        #     w = np.load(FILEPATH_V + 'w_' + file)['arr_0']
-        # elif calculate_pi:
-        pi_learner = PolicyIteration()  # TODO
-        pi_learner.one_step_policy_improvement(env, V_ref)
-        Pi_ref = pi_learner.Pi
-        w_ref = pi_learner.W
+        if 'pi_' + file in os.listdir(FILEPATH_V):
+            Pi_ref = np.load(FILEPATH_V + 'pi_' + file)['arr_0']
+            w_ref = np.load(FILEPATH_V + 'w_' + file)['arr_0']
+        elif calculate_pi:
+            pi_learner = PolicyIteration()
+            pi_learner.one_step_policy_improvement(env, V_ref)
+            Pi_ref = pi_learner.Pi
+            w_ref = pi_learner.W
 
         print('\n')
         if g_ref is None:
             print('reference g_' + method + ' stuck')
-        if check_v_app:
+        if check_v_app and (env.J == 1):
             learner_ospi = OneStepPolicyImprovement()
-            v_app = learner_ospi.get_v_app(env)
-            mask = ~np.isclose(v_app - v_app[zero_state],
-                               V_ref - V_ref[zero_state],
-                               rtol=1e-3)
-            print('V_app equal to ref?', not mask.any())
-            if print_states_v_app:
-                print(np.transpose(mask.nonzero()))
+            v_app = learner_ospi.get_v_app_i(env, 0)
+            v_app = v_app - v_app[0]
 
         print('Instance', instance_id, 'id', inst_id,
               'ref_method', ref_method, '\n')
@@ -374,15 +385,15 @@ if instance_id in ids_to_analyze:
             g = round(inst[method + g_tmp], dec)
             V = np.load(FILEPATH_V + 'v_' + file)['arr_0']
             Pi = None
-            # if ('pi_' + file in os.listdir(FILEPATH_V)
-            #         and (plot_policy or summarize_policy)):
-            #     Pi = np.load(FILEPATH_V + 'pi_' + file)['arr_0']
-            #     w = np.load(FILEPATH_V + 'w_' + file)['arr_0']
-            # elif calculate_pi and (plot_policy or summarize_policy):
-            pi_learner = PolicyIteration()  # TODO
-            pi_learner.one_step_policy_improvement(env, V)
-            Pi = pi_learner.Pi
-            w = pi_learner.W
+            if ('pi_' + file in os.listdir(FILEPATH_V)
+                    and (plot_policy or summarize_policy)):
+                Pi = np.load(FILEPATH_V + 'pi_' + file)['arr_0']
+                w = np.load(FILEPATH_V + 'w_' + file)['arr_0']
+            elif calculate_pi and (plot_policy or summarize_policy):
+                pi_learner = PolicyIteration()
+                pi_learner.one_step_policy_improvement(env, V)
+                Pi = pi_learner.Pi
+                w = pi_learner.W
 
             if g is None:
                 print('g_' + method + ' stuck')
@@ -427,6 +438,7 @@ if instance_id in ids_to_analyze:
                 print('Policy of ' + method + ' equal to ref?', not mask.any())
                 if print_states_pi:
                     print(np.transpose(mask.nonzero()))
+
             # comparing V to reference
             mask = ~np.isclose(V - V[zero_state],
                                V_ref - V_ref[zero_state],
@@ -434,14 +446,19 @@ if instance_id in ids_to_analyze:
             print('V of ' + method + ' equal to ref?', not mask.any())
             if print_states_v:
                 print(np.transpose(mask.nonzero()))
+
             # comparing V to V_app
-            if check_v_app:
-                mask = ~np.isclose(v_app - v_app[zero_state],
-                                   V - V[zero_state],
+            if check_v_app and (env.J == 1):
+                learner_ospi = OneStepPolicyImprovement()
+                v_app = learner_ospi.get_v_app_i(env, 0)
+                v_app = v_app - v_app[0]
+                mask = ~np.isclose(v_app,
+                                   V[(slice(None), env.S)],
                                    rtol=tol)
                 print('V_app equal to V of ' + method + '? ', not mask.any())
                 if print_states_v_app:
                     print(np.transpose(mask.nonzero()))
+
             print('\n')
         if plot_g_mem:
             g_mem = np.load(FILEPATH_V + '_'.join(
