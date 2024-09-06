@@ -16,13 +16,13 @@ FILEPATH_V = 'results/value_functions/'
 
 overview = False
 
-instance_id = 'J1'
+instance_id = 'J2'
 use_g_tmp = False
 max_pi_iter = 10
 multi_xyc = False
 violin = False
 
-theory_vs_sim = False
+theory_vs_sim = True
 theory_discr_vs_solve = False
 theory_vs_solve = False
 vi_vs_solve = False
@@ -138,8 +138,8 @@ for i, inst in inst_mm1.iterrows():
     mm1_g.append(sum(inst.lab * (inst.r - inst.c * prob_late)))
     # M/M/1 discr g
     env = Env(J=1, S=inst.S, D=inst.D,
-              gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
-              mu=[sum(inst.lab) / sum(sum(inst.lab) / inst.mu)],
+              gamma=inst.gamma,
+              mu=[sum(inst.lab) / sum(inst.lab / inst.mu)],
               lab=[sum(inst.lab)])
     mm1_discr_g.append(sum(env.g))
     # optional test:

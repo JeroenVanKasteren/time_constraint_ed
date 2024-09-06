@@ -39,7 +39,8 @@ def plot_convergence(kpi_df, method, k, t, m=100):
 
 
 def multi_boxplot(gap, keys, title, x_ticks, y_label, violin=False,
-                  rotation=20, left=0.1, bottom=0.1):
+                  rotation=20, left=0.1, bottom=0.1,
+                  **kwargs):
     fig, ax = plt.subplots()
     fig.subplots_adjust(left=left, bottom=bottom)
     for i, key in enumerate(keys):
@@ -49,6 +50,8 @@ def multi_boxplot(gap, keys, title, x_ticks, y_label, violin=False,
             ax.violinplot(gap[key], positions=[i], showmedians=True)
         else:
             ax.boxplot(gap[key], positions=[i], tick_labels=[key])
+    if 'y_lim' in kwargs:
+        ax.set_ylim(kwargs.get('y_lim'))
     plt.axhline(0)
     ax.set_title(title)
     ax.set_ylabel(y_label)
