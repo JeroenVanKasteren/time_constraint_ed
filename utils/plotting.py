@@ -52,9 +52,13 @@ def multi_boxplot(gap, keys, title, x_ticks, y_label, violin=False,
             ax.boxplot(gap[key], positions=[i], tick_labels=[key])
     if 'y_lim' in kwargs:
         ax.set_ylim(kwargs.get('y_lim'))
+    if kwargs.get('log_y', False):
+        ax.set_yscale('log')
     plt.axhline(0)
     ax.set_title(title)
     ax.set_ylabel(y_label)
+    if 'x_label' in kwargs:
+        ax.set_xlabel(kwargs.get('x_label'))
     if violin:
         ax.set_xticks(range(len(x_ticks)))
     ax.set_xticklabels(x_ticks, rotation=rotation)
