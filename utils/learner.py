@@ -134,7 +134,7 @@ class PolicyIteration:
         return converged, max_iter | max_time, g
 
     @staticmethod
-    @nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i4[:], tp.i8, tp.i8, tp.f8,
+    @nb.njit(tp.f8[:](tp.f8[:], tp.f8[:], tp.i4[:], tp.i8, tp.i8, tp.f8,
                       DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F1, tp.f8[:, :, :]),
              parallel=True, error_model='numpy')
     def get_w(V, W, Pi, J, D, gamma,
@@ -200,7 +200,7 @@ class PolicyIteration:
 
     @staticmethod
     @nb.njit(nb.types.Tuple((nb.i4[:], nb.b1, nb.i4))(
-        tp.f4[:], tp.f4[:], tp.i4[:], tp.i8, tp.i8, tp.f8, tp.i8,
+        tp.f8[:], tp.f8[:], tp.i4[:], tp.i8, tp.i8, tp.f8, tp.i8,
         DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F1, tp.f8[:, :, :]),
         parallel=True, error_model='numpy')
     def policy_improvement(V, W, Pi, J, D, gamma, keep_idle,
@@ -331,7 +331,7 @@ class ValueIteration:
         self.converged = False
 
     @staticmethod
-    @nb.njit(tp.f4[:](tp.f4[:], tp.f4[:], tp.i8, tp.i8, tp.f8,
+    @nb.njit(tp.f4[:](tp.f8[:], tp.f8[:], tp.i8, tp.i8, tp.f8,
                       DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F1, tp.f8[:, :, :]),
              parallel=True, error_model='numpy')
     def get_w(V, W, J, D, gamma, d_i, d_i2, d_f1, p_xy):

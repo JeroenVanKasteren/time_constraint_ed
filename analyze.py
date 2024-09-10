@@ -16,7 +16,7 @@ FILEPATH_V = 'results/value_functions/'
 
 overview = False
 
-instance_id = 'J2'
+instance_id = 'J1'
 use_g_tmp = False
 max_pi_iter = 10
 multi_xyc = False
@@ -33,10 +33,10 @@ solve_vs_sim = False
 plot_pi_abs = False
 plot_pi_rel = False
 
-# J1: 32
-ids_to_analyze = {'J1': [104], 'J2': [47, 59]}  # ID_i
+# J1: 32, 104
+ids_to_analyze = {'J1': [42], 'J2': [47, 59]}  # ID_i
 ref_method = 'vi'
-comp_methods = ['vi', 'ospi', 'pi', 'fcfs']
+comp_methods = ['vi', 'pi']  # ['vi', 'ospi', 'pi', 'fcfs']
 summarize_policy = False
 tol = 1e-2
 check_v_app = True
@@ -343,9 +343,9 @@ if check_v_app:
 # Analyzing & Plotting Pi, V, W
 if instance_id in ids_to_analyze:
     for inst_id in ids_to_analyze[instance_id]:
-        if inst_id not in inst_set.index:
+        if inst_id not in inst_set_gammas.index:
             continue
-        inst = inst_set.loc[inst_id]
+        inst = inst_set_gammas.loc[inst_id]
         env = Env(J=inst.J, S=inst.S, D=inst.D,
                   gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
                   mu=inst.mu, lab=inst.lab)
@@ -397,7 +397,8 @@ if instance_id in ids_to_analyze:
 
             if g is None:
                 print('g_' + method + ' stuck')
-            print('g_' + method + ': ', g, ' equal to ref?', g == g_ref)
+            else:
+                print('g_' + method + ': ', g, ' equal to ref?', g == g_ref)
 
             # Summarize policy
             if (Pi is not None) and summarize_policy:
