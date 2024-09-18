@@ -23,8 +23,8 @@ FILEPATH_V = 'results/value_functions/'
 MAX_TARGET_PROB = 0.9
 max_pi_iter = 10
 # run local ----------------
-# args = {'instance': 'J1', 'method': 'vi', 'time': '0-00:05:00',
-#         'job_id': 1, 'array_id': 4, 'x': 0}
+# args = {'instance': 'J1', 'method': 'pi', 'time': '0-00:05:00',
+#         'job_id': 1, 'array_id': 1, 'x': 0}
 # args = tools.DotDict(args)
 # run local ----------------
 

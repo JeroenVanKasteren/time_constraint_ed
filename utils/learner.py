@@ -74,7 +74,7 @@ class PolicyIteration:
         """
         Write good description.
         """
-        W = np.zeros(env.dim_i, dtype=np.float32)
+        W = np.zeros(env.dim_i, dtype=np.float64)
         for i in range(env.J):
             states = np.append(i, [slice(None)] * (env.J * 2))
             states[1 + i] = slice(env.D)
@@ -286,7 +286,7 @@ class PolicyIteration:
 
     def policy_iteration(s, env, g_mem=[], **kwargs):
         """Docstring."""
-        s.V = kwargs.get('V', np.zeros(env.dim, dtype=np.float32))  # V_{t-1}
+        s.V = kwargs.get('V', np.zeros(env.dim, dtype=np.float64))  # V_{t-1}
         s.Pi = kwargs.get('Pi', s.init_pi(env))
         max_pi_iter = kwargs.get('max_pi_iter', env.max_iter)
         stable = False
@@ -331,7 +331,7 @@ class ValueIteration:
         self.converged = False
 
     @staticmethod
-    @nb.njit(tp.f4[:](tp.f8[:], tp.f8[:], tp.i8, tp.i8, tp.f8,
+    @nb.njit(tp.f8[:](tp.f8[:], tp.f8[:], tp.i8, tp.i8, tp.f8,
                       DICT_TYPE_I1, DICT_TYPE_I2, DICT_TYPE_F1, tp.f8[:, :, :]),
              parallel=True, error_model='numpy')
     def get_w(V, W, J, D, gamma, d_i, d_i2, d_f1, p_xy):
@@ -368,7 +368,7 @@ class ValueIteration:
 
     def value_iteration(s, env, pi_learner):
         if s.V is None:
-            s.V = np.zeros(env.dim, dtype=np.float32)
+            s.V = np.zeros(env.dim, dtype=np.float64)
         stopped = False
         while not (stopped | s.converged):  # Update each state.
             W = pi_learner.init_w(env, s.V)
@@ -432,7 +432,7 @@ class OneStepPolicyImprovement:
         Create a list V_memory with V_ij(x), i=class, j=#servers for all x.
         Note only j = s*_i, ..., s will be filled, rest zero
         """
-        V_app = np.zeros(env.dim, dtype=np.float32)
+        V_app = np.zeros(env.dim, dtype=np.float64)
         V = np.zeros((env.J, env.D + 1))
         for i in range(env.J):
             V[i, ] = self.get_v_app_i(env, i)

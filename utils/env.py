@@ -211,9 +211,9 @@ class TimeConstraintEDs:
                   f'P(W>D): {s.cap_prob}\n'
                   f'P(W>D_i): {s.cap_prob_i}\n'
                   f'size: {s.size_i}\n'
-                  f'W: {size(np.zeros(s.dim_i, dtype=np.float32)) /10**9:.4f}'
+                  f'W: {size(np.zeros(s.dim_i, dtype=np.float64)) /10**9:.4f}'
                   f' GB.\n'
-                  f'V: {size(np.zeros(s.dim, dtype=np.float32)) /10**9:.4f}'
+                  f'V: {size(np.zeros(s.dim, dtype=np.float64)) /10**9:.4f}'
                   f' GB.\n')
         assert s.load < 1, 'rho < 1 does not hold'
 
