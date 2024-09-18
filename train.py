@@ -21,7 +21,7 @@ FILEPATH_INSTANCE = 'results/instances_'
 FILEPATH_RESULT = 'results/result_'
 FILEPATH_V = 'results/value_functions/'
 MAX_TARGET_PROB = 0.9
-max_pi_iter = 10
+max_pi_iter = 25
 # run local ----------------
 # args = {'instance': 'J1', 'method': 'pi', 'time': '0-00:05:00',
 #         'job_id': 1, 'array_id': 1, 'x': 0}
