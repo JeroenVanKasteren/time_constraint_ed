@@ -400,6 +400,7 @@ class OneStepPolicyImprovement:
     @staticmethod
     def get_v_app_i(env, i):
         """Calculate V for a single queue."""
+        # s = kwargs.get('s', env.s_star[i])
         s, lab, mu, r = env.s_star[i], env.lab[i], env.mu[i], env.r[i]
         rho, a = env.rho[i], env.a[i]
         g = env.g[i]
@@ -420,17 +421,16 @@ class OneStepPolicyImprovement:
                   * (-rho + frac ** (x - 1)))
         # -1_{x > gamma*t}[...]
         x = np.arange(env.gamma * env.t[i] + 1, env.D + 1).astype(int)
-        v_i[x] -= env.c[i] / (env.gamma * (1 - rho) ** 2) * \
-                  (lab + env.gamma - lab * (x - env.gamma * env.t[i] - 1)
-                   * (rho - 1) - (lab + env.gamma) * frac ** (
-                               x - env.gamma * env.t[i] - 1))
+        v_i[x] -= (env.c[i] / (env.gamma * (1 - rho) ** 2) *
+                   (lab + env.gamma - lab * (x - env.gamma * env.t[i] - 1)
+                    * (rho - 1) - (lab + env.gamma) * frac ** (
+                               x - env.gamma * env.t[i] - 1)))
         return v_i
 
     def get_v_app(self, env):
         """Approximation of value function.
     
-        Create a list V_memory with V_ij(x), i=class, j=#servers for all x.
-        Note only j = s*_i, ..., s will be filled, rest zero
+        Create a list V_memory with V_i(x), i=class, for all x.
         """
         V_app = np.zeros(env.dim, dtype=np.float64)
         V = np.zeros((env.J, env.D + 1))

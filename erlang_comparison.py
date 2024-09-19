@@ -17,8 +17,6 @@ grid['tail_erlang'] = .0
 grid['tail_mms'] = .0
 
 for i, inst in grid.iterrows():
-    if i == 199:
-        pass
     lab = Env.get_lambda(inst.mu[0], inst.S, inst.load, np.array([1]))
     pi_0 = Env.get_pi_0(inst.gamma, inst.S, inst.load, lab)
     tail_prob = Env.get_tail_prob(inst.gamma, inst.S, inst.load, lab,

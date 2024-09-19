@@ -13,7 +13,7 @@ V_app does not need V(x) for x<0. Therefore, these are left out
 import numpy as np
 from scipy.special import gamma as gamma_fun, gammaincc as reg_up_inc_gamma
 from scipy.integrate import quad_vec
-from env_and_learners.test_env import Env
+from utils import TimeConstraintEDs as Env
 
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 
