@@ -404,27 +404,30 @@ class OneStepPolicyImprovement:
         s, lab, mu, r = env.s_star[i], env.lab[i], env.mu[i], env.r[i]
         rho, a = env.rho[i], env.a[i]
         g = env.g[i]
-        v_i = np.zeros(env.D + 1)
+        S = inst(s + 1)
+        v_i = np.zeros(env.S + env.D + 1)
 
         # V(x) for x<=0, with V(-s)=0
-        v_x_le_0 = lambda y: (1 - (y / a) ** s) / (1 - y / a) * np.exp(a - y)
-        v_i[0] = (g - lab * r) / lab * quad_vec(v_x_le_0, a, np.inf)[0]
+        x = arange(-S + 1, 0 + 1)
+        V_x_le_0 = lambda y: (1 - (y / a) ** (x + S)) / (1 - y / a) * exp(a - y)
+        V_i[x + S] = (g - lmbda * r) / lmbda * quad_vec(V_x_le_0, a, np.inf)[0]
+
         # V(x) for x>0
         frac = (s * mu + env.gamma) / (lab + env.gamma)
         trm = np.exp(a) / a ** (s - 1) * gamma_fun(s) * reg_up_inc_gamma(s, a)
         x = np.arange(1, env.D + 1)
-        v_i[x] = (v_i[0] + (s * mu * r - g) / (env.gamma * s * mu * (1-rho)**2)
-                  * (lab + env.gamma - lab * x * (rho - 1)
-                     - (lab + env.gamma) * frac ** x)
-                  + 1 / (env.gamma * (rho - 1))
-                  * (g - s*mu*r - env.gamma/lab * (g + (g - lab*r)/rho * trm))
-                  * (-rho + frac ** (x - 1)))
+        v_i[x + S] = (v_i[0] + (s * mu * r - g) / (env.gamma * s * mu * (1-rho)**2)
+                      * (lab + env.gamma - lab * x * (rho - 1)
+                         - (lab + env.gamma) * frac ** x)
+                      + 1 / (env.gamma * (rho - 1))
+                      * (g - s*mu*r - env.gamma/lab * (g + (g - lab*r)/rho * trm))
+                      * (-rho + frac ** (x - 1)))
         # -1_{x > gamma*t}[...]
         x = np.arange(env.gamma * env.t[i] + 1, env.D + 1).astype(int)
-        v_i[x] -= (env.c[i] / (env.gamma * (1 - rho) ** 2) *
-                   (lab + env.gamma - lab * (x - env.gamma * env.t[i] - 1)
-                    * (rho - 1) - (lab + env.gamma) * frac ** (
-                               x - env.gamma * env.t[i] - 1)))
+        v_i[x + S] -= (env.c[i] / (env.gamma * (1 - rho) ** 2) *
+                       (lab + env.gamma - lab * (x - env.gamma * env.t[i] - 1)
+                        * (rho - 1) - (lab + env.gamma) * frac ** (
+                                x - env.gamma * env.t[i] - 1)))
         return v_i
 
     def get_v_app(self, env):
