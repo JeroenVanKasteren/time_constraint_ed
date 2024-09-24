@@ -432,20 +432,80 @@ class OneStepPolicyImprovement:
                           * frac ** (x - env.gamma * env.t[i] - 1)))
         return v_i
 
-    def get_v_app(self, env):
+    def get_v_app_old(self, env):
         """Approximation of value function.
     
         Create a list V_memory with V_i(x), i=class, for all x.
         """
-        V_app = np.zeros(env.dim, dtype=np.float64)
-        V = np.zeros((env.J, env.D + 1))
+        v_app = np.zeros(env.dim, dtype=np.float64)
         for i in range(env.J):
-            V[i, ] = self.get_v_app_i(env, i)
+            v_app_i = self.get_v_app_i(env, i)
             for x in range(env.D + 1):
                 states = [slice(None)] * (env.J * 2)
-                states[i] = x
-                V_app[tuple(states)] += V[i, x]
-        return V_app
+                states[i] = x  # x_i = x
+                v_app[tuple(states)] += v_app_i[x + int(env.s_star[i])]
+        return v_app
+
+    def get_v_app_base(self, env):
+        """Approximation of value function.
+        Use that v_app_i(s) is known for s <= s_star.
+        """
+        S = np.ceil(env.s_star).astype(int)
+        v_app = np.zeros(env.dim, dtype=np.float64)
+        for i in range(env.J):
+            v_app_i = self.get_v_app_i(env, i)
+            for s in range(env.S + 1):
+                states = [slice(None)] * (env.J * 2)
+                states[i] = 0  # x_i = 0
+                states[env.J + i] = s  # s_i = s
+                if s <= env.s_star[i]:
+                    v_app[tuple(states)] += v_app_i[s]
+                else:  # s > s*_i
+                    v_app[tuple(states)] += v_app_i[S[i]]
+            for x in range(1, env.D + 1):
+                states = [slice(None)] * (env.J * 2)
+                states[i] = x  # x_i = x
+                v_app[tuple(states)] += v_app_i[x + S[i]]
+        return v_app
+
+    def get_v_app_lin(self, env, type='abs'):
+        """Approximation of value function.
+        Use that v_app_i(s) is known for s <= s_star.
+        And interpolate for s > s_star.
+        """
+        S = np.ceil(env.s_star).astype(int)
+        v_app = np.zeros(env.dim, dtype=np.float64)
+        for i in range(env.J):
+            v_app_i = self.get_v_app_i(env, i)
+            for x in range(env.D + 1):
+                for s in range(env.S + 1):
+                    states = [slice(None)] * (env.J * 2)
+                    states[i] = x  # x_i = x
+                    states[env.J + i] = s  # s_i = s
+                    if s < env.s_star[i]:
+                        if x == 0:
+                            v_app[tuple(states)] += v_app_i[s]
+                        else:  # x > 0
+                            if type == 'abs':
+                                v_app[tuple(states)] += (
+                                    v_app_i[x + S[i]]
+                                    - (v_app_i[S[i]] - v_app_i[s]))
+                            else:
+                                dx = ((v_app_i[x + S[i]]
+                                       - v_app_i[x + S[i] - 1]) / (env.S + 1))
+                                v_app[tuple(states)] += (
+                                        v_app_i[x + S[i] - 1]
+                                        + dx * (s + env.S + 1 - S[i]))
+                    else:  # s >= s*_i
+                        if x < env.D:
+                            dx = ((v_app_i[x + S[i] + 1] - v_app_i[x + S[i]])
+                                  / (env.S + 1))
+                        else:  # x == D
+                            dx = ((v_app_i[x + S[i]] - v_app_i[x + S[i] - 1])
+                                  / (env.S + 1))
+                        v_app[tuple(states)] += (v_app_i[x + S[i]]
+                                                 + dx * (s - S[i]))
+        return v_app
 
     def get_g(s, env, V, pi_learner):
         """Determine g via Policy Evaluation."""
