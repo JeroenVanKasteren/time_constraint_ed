@@ -6,9 +6,6 @@ Quad_vec limits vectorizing over queues as the limits of the integration
 cannot be vectors. Additionally, V then is a matrix with specific dimensions.
 It is easier (and more readable and understandable) when we loop over J.
 
-V_app does not need V(x) for x<0. Therefore, these are left out 
-(also easier in light of problems with fractional s)
-
 # -s <= x < 0,
 g + tau*V(x) = lmbda * (r + V(x+1)) + (x + S)*mu*V(max(x-1,0)) + \
                 (tau - lmbda - (x+S)*mu)*V(x)
@@ -24,7 +21,9 @@ np.set_printoptions(precision=4, linewidth=150, suppress=True)
 np.random.seed(42)
 tolerance = 1e-4
 
-env = Env(J=1, S=3, load=0.75, gamma=20., D=100, P=1e3, e=1e-4)
+# env = Env(J=1, S=3, load=0.75, gamma=20., D=100, P=1e3, e=1e-4)
+env = Env(J=2, S=2, gamma=20., P=1e3, e=1e-5,
+          lab=np.array([0.6726, 0.1794]), mu=np.array([0.8169, 0.2651]))
 s = env.s_star
 S = np.ceil(s).astype(int)
 lab = env.lab
@@ -38,13 +37,12 @@ for i in np.arange(env.J):
     x = np.arange(-S[i], env.D + 1)
     LHS = env.g[i] + tau[i] * v[x + S[i]]
     RHS = np.zeros(S[i] + env.D + 1)
-    # -s <= x <= 0
-    x = np.arange(-S[i], 1)
-    RHS[x + S[i]] = (lab[i] * v[x + S[i] + 1]
-                     + (x + s[i]) * mu[i] * v[np.maximum(x + S[i] - 1, 0)]
-                     + (tau[i] - lab[i] - (x + s[i]) * mu[i]) * v[x + S[i]])
-    # x < 0
+    # -s <= x < 0, note V(-s)=0
     x = np.arange(-S[i], 0)
+    RHS[x + S[i]] = (lab[i] * (env.r[i] + v[x + S[i] + 1])
+                     + (x + S[i]) * mu[i] * v[np.maximum(x + S[i] - 1, 0)]
+                     + (tau[i] - lab[i] - (x + S[i]) * mu[i]) * v[x + S[i]])
+    x = 0
     RHS[x + S[i]] +=  lab[i] * env.r[i]
     # x >= 1
     x = np.arange(1, env.D)
@@ -67,7 +65,8 @@ for i in np.arange(env.J):
           np.allclose(LHS[x + S[i]], RHS[x + S[i]], atol=tolerance))
     print("x, LHS, RHS, V: \n",
           np.c_[np.arange(-S[i], env.D + 1), LHS, RHS, v])
-
+# len(np.arange(-S[i], env.D + 1)  # , LHS, RHS, v)
+# len(v)
 # -------------------- With x<0 -------------------------
 v_app_old = learner.get_v_app_old(env)
 v_app_base = learner.get_v_app_base(env)

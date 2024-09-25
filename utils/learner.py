@@ -404,7 +404,7 @@ class OneStepPolicyImprovement:
         rho, a = env.rho[i], env.a[i]
         g = env.g[i]
         S = int(np.ceil(s))
-        v_i = np.zeros(env.S + env.D + 1)
+        v_i = np.zeros(S + env.D + 1)
 
         # V(x) for x<=0, with V(-s)=0
         x = np.arange(-S + 1, 0 + 1)  # V(x) for -s<x<=0
