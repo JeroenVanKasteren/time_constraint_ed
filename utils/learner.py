@@ -431,9 +431,10 @@ class OneStepPolicyImprovement:
                                * frac ** (x - env.gamma * env.t[i] - 1)))
         return v_i
 
-    def get_v_app_old(self, env):
+    def get_v_app_cons(self, env):
         """Approximation of value function.
-    
+
+        Conservative approach.
         Create a list V_memory with V_i(x), i=class, for all x.
         """
         v_app = np.zeros(env.dim, dtype=np.float64)
@@ -445,7 +446,7 @@ class OneStepPolicyImprovement:
                 v_app[tuple(states)] += v_app_i[x + int(env.s_star[i])]
         return v_app
 
-    def get_v_app_base(self, env):
+    def get_v_app(self, env):
         """Approximation of value function.
         Use that v_app_i(s) is known for s <= s_star.
         """

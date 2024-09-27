@@ -368,10 +368,6 @@ if instance_id in ids_to_analyze:
         print('\n')
         if g_ref is None:
             print('reference g_' + method + ' stuck')
-        if check_v_app and (env.J == 1):
-            learner_ospi = OneStepPolicyImprovement()
-            v_app = learner_ospi.get_v_app_i(env, 0)
-            v_app = v_app - v_app[0]
 
         print('Instance', instance_id, 'id', inst_id,
               'ref_method', ref_method, '\n')

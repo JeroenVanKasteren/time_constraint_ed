@@ -21,7 +21,7 @@ FILEPATH_INSTANCE = 'results/instances_'
 FILEPATH_RESULT = 'results/result_'
 FILEPATH_V = 'results/value_functions/'
 MAX_TARGET_PROB = 0.9
-max_pi_iter = 25
+max_pi_iter = 30
 # run local ----------------
 # args = {'instance': 'J1', 'method': 'pi', 'time': '0-00:05:00',
 #         'job_id': 1, 'array_id': 1, 'x': 0}
@@ -69,18 +69,27 @@ def main(raw_args=None):
         pi_file = 'pi_' + args.instance + '_' + str(inst.iloc[0]) + '_vi.npz'
         if learner.converged and (pi_file not in os.listdir(FILEPATH_V)):
             pi_learner.one_step_policy_improvement(env, learner.V)
-    elif args.method == 'ospi':
+    elif 'ospi' in args.method:
         learner = OneStepPolicyImprovement()
 
-        pi_file = 'pi_' + args.instance + '_' + str(inst.iloc[0]) + '_ospi.npz'
+        pi_file = ('pi_' + args.instance + '_' + str(inst.iloc[0])
+                   + '_' + args.method + '.npz')
         if pi_file in os.listdir(FILEPATH_V):
             print('Loading Pi from file', flush=True)
             pi_learner.Pi = np.load(FILEPATH_V + pi_file)['arr_0']
         else:
-            learner.V_app = learner.get_v_app(env)
+            if args.method == 'ospi':
+                learner.V_app = learner.get_v_app(env)
+            elif args.method == 'ospi_cons':
+                learner.V_app = learner.get_v_app_cons(env)
+            elif args.method == 'ospi_lin':
+                learner.V_app = learner.get_v_app_lin(env, type='linear')
+            elif args.method == 'ospi_abs':
+                learner.V_app = learner.get_v_app_lin(env, type='abs')
             pi_learner.one_step_policy_improvement(env, learner.V_app)
 
-        v_file = 'v_' + args.instance + '_' + str(inst.iloc[0]) + '_ospi.npz'
+        v_file = ('v_' + args.instance + '_' + str(inst.iloc[0])
+                  + '_' + args.method + '.npz')
         if v_file in os.listdir(FILEPATH_V):
             print('Loading V from file', flush=True)
             learner.V = np.load(FILEPATH_V + v_file)['arr_0']
@@ -129,7 +138,8 @@ def main(raw_args=None):
                 learner.Pi = np.load(FILEPATH_V + ospi_file)['arr_0']
             else:
                 ospi_learner = OneStepPolicyImprovement()
-                ospi_learner.V_app = ospi_learner.get_v_app(env)
+                ospi_learner.V_app = ospi_learner.get_v_app_lin(env,
+                                                                type='linear')
                 learner.one_step_policy_improvement(env, learner.V_app)
             g_mem = learner.policy_iteration(env,
                                              max_pi_iter=max_pi_iter,

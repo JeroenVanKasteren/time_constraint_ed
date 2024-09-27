@@ -36,7 +36,10 @@ def main(name, solve):
                         't_prob']
     # Ensure method names are distinguishable (unique: '_' + method + '_job')
     if solve:
-        methods = ['vi', 'ospi', 'sdf', 'fcfs', 'pi', 'cmu_t_min']
+        methods = ['vi', 'ospi', 'ospi_cons', 'ospi_lin', 'ospi_abs',
+                   'sdf', 'fcfs', 'pi', 'cmu_t_min']
+        if name == 'J2_D_gam':
+            methods = ['vi', 'ospi']
         instance_columns.extend(['e', 'P', 'size', 'size_i'])
         method_columns = ['_job_id', '_attempts', '_time', '_iter', '_g_tmp',
                           '_g']
@@ -155,6 +158,6 @@ def main(name, solve):
 if __name__ == '__main__':
     for name in ['J1', 'J2', 'J2_D_gam']:
         main(name, True)
-    for name in ['J1', 'J2', 'sim']:
-        main(name, False)
+    # for name in ['J1', 'J2', 'sim']:
+    #     main(name, False)
     # main('J3', False)
