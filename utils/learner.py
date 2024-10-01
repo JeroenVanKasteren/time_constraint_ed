@@ -508,6 +508,23 @@ class OneStepPolicyImprovement:
                                                  + dx * (s - s_int[i]))
         return v_app
 
+    def get_v_app_dp(self, env):
+        """Approximation of value function with an approximate OSPI in dynamic
+        programming fashion.
+        """
+        s_int = env.s_star.astype(int)
+        v_app = np.zeros(env.dim, dtype=np.float64)
+        v_dp = np.zeros((env.J, env.D + 1, env.S + 1))
+        for i in range(env.J):
+            # Init v_dp matrix
+            v_app_i = self.get_v_app_i(env, i)
+            for s in range(s_int[i]):
+                v_dp[i, 0, s] = v_app_i[s]
+            for x in range(env.D + 1):
+                v_dp[i, x, s_int[i]] = v_app_i[x + s_int[i]]
+
+
+
     def get_g(s, env, V, pi_learner):
         """Determine g via Policy Evaluation."""
         pi_learner.Pi = pi_learner.Pi.reshape(env.size_i)
