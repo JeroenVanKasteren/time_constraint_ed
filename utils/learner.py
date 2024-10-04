@@ -407,14 +407,18 @@ class OneStepPolicyImprovement:
 
         # V(x) for x<=0, with V(-s)=0
         x = np.arange(-int(s) + 1, 0 + 1)  # V(x) for -s<x<=0
+        x = np.append(x, s % 1) if s % 1 > 0 else x  # extra state if frac. s
+        x_index = np.ceil(x).astype(int) + int(s)
         V_x_le_0 = lambda y: ((1 - (y / a) ** (x + s)) / (1 - y / a)
                               * np.exp(a - y))
-        v_i[x + int(s)] = (g - lab * r) / lab * quad_vec(V_x_le_0, a, np.inf)[0]
+        v_i[x_index] = (g - lab * r) / lab * quad_vec(V_x_le_0, a, np.inf)[0]
+
         # V(x) for x>0
         frac = (s * mu + env.gamma) / (lab + env.gamma)
         trm = np.exp(a) / a ** (s - 1) * gamma_fun(s) * reg_up_inc_gamma(s, a)
         x = np.arange(1, env.D + 1)
-        v_i[x + int(s)] = (v_i[int(s)]
+        x_index = x + int(np.ceil(s))
+        v_i[x_index] = (v_i[int(np.ceil(s))]  # V(0)
                       + (s * mu * r - g) / (env.gamma * s * mu * (1-rho)**2)
                       * (lab + env.gamma - lab * x * (rho - 1)
                          - (lab + env.gamma) * frac ** x)
@@ -424,11 +428,11 @@ class OneStepPolicyImprovement:
                       * (-rho + frac ** (x - 1)))
         # -1_{x > gamma*t}[...]
         x = np.arange(env.gamma * env.t[i] + 1, env.D + 1).astype(int)
-        v_i[x + int(s)] -= (env.c[i] / (env.gamma * (1 - rho) ** 2)
-                            * (lab + env.gamma
-                               - lab * (x - env.gamma * env.t[i] - 1)
-                               * (rho - 1) - (lab + env.gamma)
-                               * frac ** (x - env.gamma * env.t[i] - 1)))
+        v_i[x + int(np.ceil(s))] -= (env.c[i] / (env.gamma * (1 - rho) ** 2)
+                                     * (lab + env.gamma
+                                        - lab * (x - env.gamma * env.t[i] - 1)
+                                        * (rho - 1) - (lab + env.gamma) * frac
+                                        ** (x - env.gamma * env.t[i] - 1)))
         return v_i
 
     def get_v_app_cons(self, env):
@@ -443,7 +447,7 @@ class OneStepPolicyImprovement:
             for x in range(env.D + 1):
                 states = [slice(None)] * (env.J * 2)
                 states[i] = x  # x_i = x
-                v_app[tuple(states)] += v_app_i[x + int(env.s_star[i])]
+                v_app[tuple(states)] += v_app_i[x + int(np.ceil(env.s_star[i]))]
         return v_app
 
     def get_v_app(self, env):
@@ -457,14 +461,14 @@ class OneStepPolicyImprovement:
             states[i] = 0  # x_i = 0
             for s in range(env.S + 1):
                 states[env.J + i] = s  # s_i = s
-                if s <= env.s_star[i]:
+                if s < env.s_star[i]:
                     v_app[tuple(states)] += v_app_i[s]
-                else:  # s > s*_i
-                    v_app[tuple(states)] += v_app_i[int(env.s_star[i])]
+                else:  # s => s*_i
+                    v_app[tuple(states)] += v_app_i[int(np.ceil(env.s_star[i]))]
             for x in range(1, env.D + 1):
                 states = [slice(None)] * (env.J * 2)
                 states[i] = x  # x_i = x
-                v_app[tuple(states)] += v_app_i[x + int(env.s_star[i])]
+                v_app[tuple(states)] += v_app_i[x + int(np.ceil(env.s_star[i]))]
         return v_app
 
     def get_v_app_lin(self, env, type='abs'):
@@ -472,6 +476,7 @@ class OneStepPolicyImprovement:
         Use that v_app_i(s) is known for s <= s_star.
         And interpolate for s > s_star.
         """
+        s_ceil = np.ceil(env.s_star).astype(int)
         s_int = env.s_star.astype(int)
         v_app = np.zeros(env.dim, dtype=np.float64)
         for i in range(env.J):
@@ -487,24 +492,24 @@ class OneStepPolicyImprovement:
                         else:  # x > 0
                             if type == 'abs':
                                 v_app[tuple(states)] += (
-                                    v_app_i[x + s_int[i]]
-                                    - (v_app_i[s_int[i]] - v_app_i[s]))
+                                    v_app_i[s] + (v_app_i[x + s_ceil[i]]
+                                                  - v_app_i[s_ceil[i]]))
                             else:
-                                dx = ((v_app_i[x + s_int[i]]
-                                       - v_app_i[x + s_int[i] - 1])
+                                dx = ((v_app_i[x + s_ceil[i]]
+                                       - v_app_i[x + s_ceil[i] - 1])
                                       / (env.S + 1))
                                 v_app[tuple(states)] += (
-                                        v_app_i[x + s_int[i] - 1]
+                                        v_app_i[x + s_ceil[i] - 1]
                                         + dx * (s + env.S + 1 - s_int[i]))
-                    else:  # s >= s*_i
+                    else:  # s*_i <= s <= S
                         if x < env.D:
-                            dx = ((v_app_i[x + s_int[i] + 1]
-                                   - v_app_i[x + s_int[i]])
+                            dx = ((v_app_i[x + s_ceil[i] + 1]
+                                   - v_app_i[x + s_ceil[i]])
                                   / (env.S + 1))
                         else:  # x == D
-                            dx = ((v_app_i[x + s_int[i]]
-                                   - v_app_i[x + s_int[i] - 1]) / (env.S + 1))
-                        v_app[tuple(states)] += (v_app_i[x + s_int[i]]
+                            dx = ((v_app_i[x + s_ceil[i]]
+                                   - v_app_i[x + s_ceil[i] - 1]) / (env.S + 1))
+                        v_app[tuple(states)] += (v_app_i[x + s_ceil[i]]
                                                  + dx * (s - s_int[i]))
         return v_app
 
