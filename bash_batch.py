@@ -21,7 +21,7 @@ instances = [['J1', '0-01:00:00', '108', methods],
              ['J2', '0-06:00:00', '108', methods],
              ['J2_D_gam', '0-06:00:00', '216', ['vi', 'ospi']]]
 
-for instance, time, n_array in instances:
+for instance, time, n_array, methods in instances:
     for method in methods:
         script = JOBSCRIPT.format(
             name=instance + '_' + method + '_ED',

@@ -513,22 +513,57 @@ class OneStepPolicyImprovement:
                                                  + dx * (s - s_int[i]))
         return v_app
 
+    def calc_v_app_dp(self, env):
+        """Approximation of value function with an approximate OSPI in dynamic
+        programming fashion.
+        """
+        s_ceil = np.ceil(env.s_star).astype(int)
+        v_dp = np.zeros((env.J, env.D + 1, env.S + 1))
+        for i in range(env.J):
+            # init v_dp matrix
+            v_app_i = self.get_v_app_i(env, i)
+            f = env.s_star[i] % 1
+            for s in range(1, s_ceil[i] + 1):
+                if f == 0:
+                    v_dp[i, 0, s] = v_app_i[s]
+                else:
+                    v_dp[i, 0, s] = f * v_app_i[s] + (1 - f) * v_app_i[s - 1]
+            for x in range(1, env.D + 1):
+                v_dp[i, x, s_ceil[i]] = v_app_i[x + s_ceil[i]]
+                for s in range(s_ceil[i] - 1, -1, -1):  # s = {0, ..., s_ceil}
+                    r_xs = env.r[i]
+                    if x > env.gamma * env.t[i]:
+                        r_xs -= env.c[i]
+                    r_xs = f * r_xs if s == 0 else r_xs
+                    v_dp[i, x, s] = (r_xs + sum(env.p_xy[i, x, :x+1]
+                                                * v_dp[i, :x + 1, s + 1])
+                                     - env.g[i] / env.tau)
+        return v_dp
+
     def get_v_app_dp(self, env):
         """Approximation of value function with an approximate OSPI in dynamic
         programming fashion.
         """
-        s_int = env.s_star.astype(int)
         v_app = np.zeros(env.dim, dtype=np.float64)
-        v_dp = np.zeros((env.J, env.D + 1, env.S + 1))
-        for i in range(env.J):
-            # Init v_dp matrix
-            v_app_i = self.get_v_app_i(env, i)
-            for s in range(s_int[i]):
-                v_dp[i, 0, s] = v_app_i[s]
-            for x in range(env.D + 1):
-                v_dp[i, x, s_int[i]] = v_app_i[x + s_int[i]]
-
-
+        v_dp = self.calc_v_app_dp(env)
+        for s_v in env.s_states_v:  # for every combination of s
+            for i in range(env.J):
+                states = [slice(None)] * (env.J * 2)
+                states[env.J:] = s_v
+                h = env.s_star - (env.S - sum(s_v)) * env.s_star[i] / env.S
+                n = int(env.s_star[i] - h[i])
+                for x in range(env.D + 1):
+                    states[i] = x  # x_i = x
+                    if (x > 0) and (h >= 1):
+                        f = h - (env.s_star[i] - (n + 1))
+                    elif ((x == 0) and (h <= int(env.s_star[i]))) or (h == 0):
+                        f = h % 1
+                    else:  # (x = 0 and int(s_star) < h) or (x > 0 and h < 1)
+                        f = (h % 1) / (env.s_star[i] % 1)
+                    s_i = int(env.s_star[i])
+                    v_app[tuple(states)] += (f * v_dp[i, x, s_i - n] + (1 - f)
+                                             * v_dp[i, x, s_i - n - 1])
+        return v_app
 
     def get_g(s, env, V, pi_learner):
         """Determine g via Policy Evaluation."""

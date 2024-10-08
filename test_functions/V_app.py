@@ -23,8 +23,9 @@ FILEPATH_RESULTS = 'results/'
 FILEPATH_V = 'results/value_functions/'
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 tolerance = 1e-4
-instance_id = 'J1'
+instance_id = 'J2'
 learner = OSPI()
+
 
 def v_app_i_test(env, i, verbose=False):
     """Testing Poisson Equation equality."""
@@ -74,6 +75,7 @@ def v_app_i_test(env, i, verbose=False):
               np.c_[np.arange(-s_int[i], env.D + 1), LHS, RHS, v])
     return all_close
 
+
 # Load in instance_set and extract methods used
 instance_name = 'instances_' + instance_id
 inst_set = tools.inst_load(FILEPATH_RESULTS + instance_name + '.csv')
@@ -92,8 +94,8 @@ if instance_id == 'J1':
             break
     print("All tests passed (if nothing else printed).")
 
-perc_improv = {'base': [], 'linear': [], 'abs': []}
-perc_improv_opt = {'base': [], 'linear': [], 'abs': []}
+perc_improv = {'base': [], 'linear': [], 'abs': [], 'dp': []}
+perc_improv_opt = perc_improv.copy()
 for i, inst in inst_set.iterrows():
     env_i = Env(J=inst.J, S=inst.S, D=inst.D,
                 gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
@@ -107,33 +109,32 @@ for i, inst in inst_set.iterrows():
     error = np.sum(abs(v_app_old - v_fcfs))
     error_opt = np.sum(abs(v_app_old - v_vi))
 
-    v_app = learner.get_v_app(env_i)
-    base_error = np.sum(abs(v_app - v_fcfs))
-    base_error_opt = np.sum(abs(v_app - v_vi))
-    perc_improv['base'].append((error - base_error) / error * 100)
-    perc_improv_opt['base'].append((error_opt - base_error_opt)
-                                   / error_opt * 100)
-
-    v_app_lin = learner.get_v_app_lin(env_i, type='linear')
-    lin_error = np.sum(abs(v_app_lin - v_fcfs))
-    lin_error_opt = np.sum(abs(v_app_lin - v_vi))
-    perc_improv['linear'].append((error - lin_error) / error * 100)
-    perc_improv_opt['linear'].append((error_opt - lin_error_opt)
-                                   / error_opt * 100)
-
-    v_app_abs = learner.get_v_app_lin(env_i, type='abs')
-    abs_error = np.sum(abs(v_app_abs - v_fcfs))
-    abs_error_opt = np.sum(abs(v_app_abs - v_vi))
-    perc_improv['abs'].append((error - abs_error) / error * 100)
-    perc_improv_opt['abs'].append((error_opt - abs_error_opt)
+    for method in perc_improv.keys():
+        if method == 'base':
+            v_app = learner.get_v_app(env_i)
+        elif method == 'linear':
+            v_app = learner.get_v_app_lin(env_i, type='linear')
+        elif method == 'abs':
+            v_app = learner.get_v_app_lin(env_i, type='abs')
+        elif method == 'dp':
+            v_app = learner.get_v_app_dp(env_i)
+        m_error = np.sum(abs(v_app - v_fcfs))
+        m_error_opt = np.sum(abs(v_app - v_vi))
+        perc_improv[method].append((error - m_error) / error * 100)
+    perc_improv_opt[method].append((error_opt - m_error_opt)
                                    / error_opt * 100)
 
 plotting.multi_boxplot(perc_improv, perc_improv.keys(),
-                       'Improvement $V_{app}$ by interpolation, rel to fcfs, instance: ' + instance_id,
+                       'Improvement $V_{app}$ by interpolation, '
+                       'rel to fcfs, instance: ' + instance_id,
                        perc_improv.keys(),
                        'improvement vs conservative (%)')
 
 plotting.multi_boxplot(perc_improv_opt, perc_improv_opt.keys(),
-                       'Improvement $V_{app}$ by interpolation, rel to Value Iteration, instance: ' + instance_id,
+                       'Improvement $V_{app}$ by interpolation, '
+                       'rel to Value Iteration, instance: ' + instance_id,
                        perc_improv_opt.keys(),
                        'improvement vs conservative (%)')
+
+# v_dp = learner.calc_v_app_dp(env_i)
+# learner.get_v_app_dp(env_i)
