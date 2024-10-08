@@ -23,7 +23,7 @@ FILEPATH_RESULTS = 'results/'
 FILEPATH_V = 'results/value_functions/'
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 tolerance = 1e-4
-instance_id = 'J2'
+instance_id = 'J1'
 learner = OSPI()
 
 def v_app_i_test(env, i, verbose=False):
