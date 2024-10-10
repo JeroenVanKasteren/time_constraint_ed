@@ -17,6 +17,8 @@ zip -r v_ospi.zip results/value_functions -i 'results/value_functions/v_*_ospi_l
 echo "Done with v_ospi_lin"
 zip -r v_ospi.zip results/value_functions -i 'results/value_functions/v_*_ospi_abs.npz'
 echo "Done with v_ospi_abs"
+zip -r v_ospi.zip results/value_functions -i 'results/value_functions/v_*_ospi_dp.npz'
+echo "Done with v_ospi_dp"
 zip -r v_pi.zip results/value_functions -i 'results/value_functions/v_*_pi.npz'
 echo "Done with v_pi"
 zip -r v_fcfs.zip results/value_functions -i 'results/value_functions/v_*_fcfs.npz'
@@ -41,6 +43,8 @@ zip -r pi_ospi.zip results/value_functions -i 'results/value_functions/pi_*_ospi
 echo "Done with pi_ospi_lin"
 zip -r pi_ospi.zip results/value_functions -i 'results/value_functions/pi_*_ospi_abs.npz'
 echo "Done with pi_ospi_abs"
+zip -r pi_ospi.zip results/value_functions -i 'results/value_functions/pi_*_ospi_dp.npz'
+echo "Done with pi_ospi_dp"
 zip -r pi_pi.zip results/value_functions -i 'results/value_functions/pi_*_pi.npz'
 echo "Done with pi_pi"
 

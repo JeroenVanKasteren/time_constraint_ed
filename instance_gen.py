@@ -36,7 +36,8 @@ def main(name, solve):
                         't_prob']
     # Ensure method names are distinguishable (unique: '_' + method + '_job')
     if solve:
-        methods = ['vi', 'ospi', 'ospi_cons', 'ospi_lin', 'ospi_abs',
+        methods = ['vi',
+                   'ospi', 'ospi_cons', 'ospi_lin', 'ospi_abs',  'ospi_dp',
                    'sdf', 'fcfs', 'pi', 'cmu_t_min']
         if name == 'J2_D_gam':
             methods = ['vi', 'ospi']
@@ -45,7 +46,8 @@ def main(name, solve):
                           '_g']
         heuristic_columns = ['_opt_gap_tmp', '_opt_gap']
     else:
-        methods = ['ospi', 'cmu_t_min', 'cmu_t_max', 'fcfs', 'sdf', 'sdfprior',
+        methods = ['ospi', 'ospi_cons', 'ospi_lin', 'ospi_abs',  'ospi_dp',
+                   'cmu_t_min', 'cmu_t_max', 'fcfs', 'sdf', 'sdfprior',
                    'l_max', 'l_min']
         instance_columns.extend(['N', 'start_K', 'batch_T'])
         method_columns = ['_g', '_g_ci', '_perc', '_perc_ci']

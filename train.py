@@ -86,6 +86,8 @@ def main(raw_args=None):
                 learner.V_app = learner.get_v_app_lin(env, type='linear')
             elif args.method == 'ospi_abs':
                 learner.V_app = learner.get_v_app_lin(env, type='abs')
+            elif args.method == 'ospi_dp':
+                learner.V_app = learner.get_v_app_dp(env)
             pi_learner.one_step_policy_improvement(env, learner.V_app)
 
         v_file = ('v_' + args.instance + '_' + str(inst.iloc[0])
