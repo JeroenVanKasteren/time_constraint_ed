@@ -403,7 +403,7 @@ class OneStepPolicyImprovement:
         s, lab, mu, r = env.s_star[i], env.lab[i], env.mu[i], env.r[i]
         rho, a = env.rho[i], env.a[i]
         g = env.g[i]
-        v_i = np.zeros(int(s) + env.D + 1)
+        v_i = np.zeros(int(np.ceil(s)) + env.D + 1)
 
         # V(x) for x<=0, with V(-s)=0
         x = np.arange(-int(s) + 1, 0 + 1)  # V(x) for -s<x<=0
@@ -550,13 +550,14 @@ class OneStepPolicyImprovement:
             for i in range(env.J):
                 states = [slice(None)] * (env.J * 2)
                 states[env.J:] = s_v
-                h = env.s_star - (env.S - sum(s_v)) * env.s_star[i] / env.S
-                n = int(env.s_star[i] - h[i])
+                h = env.s_star[i] - (env.S - sum(s_v)) * env.s_star[i] / env.S
+                n = int(env.s_star[i] - h)
                 for x in range(env.D + 1):
                     states[i] = x  # x_i = x
                     if (x > 0) and (h >= 1):
                         f = h - (env.s_star[i] - (n + 1))
-                    elif ((x == 0) and (h <= int(env.s_star[i]))) or (h == 0):
+                    elif (((x == 0) and (h <= int(env.s_star[i]))) or
+                          (env.s_star[i] % 1 == 0)):
                         f = h % 1
                     else:  # (x = 0 and int(s_star) < h) or (x > 0 and h < 1)
                         f = (h % 1) / (env.s_star[i] % 1)
