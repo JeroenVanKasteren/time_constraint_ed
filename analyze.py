@@ -404,7 +404,7 @@ if instance_id in ids_to_analyze:
             name = method + ' inst: ' + instance_id + '_' + str(inst_id)
             # Plotting policy
             state = plotting.state_selection(env,
-                                             dim_i=True,
+                                             dim=True,
                                              s=1,
                                              wait_perc=0.7)
             events = range(env.J + 1) if dep_arr == -1 else [dep_arr]

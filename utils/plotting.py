@@ -148,7 +148,7 @@ def plot_multi_bar(filepath, instance_names, methods, kpi, normalize=False,
 
 
 def state_selection(env,
-                    dim_i=False,
+                    dim=True,
                     x=None,  # None, 'random', array
                     s=None,  # None, 'random', number, array
                     dep_arr=0,  # state[0] = i (arrival) / env.J (departure)
@@ -169,7 +169,7 @@ def state_selection(env,
 
     assert len(x) == env.J, 'x has wrong dimension'
     assert len(s) == env.J, 's has wrong dimension'
-    if dim_i:  # if a policy (# dim_i uneven, dim even)
+    if dim:  # if a policy (# dim_i uneven, dim even)
         state = np.concatenate([x, s]).astype(object)
     else:
         state = np.concatenate(([dep_arr], x, s))
@@ -205,8 +205,8 @@ def plot_heatmap(env, state, **kwargs):
     print_states = [''] * (event + 2 * env.J)
     for i in range(env.J):
         print_states[event + i] = '$x_{' + str(i + 1) + '}$=' + str(states[i])
-        print_states[event + i + env.J] = ('$s_{' + str(i + 1) + '}=' +
-                                           str(states[i]))
+        print_states[event + i + env.J] = ('$s_{' + str(i + 1) + '}$=' +
+                                           str(states[env.J + i]))
     if (event == 1) and (states[0] < env.J):
         print_states[0] = '$arr_{' + str(states[0] + 1) + '}$'
     elif (event == 1) and (states[0] == env.J):

@@ -23,7 +23,8 @@ FILEPATH_RESULTS = 'results/'
 FILEPATH_V = 'results/value_functions/'
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 tolerance = 1e-4
-instance_id = 'J2'
+instance_id = 'J1'
+weight_error = False
 learner = OSPI()
 
 
@@ -76,6 +77,21 @@ def v_app_i_test(env, i, verbose=False):
     return all_close
 
 
+def get_weighting_factor(env):
+    """Calculate weighting factor of error (by tail prob)."""
+    x_v = np.arange(env.D + 1)
+    p_x_leq_t = np.ones((env.J, env.D + 1))
+    w_factor = np.ones(env.dim)
+    for j in range(env.J):
+        p_x_leq_t *= env.get_tail_prob(env.gamma, env.S, env.rho[j], env.lab[j],
+                                       env.mu[j], env.pi_0[j], x_v)
+        states = [slice(None)] * (env.J * 2)
+        for x in range(env.D + 1):
+            states[j] = x
+            w_factor[tuple(states)] *= p_x_leq_t[j, x]
+    return w_factor
+
+
 # Load in instance_set and extract methods used
 instance_name = 'instances_' + instance_id
 inst_set = tools.inst_load(FILEPATH_RESULTS + instance_name + '.csv')
@@ -95,19 +111,22 @@ if instance_id == 'J1':
     print("All tests passed (if nothing else printed).")
 
 perc_improv = {'base': [], 'linear': [], 'abs': [], 'dp': []}
-perc_improv_opt = perc_improv.copy()
+perc_improv_opt = {'base': [], 'linear': [], 'abs': [], 'dp': []}
 for i, inst in inst_set.iterrows():
     env_i = Env(J=inst.J, S=inst.S, D=inst.D,
                 gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
                 mu=inst.mu, lab=inst.lab)
+
+    w_factor = get_weighting_factor(env_i) if weight_error else 1
+
     file = '_'.join([instance_id, str(i), 'fcfs.npz'])
     v_fcfs = np.load(FILEPATH_V + 'v_' + file)['arr_0']
     file = '_'.join([instance_id, str(i), 'vi.npz'])
     v_vi = np.load(FILEPATH_V + 'v_' + file)['arr_0']
 
     v_app_old = learner.get_v_app_cons(env_i)
-    error = np.sum(abs(v_app_old - v_fcfs))
-    error_opt = np.sum(abs(v_app_old - v_vi))
+    error = np.sum(abs(v_app_old - v_fcfs)*w_factor)
+    error_opt = np.sum(abs(v_app_old - v_vi)*w_factor)
 
     for method in perc_improv.keys():
         if method == 'base':
@@ -118,23 +137,62 @@ for i, inst in inst_set.iterrows():
             v_app = learner.get_v_app_lin(env_i, type='abs')
         elif method == 'dp':
             v_app = learner.get_v_app_dp(env_i)
-        m_error = np.sum(abs(v_app - v_fcfs))
-        m_error_opt = np.sum(abs(v_app - v_vi))
+        m_error = np.sum(abs(v_app - v_fcfs)*w_factor)
+        m_error_opt = np.sum(abs(v_app - v_vi)*w_factor)
         perc_improv[method].append((error - m_error) / error * 100)
-    perc_improv_opt[method].append((error_opt - m_error_opt)
-                                   / error_opt * 100)
+        perc_improv_opt[method].append((error_opt - m_error_opt)
+                                       / error_opt * 100)
+        # if (error_opt - m_error_opt) / error_opt * 100 < -100:
+        #     print(i, method, (error_opt - m_error_opt) / error_opt * 100)
 
 plotting.multi_boxplot(perc_improv, perc_improv.keys(),
-                       'Improvement $V_{app}$ by interpolation, '
-                       'rel to fcfs, instance: ' + instance_id,
+                       'Weighted improvement $V_{app}$ by interpolation, '
+                       'rel to fcfs, inst: ' + instance_id,
                        perc_improv.keys(),
                        'improvement vs conservative (%)')
 
 plotting.multi_boxplot(perc_improv_opt, perc_improv_opt.keys(),
-                       'Improvement $V_{app}$ by interpolation, '
-                       'rel to Value Iteration, instance: ' + instance_id,
+                       'Weighted improvement $V_{app}$ by interpolation, '
+                       'rel to VI, inst: ' + instance_id,
                        perc_improv_opt.keys(),
                        'improvement vs conservative (%)')
 
+# Analyses checking v_app_dp
+# i = 49
+# inst = inst_set.iloc[i]
+# env_i = Env(J=inst.J, S=inst.S, D=inst.D,
+#             gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
+#             mu=inst.mu, lab=inst.lab)
+#
+# w_factor = get_weighting_factor(env_i)
+# file = '_'.join([instance_id, str(i), 'vi.npz'])
+# v_vi = np.load(FILEPATH_V + 'v_' + file)['arr_0']
+# v_app_old = learner.get_v_app_cons(env_i)
+# error_opt = np.sum(abs(v_app_old - v_vi) * w_factor)
+#
+# v_app_lin = learner.get_v_app_lin(env_i, type='linear')
 # v_dp = learner.calc_v_app_dp(env_i)
-# learner.get_v_app_dp(env_i)
+# v_app_dp = learner.get_v_app_dp(env_i)
+#
+# m_error_opt = np.sum(abs(v_app_lin - v_vi) * w_factor)
+# print('lin improv: ', (error_opt - m_error_opt) / error_opt * 100)
+# m_error_opt = np.sum(abs(v_app_dp - v_vi) * w_factor)
+# print('dp improv: ', (error_opt - m_error_opt) / error_opt * 100)
+#
+# state = plotting.state_selection(env_i,
+#                                  dim=True,
+#                                  s=1,
+#                                  wait_perc=0.7)
+# plotting.plot_heatmap(env_i, state,
+#                       V=v_vi,
+#                       title='VI',
+#                       t=inst.t * inst.gamma)
+#
+# plotting.plot_heatmap(env_i, state,
+#                       V=v_app_lin,
+#                       title='V_app_lin',
+#                       t=inst.t * inst.gamma)
+# plotting.plot_heatmap(env_i, state,
+#                       V=v_app_dp,
+#                       title='V_app_dp',
+#                       t=inst.t * inst.gamma)
