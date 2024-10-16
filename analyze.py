@@ -16,7 +16,7 @@ FILEPATH_V = 'results/value_functions/'
 
 overview = False
 
-instance_id = 'J1'
+set_id = 'J1'
 use_g_tmp = False
 max_pi_iter = 10
 multi_xyc = False
@@ -43,7 +43,7 @@ check_v_app = True
 print_states_pi = False
 print_states_v = False
 print_states_v_app = False
-calculate_pi = True
+calc_pi = True
 plot_policy = True
 plot_g_mem = False
 plot_v = True
@@ -84,9 +84,9 @@ if overview:
         print('\n')
 
 # Load in instance_set and extract methods used
-instance_name = 'instances_' + instance_id
+instance_name = 'instances_' + set_id
 inst_set = tools.inst_load(FILEPATH_RESULTS + instance_name + '.csv')
-is_sim = 'sim' in instance_id
+is_sim = 'sim' in set_id
 tools.solved_and_left(inst_set, sim=is_sim, use_g_tmp=use_g_tmp)
 solve_methods = []
 inst_set['smu(1-rho)'] = tools.get_smu_rho(inst_set.lab,
@@ -157,9 +157,9 @@ if theory_vs_sim:
                       '_g',
                       'mm1',
                       '_g',
-                      'Gap of g for sims vs M/M/1 for ' + instance_id,
+                      'Gap of g for sims vs M/M/1 for ' + set_id,
                       multi_xyc=multi_xyc,
-                      title_xyc=instance_id + ' sim',
+                      title_xyc=set_id + ' sim',
                       violin=violin,
                       rotation=20,
                       left=0.1,
@@ -173,9 +173,9 @@ if theory_discr_vs_solve:
                       '_g',
                       'mm1_discr',
                       '_g',
-                      'Gap of g for solve vs M/M/1 discr for ' + instance_id,
+                      'Gap of g for solve vs M/M/1 discr for ' + set_id,
                       multi_xyc=multi_xyc,
-                      title_xyc=instance_id + ' solve & M/M/1 discr',
+                      title_xyc=set_id + ' solve & M/M/1 discr',
                       violin=violin,
                       rotation=20,
                       left=0.1,
@@ -189,9 +189,9 @@ if theory_vs_solve:
                       '_g',
                       'mm1',
                       '_g',
-                      'Gap of g for solve vs M/M/1 for ' + instance_id,
+                      'Gap of g for solve vs M/M/1 for ' + set_id,
                       multi_xyc=multi_xyc,
-                      title_xyc=instance_id + ' solve & theory',
+                      title_xyc=set_id + ' solve & theory',
                       violin=violin,
                       rotation=20,
                       left=0.1,
@@ -206,9 +206,9 @@ if vi_vs_solve:
                       g_tmp,
                       'vi',
                       g_tmp,
-                      'Gap of g for solve vs VI for ' + instance_id,
+                      'Gap of g for solve vs VI for ' + set_id,
                       multi_xyc=multi_xyc,
-                      title_xyc=instance_id + ' solve vs VI',
+                      title_xyc=set_id + ' solve vs VI',
                       violin=violin,
                       rotation=20,
                       left=0.1,
@@ -223,9 +223,9 @@ if vi_vs_sim:
                       g_tmp,
                       'vi',
                       g_tmp,
-                      'Gap of g for sim vs VI for ' + instance_id,
+                      'Gap of g for sim vs VI for ' + set_id,
                       multi_xyc=multi_xyc,
-                      title_xyc=instance_id + ' sim vs VI',
+                      title_xyc=set_id + ' sim vs VI',
                       violin=violin,
                       rotation=20,
                       left=0.1,
@@ -240,9 +240,9 @@ if ospi_vs_solve:
                       g_tmp,
                       'vi',
                       g_tmp,
-                      'Gap of g for sim vs OSPI rel to VI for ' + instance_id,
+                      'Gap of g for sim vs OSPI rel to VI for ' + set_id,
                       multi_xyc=multi_xyc,
-                      title_xyc=instance_id + ' solve vs OSPI',
+                      title_xyc=set_id + ' solve vs OSPI',
                       violin=violin,
                       rotation=20,
                       left=0.1,
@@ -261,7 +261,7 @@ if solve_vs_sim:
                           g_tmp,
                           'Gap of g, (solve_g - sims-g) for ' + method,
                           multi_xyc=multi_xyc,
-                          title_xyc=instance_id + ' solve_g - sim_g',
+                          title_xyc=set_id + ' solve_g - sim_g',
                           violin=violin,
                           rotation=20,
                           left=0.1,
@@ -274,7 +274,7 @@ if (not is_sim) and (plot_pi_abs or plot_pi_rel):
     gap_imp_abs = {'abs_' + str(i): [] for i in range(max_pi_iter)}
     gap_imp_rel = {'rel_' + str(i): [] for i in range(max_pi_iter)}
     for i, inst in inst_set.iterrows():
-        g_mem = np.load(FILEPATH_V + '_'.join(['g', instance_id, str(i),
+        g_mem = np.load(FILEPATH_V + '_'.join(['g', set_id, str(i),
                                                'pi.npz']))['arr_0']
         vi_g, ospi_g = inst['vi' + g_tmp], inst['ospi' + g_tmp]
         # add isolated g
@@ -341,8 +341,8 @@ if check_v_app:
     print(inst_set['v_app_incr'])
 
 # Analyzing & Plotting Pi, V, W
-if instance_id in ids_to_analyze:
-    for inst_id in ids_to_analyze[instance_id]:
+if set_id in ids_to_analyze:
+    for inst_id in ids_to_analyze[set_id]:
         if inst_id not in inst_set_gammas.index:
             continue
         inst = inst_set_gammas.loc[inst_id]
@@ -351,45 +351,21 @@ if instance_id in ids_to_analyze:
                   mu=inst.mu, lab=inst.lab)
         zero_state = tuple(np.zeros(len(env.dim), dtype=int))
 
-        # load in ref V, w, Pi, v_app
-        file = '_'.join([instance_id, str(inst_id), ref_method + '.npz'])
-        g_ref = round(inst[ref_method + g_tmp], dec)
-        V_ref = np.load(FILEPATH_V + 'v_' + file)['arr_0']
-        Pi_ref = None
-        if 'pi_' + file in os.listdir(FILEPATH_V):
-            Pi_ref = np.load(FILEPATH_V + 'pi_' + file)['arr_0']
-            w_ref = np.load(FILEPATH_V + 'w_' + file)['arr_0']
-        elif calculate_pi:
-            pi_learner = PolicyIteration()
-            pi_learner.one_step_policy_improvement(env, V_ref)
-            Pi_ref = pi_learner.Pi
-            w_ref = pi_learner.W
+        g_ref, V_ref, Pi_ref, w_ref = tools.load_data(
+            env, FILEPATH_V, inst, set_id, inst_id, method, g_tmp, dec, calc_pi)
 
         print('\n')
         if g_ref is None:
             print('reference g_' + method + ' stuck')
-
-        print('Instance', instance_id, 'id', inst_id,
+        print('Instance', set_id, 'id', inst_id,
               'ref_method', ref_method, '\n')
-
         print('Impact discr state space: ',
               sum(env.lab)**2/env.gamma * env.pi_0,
               '\nWith lab:', env.lab, 'P(W>t):', env.target_prob)
         for method in comp_methods:
-            # load in data
-            file = '_'.join([instance_id, str(inst_id), method + '.npz'])
-            g = round(inst[method + g_tmp], dec)
-            V = np.load(FILEPATH_V + 'v_' + file)['arr_0']
-            Pi = None
-            if ('pi_' + file in os.listdir(FILEPATH_V)
-                    and (plot_policy or summarize_policy)):
-                Pi = np.load(FILEPATH_V + 'pi_' + file)['arr_0']
-                w = np.load(FILEPATH_V + 'w_' + file)['arr_0']
-            elif calculate_pi and (plot_policy or summarize_policy):
-                pi_learner = PolicyIteration()
-                pi_learner.one_step_policy_improvement(env, V)
-                Pi = pi_learner.Pi
-                w = pi_learner.W
+            g, V, Pi, w = tools.load_data(
+                env, FILEPATH_V, inst, set_id, inst_id, method, g_tmp, dec,
+                calc_pi)
 
             if g is None:
                 print('g_' + method + ' stuck')
@@ -397,11 +373,11 @@ if instance_id in ids_to_analyze:
                 print('g_' + method + ': ', g, ' equal to ref?', g == g_ref)
 
             # Summarize policy
-            if (Pi is not None) and summarize_policy:
+            if summarize_policy and (Pi is not None):
                 pi_learner = PolicyIteration(Pi=Pi)
                 tools.summarize_policy(env, pi_learner, print_per_time=False)
 
-            name = method + ' inst: ' + instance_id + '_' + str(inst_id)
+            name = method + ' inst: ' + set_id + '_' + str(inst_id)
             # Plotting policy
             state = plotting.state_selection(env,
                                              dim=True,
@@ -416,14 +392,13 @@ if instance_id in ids_to_analyze:
                                           title=name + ' policy',
                                           t=inst.t * inst.gamma,
                                           cap_d=cap_d)
-                if (Pi is not None) and plot_w:
+                if (w is not None) and plot_w:
                     plotting.plot_heatmap(env, state_i,
                                           W=w,
                                           title=name + ' W',
                                           t=inst.t * inst.gamma,
                                           cap_d=cap_d)
-            # if file_pi in os.listdir(FILEPATH_V) and
-            if plot_v:
+            if plot_v and (V is not None):
                 plotting.plot_heatmap(env, state,
                                       V=V,
                                       title=name + ' V',
@@ -459,7 +434,7 @@ if instance_id in ids_to_analyze:
             print('\n')
         if plot_g_mem:
             g_mem = np.load(FILEPATH_V + '_'.join(
-                ['g', instance_id, str(inst_id), 'pi.npz']))['arr_0']
+                ['g', set_id, str(inst_id), 'pi.npz']))['arr_0']
             fig, ax = plt.subplots(1)
             ax.scatter(range(len(g_mem)), g_mem)
             ax.set_xlabel('Iterations')
@@ -474,7 +449,7 @@ for i, inst in inst_set.iterrows():
     pi_0 = Env.get_pi_0(inst.gamma, inst.S, inst.load, sum(inst.lab))
     term_list.append(pi_0 * sum(inst.lab)**2 / inst.gamma)
 plotting.plot_xyc(inst_set.t_prob, term_list, inst_set.fcfs_opt_gap,
-                  title='Impact discr state space, instance:' + instance_id,
+                  title='Impact discr state space, instance:' + set_id,
                   x_lab='P(W>t)',
                   y_lab='extra term',
                   c_lab='opt gap fcfs (vs VI)',
@@ -490,9 +465,9 @@ if analyze_gamma and len(set(inst_set_gammas['gamma'])) > 1:
     inst_set_tmp['imbalance'] = inst_set_tmp['imbalance'].apply(str)
     data = inst_set_tmp[key_cols].copy().drop_duplicates(ignore_index=True)
     gammas = sorted(list(set(inst_set_tmp['gamma'])))
-    if instance_id == 'J2_D_gam':
+    if set_id == 'J2_D_gam':
         d_multiples = [5, 10, 0]  # 0 must be last
-    elif instance_id == 'J3':
+    elif set_id == 'J3':
         d_multiples = [4, 0]
     else:
         d_multiples = [0]
@@ -529,7 +504,7 @@ if analyze_gamma and len(set(inst_set_gammas['gamma'])) > 1:
                       g_tmp,
                       ref_m, g_tmp,
                       ref_m, g_tmp,
-                      'Gap of g for different D and gamma for ' + instance_id,
+                      'Gap of g for different D and gamma for ' + set_id,
                       multi_xyc=False,
                       violin=violin,
                       x_lab='imbalance',

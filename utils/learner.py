@@ -471,7 +471,19 @@ class OneStepPolicyImprovement:
                 v_app[tuple(states)] += v_app_i[x + int(np.ceil(env.s_star[i]))]
         return v_app
 
-    def get_v_app_lin(self, env, type='abs'):
+    @staticmethod
+    def calc_dx(env, i, x, s, v_app_i):
+        """Calculate dx for v_app."""
+        s_ceil = np.ceil(env.s_star).astype(int)
+        if (s < env.s_star[i]) or (x == env.D):
+            return ((v_app_i[x + s_ceil[i]]
+                     - v_app_i[x + s_ceil[i] - 1]) / (env.S + 1))
+        else:
+            return ((v_app_i[x + s_ceil[i] + 1]
+                   - v_app_i[x + s_ceil[i]])
+                  / (env.S + 1))
+
+    def get_v_app_lin(self, env, method='abs'):
         """Approximation of value function.
         Use that v_app_i(s) is known for s <= s_star.
         And interpolate for s > s_star.
@@ -490,25 +502,17 @@ class OneStepPolicyImprovement:
                         if x == 0:
                             v_app[tuple(states)] += v_app_i[s]
                         else:  # x > 0
-                            if type == 'abs':
+                            if method == 'abs':
                                 v_app[tuple(states)] += (
                                     v_app_i[s] + (v_app_i[x + s_ceil[i]]
                                                   - v_app_i[s_ceil[i]]))
                             else:
-                                dx = ((v_app_i[x + s_ceil[i]]
-                                       - v_app_i[x + s_ceil[i] - 1])
-                                      / (env.S + 1))
+                                dx = self.calc_dx(env, i, x, s, v_app_i)
                                 v_app[tuple(states)] += (
                                         v_app_i[x + s_ceil[i] - 1]
                                         + dx * (s + env.S + 1 - s_int[i]))
                     else:  # s*_i <= s <= S
-                        if x < env.D:
-                            dx = ((v_app_i[x + s_ceil[i] + 1]
-                                   - v_app_i[x + s_ceil[i]])
-                                  / (env.S + 1))
-                        else:  # x == D
-                            dx = ((v_app_i[x + s_ceil[i]]
-                                   - v_app_i[x + s_ceil[i] - 1]) / (env.S + 1))
+                        dx = self.calc_dx(env, i, x, s, v_app_i)
                         v_app[tuple(states)] += (v_app_i[x + s_ceil[i]]
                                                  + dx * (s - s_int[i]))
         return v_app
@@ -540,6 +544,16 @@ class OneStepPolicyImprovement:
                                      - env.g[i] / env.tau)
         return v_dp
 
+    @staticmethod
+    def calc_f(env, i, x, h, n):
+        if (x > 0) and (h >= 1):
+            return h - (env.s_star[i] - (n + 1))
+        elif (((x == 0) and (h <= int(env.s_star[i]))) or
+              (env.s_star[i] % 1 == 0)):
+            return h % 1
+        else:  # (x = 0 and int(s_star) < h) or (x > 0 and h < 1)
+            return (h % 1) / (env.s_star[i] % 1)
+
     def get_v_app_dp(self, env):
         """Approximation of value function with an approximate OSPI in dynamic
         programming fashion.
@@ -554,13 +568,7 @@ class OneStepPolicyImprovement:
                 n = int(env.s_star[i] - h)
                 for x in range(env.D + 1):
                     states[i] = x  # x_i = x
-                    if (x > 0) and (h >= 1):
-                        f = h - (env.s_star[i] - (n + 1))
-                    elif (((x == 0) and (h <= int(env.s_star[i]))) or
-                          (env.s_star[i] % 1 == 0)):
-                        f = h % 1
-                    else:  # (x = 0 and int(s_star) < h) or (x > 0 and h < 1)
-                        f = (h % 1) / (env.s_star[i] % 1)
+                    f = self.calc_f(env, i, x, h, n)
                     s_i = int(env.s_star[i])
                     v_app[tuple(states)] += (f * v_dp[i, x, s_i - n] + (1 - f)
                                              * v_dp[i, x, s_i - n - 1])

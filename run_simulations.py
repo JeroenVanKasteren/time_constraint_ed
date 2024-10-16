@@ -6,27 +6,28 @@ FILEPATH_PICKLES = 'results/simulation_pickles/'
 FILEPATH_RESULT = 'results/simulation_pickles/result_'
 
 # local simulation ----------------
-# instances_name = 'sim'
-# inst = tools.inst_load(FILEPATH_INSTANCE + instances_name + '_sim.csv')
+instances_name = 'sim'
+inst = tools.inst_load(FILEPATH_INSTANCE + instances_name + '_sim.csv')
 # for array_id in range(1, 3):  # len(inst) + 1):
 
 # local / Debug
-# array_id = 1
-# args = {'job_id': 1,
-#         'array_id': array_id,  # array_id if local simulation
-#         'time': '0-00:10:00',
-#         'instance': instances_name,
-#         'method': 'not specified',
-#         'x': 0,
-#         'max_iter': '1e5',
-#         'continue_run': True}
-# args = tools.DotDict(args)
+array_id = 1
+args = {'job_id': 1,
+        'array_id': array_id,  # array_id if local simulation
+        'time': '0-00:10:00',
+        'instance': instances_name,
+        'method': 'all',
+        'x': 0,
+        'max_iter': '1e5',
+        'continue_run': True}
+args = tools.DotDict(args)
 # local simulation ----------------
-args = tools.load_args()
+# args = tools.load_args()  TODO: Uncomment this line
 
 args.max_iter = np.inf if args.max_iter == 'inf' else float(args.max_iter)
-methods = ['ospi', 'cmu_t_min', 'cmu_t_max', 'fcfs', 'sdf',
-           'sdfprior', 'l_max', 'l_min']
+methods = ['ospi', 'ospi_cons', 'ospi_lin', 'ospi_abs',  'ospi_dp',
+           'cmu_t_min', 'cmu_t_max', 'fcfs',
+           'sdf', 'sdfprior', 'l_max', 'l_min']
 if args.method != 'all':
     if args.method in methods:
         methods = [args.method]

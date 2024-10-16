@@ -11,8 +11,8 @@ import pickle as pkl
 from scipy.stats import norm
 from scipy.special import factorial as fac
 from sklearn.model_selection import ParameterGrid
-from utils import TimeConstraintEDs as Env
-from utils import OneStepPolicyImprovement as Ospi
+from utils import (TimeConstraintEDs as Env, OneStepPolicyImprovement as Ospi,
+                   PolicyIteration)
 
 
 def conf_int(alpha, data):
@@ -198,6 +198,25 @@ def inst_load(filepath):
     inst = pd.read_csv(filepath)
     inst.loc[:, cols] = inst.loc[:, cols].map(strip_split)
     return inst
+
+
+def load_data(env, filepath, inst, instance_id, inst_id, method, g_tmp, dec,
+              calc_pi):
+    V, Pi, w = None, None, None
+    file = '_'.join([instance_id, str(inst_id), method + '.npz'])
+    g = round(inst[method + g_tmp], dec)
+    if 'v_' + file in os.listdir(filepath):
+        V = np.load(filepath + 'v_' + file)['arr_0']
+    if 'pi_' + file in os.listdir(filepath):
+        Pi = np.load(filepath + 'pi_' + file)['arr_0']
+        if 'w_' + file in os.listdir(filepath):
+            w = np.load(filepath + 'w_' + file)['arr_0']
+    elif calc_pi and (V is not None):
+        pi_learner = PolicyIteration()
+        pi_learner.one_step_policy_improvement(env, V)
+        Pi = pi_learner.Pi
+        w = pi_learner.W
+    return g, V, Pi, w
 
 
 def load_result(method, instance_name):

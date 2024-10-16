@@ -36,9 +36,9 @@ def main(name, solve):
                         't_prob']
     # Ensure method names are distinguishable (unique: '_' + method + '_job')
     if solve:
-        methods = ['vi',
+        methods = ['vi', 'pi'
                    'ospi', 'ospi_cons', 'ospi_lin', 'ospi_abs',  'ospi_dp',
-                   'sdf', 'fcfs', 'pi', 'cmu_t_min']
+                   'sdf', 'fcfs', 'cmu_t_min']
         if name == 'J2_D_gam':
             methods = ['vi', 'ospi']
         instance_columns.extend(['e', 'P', 'size', 'size_i'])

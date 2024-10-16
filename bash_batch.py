@@ -15,8 +15,8 @@ python train.py --job_id $SLURM_JOBID --array_id $SLURM_ARRAY_TASK_ID --time $TI
 # python read_results_sim.py
 """
 
-methods = ['vi', 'ospi', 'ospi_cons', 'ospi_lin', 'ospi_abs',
-           'sdf', 'fcfs', 'pi', 'cmu_t_min']
+methods = ['vi', 'ospi', 'ospi_cons', 'ospi_lin', 'ospi_abs', 'ospi_dp', 'pi']
+#           'sdf', 'fcfs', 'cmu_t_min']
 instances = [['J1', '0-01:00:00', '108', methods],
              ['J2', '0-06:00:00', '108', methods],
              ['J2_D_gam', '0-06:00:00', '216', ['vi', 'ospi']]]
