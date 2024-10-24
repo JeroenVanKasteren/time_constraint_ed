@@ -27,8 +27,9 @@ M = 100
 alpha = 0.05
 
 if method == 'not_specified':
-    methods = ['ospi', 'cmu_t_min', 'cmu_t_max', 'fcfs', 'sdf',
-               'sdfprior', 'l_max', 'l_min']
+    methods = ['ospi', 'ospi_cons', 'ospi_lin', 'ospi_abs', 'ospi_dp',
+               'cmu_t_min', 'cmu_t_max', 'fcfs',
+               'sdf', 'sdfprior', 'l_max', 'l_min']
 else:
     methods = [method]
 

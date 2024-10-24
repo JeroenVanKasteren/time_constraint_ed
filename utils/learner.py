@@ -545,14 +545,22 @@ class OneStepPolicyImprovement:
         return v_dp
 
     @staticmethod
+    def calc_h(env, i, s_v):
+        h = env.s_star[i] - (env.S - sum(s_v)) * env.s_star[i] / env.S
+        # round floating point errors, ensure h>=0 if -1e16 negatives
+        h = max(0, np.floor(h * 1e10) / 1e10)
+        n = int(env.s_star[i] - h)
+        return h, n
+
+    @staticmethod
     def calc_f(env, i, x, h, n):
-        if (x > 0) and (h >= 1):
+        s_frac = (env.s_star[i] % 1)
+        if (x > 0) and (h >= s_frac):
             return h - (env.s_star[i] - (n + 1))
-        elif (((x == 0) and (h <= int(env.s_star[i]))) or
-              (env.s_star[i] % 1 == 0)):
+        elif ((x == 0) and (h <= int(env.s_star[i]))) or s_frac == 0:
             return h % 1
         else:  # (x = 0 and int(s_star) < h) or (x > 0 and h < 1)
-            return (h % 1) / (env.s_star[i] % 1)
+            return (h % 1) / s_frac
 
     def get_v_app_dp(self, env):
         """Approximation of value function with an approximate OSPI in dynamic
@@ -564,11 +572,11 @@ class OneStepPolicyImprovement:
             for i in range(env.J):
                 states = [slice(None)] * (env.J * 2)
                 states[env.J:] = s_v
-                h = env.s_star[i] - (env.S - sum(s_v)) * env.s_star[i] / env.S
-                n = int(env.s_star[i] - h)
+                h, n = self.calc_h(env, i, s_v)
                 for x in range(env.D + 1):
                     states[i] = x  # x_i = x
                     f = self.calc_f(env, i, x, h, n)
+                    assert 0 <= f <= 1
                     s_i = int(env.s_star[i])
                     v_app[tuple(states)] += (f * v_dp[i, x, s_i - n] + (1 - f)
                                              * v_dp[i, x, s_i - n - 1])

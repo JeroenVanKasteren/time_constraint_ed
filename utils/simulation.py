@@ -39,7 +39,8 @@ class Simulation:
             tools.generate_times(self.env, self.N)
 
     def get_v(self, env):
-        """Get the value function for each class."""
+        """Get the value function for each class.
+        Mimics get_v_app_... of OneStepPolicyImprovement."""
         if self.method == 'ospi_dp':
             return self.learner.calc_v_app_dp(env)
 
@@ -49,15 +50,14 @@ class Simulation:
         for i in range(env.J):
             v_app_i = self.learner.get_v_app_i(env, i)
             if self.method in ["ospi", "ospi_cons"]:
-                for x in range(env.D + 1):
+                for x in range(env.D + 1):  # Value indep. of s
                     v[i, x, :] = v_app_i[x + s_ceil[i]]
                 if self.method == 'ospi':
-                    for s in range(s_ceil[i]):
+                    for s in range(s_ceil[i]):  # overwrite x=0, s<s*
                         v[i, 0, s] = v_app_i[s]
             else:  # ospi_lin, ospi_abs
-                for x in range(env.D + 1):
-                    for s in range(env.S + 1):
-                        # x, s  # x_i = x, s_i = s
+                for x in range(env.D + 1):  # x_i = x
+                    for s in range(env.S + 1):  # s_i = s
                         if s < env.s_star[i]:
                             if x == 0:
                                 v[i, 0, s] = v_app_i[s]
@@ -79,8 +79,7 @@ class Simulation:
         return v
 
     def get_v_app_dp(self, env, j, x, s):
-        h = env.s_star[j] - (env.S - sum(s)) * env.s_star[j] / env.S
-        n = int(env.s_star[j] - h)
+        h, n = self.learner.calc_h(env, j, s)
         f = self.learner.calc_f(env, j, x, h, n)
         assert 0 <= f <= 1
         s_i = int(env.s_star[j])

@@ -19,7 +19,7 @@ args = {'job_id': 1,
         'method': 'all',
         'x': 0,
         'max_iter': '1e5',
-        'continue_run': True}
+        'continue_run': False}  # TODO: Change to True
 args = tools.DotDict(args)
 # local simulation ----------------
 # args = tools.load_args()  TODO: Uncomment this line

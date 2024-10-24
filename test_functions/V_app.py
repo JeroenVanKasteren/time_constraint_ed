@@ -24,7 +24,7 @@ FILEPATH_V = 'results/value_functions/'
 np.set_printoptions(precision=4, linewidth=150, suppress=True)
 tolerance = 1e-4
 instance_id = 'J2'
-weight_error = False
+weight_error = True
 learner = OSPI()
 
 
@@ -142,8 +142,8 @@ for i, inst in inst_set.iterrows():
         perc_improv[method].append((error - m_error) / error * 100)
         perc_improv_opt[method].append((error_opt - m_error_opt)
                                        / error_opt * 100)
-        # if (error_opt - m_error_opt) / error_opt * 100 < -100:
-        #     print(i, method, (error_opt - m_error_opt) / error_opt * 100)
+        if (error_opt - m_error_opt) / error_opt * 100 < -100:
+            print(i, method, (error_opt - m_error_opt) / error_opt * 100)
 
 weighted = 'Weighted i' if weight_error else 'I'
 plotting.multi_boxplot(perc_improv, perc_improv.keys(),
@@ -158,8 +158,8 @@ plotting.multi_boxplot(perc_improv_opt, perc_improv_opt.keys(),
                        perc_improv_opt.keys(),
                        'improvement vs conservative (%)')
 
-# Analyses checking v_app_dp
-# i = 49
+# Analyses checking v_app_dp for specific instances
+# i = 97
 # inst = inst_set.iloc[i]
 # env_i = Env(J=inst.J, S=inst.S, D=inst.D,
 #             gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
@@ -171,7 +171,7 @@ plotting.multi_boxplot(perc_improv_opt, perc_improv_opt.keys(),
 # v_app_old = learner.get_v_app_cons(env_i)
 # error_opt = np.sum(abs(v_app_old - v_vi) * w_factor)
 #
-# v_app_lin = learner.get_v_app_lin(env_i, type='linear')
+# v_app_lin = learner.get_v_app_lin(env_i, method='linear')
 # v_dp = learner.calc_v_app_dp(env_i)
 # v_app_dp = learner.get_v_app_dp(env_i)
 #
