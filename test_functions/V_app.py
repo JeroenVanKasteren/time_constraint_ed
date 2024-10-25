@@ -159,41 +159,48 @@ plotting.multi_boxplot(perc_improv_opt, perc_improv_opt.keys(),
                        'improvement vs conservative (%)')
 
 # Analyses checking v_app_dp for specific instances
-# i = 97
-# inst = inst_set.iloc[i]
-# env_i = Env(J=inst.J, S=inst.S, D=inst.D,
-#             gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
-#             mu=inst.mu, lab=inst.lab)
-#
-# w_factor = get_weighting_factor(env_i)
-# file = '_'.join([instance_id, str(i), 'vi.npz'])
-# v_vi = np.load(FILEPATH_V + 'v_' + file)['arr_0']
-# v_app_old = learner.get_v_app_cons(env_i)
-# error_opt = np.sum(abs(v_app_old - v_vi) * w_factor)
-#
-# v_app_lin = learner.get_v_app_lin(env_i, method='linear')
-# v_dp = learner.calc_v_app_dp(env_i)
-# v_app_dp = learner.get_v_app_dp(env_i)
-#
-# m_error_opt = np.sum(abs(v_app_lin - v_vi) * w_factor)
-# print('lin improv: ', (error_opt - m_error_opt) / error_opt * 100)
-# m_error_opt = np.sum(abs(v_app_dp - v_vi) * w_factor)
-# print('dp improv: ', (error_opt - m_error_opt) / error_opt * 100)
-#
-# state = plotting.state_selection(env_i,
-#                                  dim=True,
-#                                  s=1,
-#                                  wait_perc=0.7)
-# plotting.plot_heatmap(env_i, state,
-#                       V=v_vi,
-#                       title='VI',
-#                       t=inst.t * inst.gamma)
-#
-# plotting.plot_heatmap(env_i, state,
-#                       V=v_app_lin,
-#                       title='V_app_lin',
-#                       t=inst.t * inst.gamma)
-# plotting.plot_heatmap(env_i, state,
-#                       V=v_app_dp,
-#                       title='V_app_dp',
-#                       t=inst.t * inst.gamma)
+i = 4
+inst = inst_set.iloc[i]
+env_i = Env(J=inst.J, S=inst.S, D=inst.D,
+            gamma=inst.gamma, t=inst.t, c=inst.c, r=inst.r,
+            mu=inst.mu, lab=inst.lab)
+
+w_factor = get_weighting_factor(env_i)
+file = '_'.join([instance_id, str(i), 'fcfs.npz'])
+v_fcfs = np.load(FILEPATH_V + 'v_' + file)['arr_0']
+file = '_'.join([instance_id, str(i), 'vi.npz'])
+v_vi = np.load(FILEPATH_V + 'v_' + file)['arr_0']
+v_app_old = learner.get_v_app_cons(env_i)
+error_opt = np.sum(abs(v_app_old - v_vi) * w_factor)
+
+v_app_lin = learner.get_v_app_lin(env_i, method='linear')
+v_dp = learner.calc_v_app_dp(env_i)
+v_app_dp = learner.get_v_app_dp(env_i)
+
+m_error_opt = np.sum(abs(v_app_lin - v_vi) * w_factor)
+print('lin improv: ', (error_opt - m_error_opt) / error_opt * 100)
+m_error_opt = np.sum(abs(v_app_dp - v_vi) * w_factor)
+print('dp improv: ', (error_opt - m_error_opt) / error_opt * 100)
+
+state = plotting.state_selection(env_i,
+                                 dim=True,
+                                 s=1,
+                                 wait_perc=0.7)
+plotting.plot_heatmap(env_i, state,
+                      V=v_fcfs,
+                      title='FCFS',
+                      t=inst.t * inst.gamma)
+
+plotting.plot_heatmap(env_i, state,
+                      V=v_vi,
+                      title='VI',
+                      t=inst.t * inst.gamma)
+
+plotting.plot_heatmap(env_i, state,
+                      V=v_app_lin,
+                      title='V_app_lin',
+                      t=inst.t * inst.gamma)
+plotting.plot_heatmap(env_i, state,
+                      V=v_app_dp,
+                      title='V_app_dp',
+                      t=inst.t * inst.gamma)

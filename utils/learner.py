@@ -540,8 +540,7 @@ class OneStepPolicyImprovement:
                         r_xs -= env.c[i]
                     r_xs = f * r_xs if s == 0 else r_xs
                     v_dp[i, x, s] = (r_xs + sum(env.p_xy[i, x, :x+1]
-                                                * v_dp[i, :x + 1, s + 1])
-                                     - env.g[i] / env.tau)
+                                                * v_dp[i, :x + 1, s + 1]))
         return v_dp
 
     @staticmethod
