@@ -37,6 +37,7 @@ class Simulation:
             self.v = self.get_v(self.env)
         self.arrival_times, self.service_times = \
             tools.generate_times(self.env, self.N)
+        print("Initialized simulation.")
 
     def get_v(self, env):
         """Get the value function for each class.

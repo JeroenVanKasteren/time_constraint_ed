@@ -16,7 +16,7 @@ args = {'job_id': 1,
         'array_id': array_id,  # array_id if local simulation
         'time': '0-00:10:00',
         'instance': instances_name,
-        'method': 'all',
+        'method': 'ospi_dp',
         'x': 0,
         'max_iter': '1e5',
         'continue_run': False}  # TODO: Change to True
@@ -54,5 +54,6 @@ for method in methods:
                      inst_id=inst_id,
                      method=method,
                      N=N,
-                     time=args.time)
+                     time=args.time,
+                     time_check=1e3)
     simulation.run(continue_run=args.continue_run)
